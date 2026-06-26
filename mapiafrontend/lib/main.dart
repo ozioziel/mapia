@@ -5,6 +5,7 @@ import 'package:mapiafrontend/features/alerts/presentation/screens/alerts_screen
 import 'package:mapiafrontend/features/alerts/presentation/screens/nearby_posts_screen.dart';
 import 'package:mapiafrontend/features/auth/presentation/screens/login_screen.dart';
 import 'package:mapiafrontend/features/auth/presentation/screens/register_screen.dart';
+import 'package:mapiafrontend/features/chatbot/widgets/floating_chatbot_button.dart';
 import 'package:mapiafrontend/features/language/presentation/providers/language_provider.dart';
 import 'package:mapiafrontend/features/language/presentation/screens/language_settings_screen.dart';
 import 'package:mapiafrontend/features/map/presentation/screens/map_screen.dart';
@@ -64,13 +65,19 @@ class _MainAppState extends State<MainApp> {
           routes: {
             '/login': (context) => const LoginScreen(),
             '/register': (context) => const RegisterScreen(),
-            '/map': (context) => const MapScreen(),
-            '/publications': (context) => const PostsFeedScreen(),
-            '/create-post': (context) => const CreatePostScreen(),
-            '/alerts': (context) => const AlertsScreen(),
-            '/profile': (context) => const ProfileScreen(),
-            '/profile/edit': (context) => const EditProfileScreen(),
-            '/profile/verify-phone': (context) => const VerifyPhoneScreen(),
+            '/map': (context) => _withExperimentalChatbot(const MapScreen()),
+            '/publications': (context) =>
+                _withExperimentalChatbot(const PostsFeedScreen()),
+            '/create-post': (context) =>
+                _withExperimentalChatbot(const CreatePostScreen()),
+            '/alerts': (context) =>
+                _withExperimentalChatbot(const AlertsScreen()),
+            '/profile': (context) =>
+                _withExperimentalChatbot(const ProfileScreen()),
+            '/profile/edit': (context) =>
+                _withExperimentalChatbot(const EditProfileScreen()),
+            '/profile/verify-phone': (context) =>
+                _withExperimentalChatbot(const VerifyPhoneScreen()),
             '/language': (context) =>
                 LanguageSettingsScreen(provider: _languageProvider),
           },
@@ -83,7 +90,9 @@ class _MainAppState extends State<MainApp> {
               );
               if (postId.isNotEmpty) {
                 return MaterialPageRoute(
-                  builder: (context) => PostDetailScreen(postId: postId),
+                  builder: (context) => _withExperimentalChatbot(
+                    PostDetailScreen(postId: postId),
+                  ),
                   settings: settings,
                 );
               }
@@ -94,7 +103,9 @@ class _MainAppState extends State<MainApp> {
               );
               if (postId.isNotEmpty) {
                 return MaterialPageRoute(
-                  builder: (context) => PostsFeedScreen(focusPostId: postId),
+                  builder: (context) => _withExperimentalChatbot(
+                    PostsFeedScreen(focusPostId: postId),
+                  ),
                   settings: settings,
                 );
               }
@@ -111,8 +122,9 @@ class _MainAppState extends State<MainApp> {
 
               if (type != null && radiusKm != null) {
                 return MaterialPageRoute(
-                  builder: (context) =>
-                      NearbyPostsScreen(type: type, radiusKm: radiusKm),
+                  builder: (context) => _withExperimentalChatbot(
+                    NearbyPostsScreen(type: type, radiusKm: radiusKm),
+                  ),
                   settings: settings,
                 );
               }
@@ -123,6 +135,10 @@ class _MainAppState extends State<MainApp> {
       },
     );
   }
+}
+
+Widget _withExperimentalChatbot(Widget child) {
+  return FloatingChatbotButton(child: child);
 }
 
 PostType? _postTypeFromName(String name) {

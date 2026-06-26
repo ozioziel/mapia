@@ -94,11 +94,11 @@ class ReportsApi {
     double? latitude,
     double? longitude,
   }) async {
-    final json = await _client.postJson(ApiEndpoints.parseReport, {
-      'text': text,
-      ?'latitude': latitude,
-      ?'longitude': longitude,
-    });
+    final payload = <String, dynamic>{'text': text};
+    if (latitude != null) payload['latitude'] = latitude;
+    if (longitude != null) payload['longitude'] = longitude;
+
+    final json = await _client.postJson(ApiEndpoints.parseReport, payload);
     return ParsedReport.fromJson(json);
   }
 

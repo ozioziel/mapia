@@ -121,7 +121,11 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 820;
+    final viewport = MediaQuery.sizeOf(context);
+    final compact = viewport.width < 820;
+    final compactMapHeight = (viewport.height * 0.46)
+        .clamp(320.0, 440.0)
+        .toDouble();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -160,15 +164,18 @@ class _MapScreenState extends State<MapScreen> {
                   child: compact
                       ? Column(
                           children: [
-                            _MapCard(
-                              alerts: _alerts,
-                              selected: _selected,
-                              isLoading: _isLoading,
-                              error: _error,
-                              onMapCreated: (controller) =>
-                                  _mapController = controller,
-                              onAlertSelected: _selectAlertFromMap,
-                              onRetry: _loadAlerts,
+                            SizedBox(
+                              height: compactMapHeight,
+                              child: _MapCard(
+                                alerts: _alerts,
+                                selected: _selected,
+                                isLoading: _isLoading,
+                                error: _error,
+                                onMapCreated: (controller) =>
+                                    _mapController = controller,
+                                onAlertSelected: _selectAlertFromMap,
+                                onRetry: _loadAlerts,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             _SidePanel(
