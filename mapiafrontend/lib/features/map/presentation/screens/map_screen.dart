@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -7,6 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mapiafrontend/core/config/app_config.dart';
 import 'package:mapiafrontend/core/platform/google_maps_web_loader.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
+import 'package:mapiafrontend/features/chatbot/widgets/floating_chatbot_button.dart';
+import 'package:mapiafrontend/core/network/authenticated_api_client.dart';
+import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
 import 'package:mapiafrontend/features/map/presentation/widgets/map_post_preview_card.dart';
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
@@ -29,8 +33,8 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  final _mapApi = MapApi();
-  final _reportsApi = ReportsApi();
+  MapApi? _mapApi;
+  ReportsApi? _reportsApi;
   final List<PostEntity> _explorePosts = const MockPostsDatasource().getPosts();
 
   GoogleMapController? _mapController;
@@ -50,10 +54,24 @@ class _MapScreenState extends State<MapScreen> {
   LatLng? _currentLocation;
   static const double _nearbyRadiusKm = 3;
   Timer? _refreshTimer;
+  String? _activeUserId;
 
-  @override
-  void initState() {
-    super.initState();
+  void _bindToUser() {
+    final auth = AuthScope.of(context);
+    final userId = auth.user?.id;
+    if (userId == null || userId == _activeUserId) return;
+
+    _refreshTimer?.cancel();
+    _activeUserId = userId;
+    final client = createAuthenticatedApiClient(auth);
+    _mapApi = MapApi(client: client);
+    _reportsApi = ReportsApi(client: client);
+    setState(() {
+      _selected = null;
+      _selectedExplorePost = null;
+      _alerts = [];
+      _isLoading = true;
+    });
     _initializeMap();
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (!_isLoading && _error == null) {
@@ -63,13 +81,24 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _bindToUser();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPostMarkerIcons();
+  }
+
+  @override
   void dispose() {
     _refreshTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _initializeMap() async {
-    _loadPostMarkerIcons();
     await _loadGoogleMapsSdk();
     await _requestCurrentLocation();
     await _loadAlerts();
@@ -159,8 +188,8 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final filters = _nearbyFilters;
       final results = await Future.wait([
-        _mapApi.fetchAlerts(filters),
-        _mapApi.fetchFilters(),
+        _mapApi!.fetchAlerts(filters),
+        _mapApi!.fetchFilters(),
       ]);
       if (!mounted) return;
       setState(() {
@@ -179,8 +208,8 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final filters = _nearbyFilters;
       final results = await Future.wait([
-        _mapApi.fetchAlerts(filters),
-        _mapApi.fetchFilters(),
+        _mapApi!.fetchAlerts(filters),
+        _mapApi!.fetchFilters(),
       ]);
       final alerts = results[0] as List<AlertMapItem>;
       final options = results[1] as AlertFilterOptions;
@@ -265,7 +294,7 @@ class _MapScreenState extends State<MapScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _PublishReportSheet(reportsApi: _reportsApi),
+      builder: (context) => _PublishReportSheet(reportsApi: _reportsApi!),
     );
     if (id == null || id.isEmpty) return;
     if (!mounted) return;
@@ -273,6 +302,25 @@ class _MapScreenState extends State<MapScreen> {
       const SnackBar(content: Text('Reporte publicado correctamente')),
     );
     await _loadAlerts(selectId: id);
+  }
+
+  Future<void> _deleteReport(String id) async {
+    try {
+      await _reportsApi!.deleteReport(id);
+      if (!mounted) return;
+      setState(() {
+        if (_selected?.id == id) _selected = null;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Reporte eliminado')));
+      await _loadAlerts();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
+    }
   }
 
   void _onBottomNavTap(int index) {
@@ -284,6 +332,14 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isCardOpen = _selected != null || _selectedExplorePost != null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (FloatingChatbotButton.isVisible.value != !isCardOpen) {
+        FloatingChatbotButton.isVisible.value = !isCardOpen;
+      }
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       extendBody: true,
@@ -291,19 +347,25 @@ class _MapScreenState extends State<MapScreen> {
         currentIndex: 0,
         onIndexChanged: _onBottomNavTap,
       ),
-      floatingActionButton: FloatingActionButton.small(
-        onPressed: _openPublishReport,
-        backgroundColor: const Color(0xFF2563EB),
-        foregroundColor: Colors.white,
-        tooltip: 'Publicar reporte',
-        child: const Icon(Icons.add_location_alt_rounded),
-      ),
+      floatingActionButton: isCardOpen
+          ? null
+          : FloatingActionButton.small(
+              onPressed: _openPublishReport,
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              tooltip: 'Publicar reporte',
+              child: const Icon(Icons.add_location_alt_rounded),
+            ),
       body: Stack(
         children: [
           Positioned.fill(
             child: _MapCard(
               alerts: _alerts,
               selected: _selected,
+              myReportIds: {
+                for (final alert in _alerts)
+                  if (alert.isMine) alert.id,
+              },
               isLoading: _isLoading,
               error: _error,
               currentLocation: _currentLocation,
@@ -357,6 +419,8 @@ class _MapScreenState extends State<MapScreen> {
               bottom: 125,
               child: _SelectedAlertCard(
                 alert: _selected!,
+                isMyReport: _selected!.isMine,
+                onDelete: () => _deleteReport(_selected!.id),
                 onClose: () => setState(() => _selected = null),
               ),
             ),
@@ -387,6 +451,7 @@ class _MapCard extends StatelessWidget {
   const _MapCard({
     required this.alerts,
     required this.selected,
+    required this.myReportIds,
     required this.isLoading,
     required this.error,
     required this.currentLocation,
@@ -403,6 +468,7 @@ class _MapCard extends StatelessWidget {
 
   final List<AlertMapItem> alerts;
   final AlertMapItem? selected;
+  final Set<String> myReportIds;
   final bool isLoading;
   final String? error;
   final LatLng? currentLocation;
@@ -497,9 +563,16 @@ class _MapCard extends StatelessWidget {
         Marker(
           markerId: MarkerId(alert.id),
           position: alert.position,
-          infoWindow: InfoWindow(title: alert.title, snippet: alert.product),
+          infoWindow: InfoWindow(
+            title: myReportIds.contains(alert.id)
+                ? 'Tu reporte: ${alert.title}'
+                : alert.title,
+            snippet: alert.product,
+          ),
           icon: BitmapDescriptor.defaultMarkerWithHue(
-            markerHue(alert.severity),
+            myReportIds.contains(alert.id)
+                ? BitmapDescriptor.hueAzure
+                : markerHue(alert.severity),
           ),
           onTap: () => onAlertSelected(alert),
         ),
@@ -563,7 +636,6 @@ class _MapFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final activeFilters = _activeFilterCount(filters);
-    final compact = MediaQuery.sizeOf(context).width < 520;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1014,92 +1086,168 @@ class _EnumFilter<T> extends StatelessWidget {
 }
 
 class _SelectedAlertCard extends StatelessWidget {
-  const _SelectedAlertCard({required this.alert, required this.onClose});
+  const _SelectedAlertCard({
+    required this.alert,
+    required this.isMyReport,
+    required this.onDelete,
+    required this.onClose,
+  });
 
   final AlertMapItem alert;
+  final bool isMyReport;
+  final VoidCallback onDelete;
   final VoidCallback onClose;
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar reporte'),
+        content: const Text('¿Estás seguro de eliminar este reporte?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onDelete();
+            },
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: AppTheme.softShadow,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            margin: const EdgeInsets.only(top: 5),
-            decoration: BoxDecoration(
-              color: severityColor(alert.severity),
-              shape: BoxShape.circle,
+    final severity = severityColor(alert.severity);
+    final location = alert.municipality ?? alert.department ?? 'Bolivia';
+    final subtitle = [
+      alert.product ?? 'Producto no especificado',
+      alert.alertType.label,
+      alert.severity.label,
+    ].join(' · ');
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      elevation: 10,
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 13, 8, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: severity.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.report_rounded, color: severity, size: 20),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isMyReport)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Tu reporte',
+                          style: TextStyle(
+                            color: Color(0xFF2563EB),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  Text(
+                    alert.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 15.5,
+                      height: 1.12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: severity,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$location · ${(alert.confidence * 100).round()}% confianza',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  alert.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF0F172A),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  [
-                    alert.product ?? 'Producto no especificado',
-                    alert.alertType.label,
-                    alert.severity.label,
-                  ].join(' - '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                IconButton(
+                  onPressed: onClose,
+                  icon: const Icon(
+                    Icons.close_rounded,
                     color: Color(0xFF64748B),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                    size: 20,
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  [
-                    alert.municipality ?? alert.department ?? 'Bolivia',
-                    '${(alert.confidence * 100).round()}% confianza',
-                  ].join(' - '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF334155),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 36,
+                    height: 36,
                   ),
+                  padding: EdgeInsets.zero,
                 ),
+                if (isMyReport) ...[
+                  const SizedBox(height: 4),
+                  FilledButton.tonal(
+                    onPressed: () => _confirmDelete(context),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFFEE2E2),
+                      foregroundColor: const Color(0xFFDC2626),
+                      minimumSize: const Size(52, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Icon(Icons.delete_outline_rounded, size: 18),
+                  ),
+                ],
               ],
             ),
-          ),
-          IconButton(
-            tooltip: 'Cerrar detalle',
-            visualDensity: VisualDensity.compact,
-            onPressed: onClose,
-            icon: const Icon(
-              Icons.close_rounded,
-              color: Color(0xFF64748B),
-              size: 20,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1134,11 +1282,14 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
   bool _isParsing = false;
   bool _isPublishing = false;
   bool _isListening = false;
+  bool _isMapSdkLoading = kIsWeb && AppConfig.googleMapsApiKey.isNotEmpty;
   String? _error;
+  GoogleMapController? _mapController;
 
   @override
   void initState() {
     super.initState();
+    _loadGoogleMapsSdk();
     _requestLocation();
   }
 
@@ -1154,6 +1305,20 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
     _zoneController.dispose();
     _speech.stop();
     super.dispose();
+  }
+
+  Future<void> _loadGoogleMapsSdk() async {
+    if (!kIsWeb || AppConfig.googleMapsApiKey.isEmpty) return;
+    try {
+      await ensureGoogleMapsWebLoaded();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isMapSdkLoading = false);
+      }
+    }
   }
 
   Future<void> _requestLocation() async {
@@ -1175,7 +1340,55 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       setState(() => _location = location);
+      _mapController?.animateCamera(CameraUpdate.newLatLng(location));
     });
+  }
+
+  void _onLocationMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+    controller.animateCamera(CameraUpdate.newLatLngZoom(_location, 13));
+  }
+
+  Widget _buildLocationMap() {
+    final missingKey = kIsWeb && AppConfig.googleMapsApiKey.isEmpty;
+
+    if (missingKey) {
+      return const _MapStateMessage(
+        icon: Icons.key_off_rounded,
+        title: 'Configura Google Maps',
+        message: 'No se puede seleccionar el punto sin API key.',
+      );
+    }
+
+    if (_isMapSdkLoading) {
+      return const _MapStateMessage(
+        icon: Icons.map_rounded,
+        title: 'Cargando mapa',
+        message: 'Preparando la vista de ubicacion.',
+      );
+    }
+
+    return GoogleMap(
+      key: const ValueKey('publish_location_map'),
+      onMapCreated: _onLocationMapCreated,
+      initialCameraPosition: CameraPosition(target: _location, zoom: 13),
+      style: mapiaCleanMapStyle,
+      markers: {
+        Marker(
+          markerId: const MarkerId('report_location'),
+          position: _location,
+          draggable: true,
+          onDragEnd: _setLocation,
+        ),
+      },
+      onTap: _setLocation,
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: false,
+      liteModeEnabled: false,
+      gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+        Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+      },
+    );
   }
 
   Future<void> _toggleVoice() async {
@@ -1312,25 +1525,23 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.94,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.92,
       ),
       decoration: const BoxDecoration(
         color: Color(0xFFF8FAFC),
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          14,
-          16,
-          MediaQuery.viewInsetsOf(context).bottom + 18,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 8, 0),
+            child: Row(
               children: [
                 const Expanded(
                   child: Text(
@@ -1348,239 +1559,245 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _sourceController,
-              minLines: 4,
-              maxLines: 7,
-              decoration: const InputDecoration(
-                labelText: 'Escribir reporte',
-                hintText: 'En el mercado Rodriguez el azucar subio a 9 Bs...',
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _toggleVoice,
-                    icon: Icon(
-                      _isListening ? Icons.stop_rounded : Icons.mic_rounded,
-                    ),
-                    label: Text(
-                      _isListening ? 'Detener dictado' : 'Dictar con voz',
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _isParsing ? null : _parseReport,
-                    icon: _isParsing
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.auto_awesome_rounded),
-                    label: const Text('Analizar'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _SheetSection(
-              title: 'Datos detectados',
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TextField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(labelText: 'Titulo'),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _descriptionController,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: const InputDecoration(labelText: 'Descripcion'),
+                    controller: _sourceController,
+                    minLines: 4,
+                    maxLines: 7,
+                    decoration: const InputDecoration(
+                      labelText: 'Escribir reporte',
+                      hintText:
+                          'En el mercado Rodriguez el azucar subio a 9 Bs...',
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
-                        child: TextField(
-                          controller: _productController,
-                          decoration: const InputDecoration(
-                            labelText: 'Producto',
+                        child: OutlinedButton.icon(
+                          onPressed: _toggleVoice,
+                          icon: Icon(
+                            _isListening
+                                ? Icons.stop_rounded
+                                : Icons.mic_rounded,
+                          ),
+                          label: Text(
+                            _isListening ? 'Detener dictado' : 'Dictar con voz',
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: TextField(
-                          controller: _priceController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Precio Bs',
-                          ),
+                        child: FilledButton.icon(
+                          onPressed: _isParsing ? null : _parseReport,
+                          icon: _isParsing
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.auto_awesome_rounded),
+                          label: const Text('Analizar'),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<AlertType>(
-                    initialValue: _alertType,
-                    decoration: const InputDecoration(
-                      labelText: 'Tipo de alerta',
-                    ),
-                    items: AlertType.values
-                        .map(
-                          (type) => DropdownMenuItem(
-                            value: type,
-                            child: Text(type.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) =>
-                        setState(() => _alertType = value ?? _alertType),
-                  ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<AlertSeverity>(
-                    initialValue: _severity,
-                    decoration: const InputDecoration(labelText: 'Severidad'),
-                    items: AlertSeverity.values
-                        .map(
-                          (severity) => DropdownMenuItem(
-                            value: severity,
-                            child: Text(severity.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) =>
-                        setState(() => _severity = value ?? _severity),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _departmentController,
-                    decoration: const InputDecoration(
-                      labelText: 'Departamento',
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _municipalityController,
-                    decoration: const InputDecoration(labelText: 'Municipio'),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _zoneController,
-                    decoration: const InputDecoration(labelText: 'Zona'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            _SheetSection(
-              title: 'Ubicacion',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    height: 220,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: kIsWeb && AppConfig.googleMapsApiKey.isEmpty
-                          ? const _MapStateMessage(
-                              icon: Icons.key_off_rounded,
-                              title: 'Configura Google Maps',
-                              message:
-                                  'No se puede seleccionar el punto sin API key.',
-                            )
-                          : GoogleMap(
-                              initialCameraPosition: CameraPosition(
-                                target: _location,
-                                zoom: 13,
-                              ),
-                              style: mapiaCleanMapStyle,
-                              markers: {
-                                Marker(
-                                  markerId: const MarkerId('report_location'),
-                                  position: _location,
-                                  draggable: true,
-                                  onDragEnd: _setLocation,
-                                ),
-                              },
-                              onTap: _setLocation,
-                              myLocationButtonEnabled: false,
-                              zoomControlsEnabled: false,
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Lat ${_location.latitude.toStringAsFixed(5)}, Lng ${_location.longitude.toStringAsFixed(5)}',
-                    style: TextStyle(
-                      color:
-                          isInsideBolivia(
-                            _location.latitude,
-                            _location.longitude,
-                          )
-                          ? const Color(0xFF64748B)
-                          : const Color(0xFFEF4444),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: _requestLocation,
-                    icon: const Icon(Icons.my_location_rounded),
-                    label: const Text('Usar ubicacion actual'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            _SheetSection(
-              title: 'Imagenes',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _images.length >= 3 ? null : _pickImages,
-                    icon: const Icon(Icons.photo_library_rounded),
-                    label: const Text('Agregar imagenes'),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final image in _images)
-                        _ImagePreview(
-                          image: image,
-                          onRemove: () => setState(
-                            () => _images = _images
-                                .where((item) => item != image)
-                                .toList(),
+                  const SizedBox(height: 16),
+                  _SheetSection(
+                    title: 'Datos detectados',
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Titulo',
                           ),
                         ),
-                    ],
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _descriptionController,
+                          minLines: 2,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            labelText: 'Descripcion',
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _productController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Producto',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                controller: _priceController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Precio Bs',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        DropdownButtonFormField<AlertType>(
+                          initialValue: _alertType,
+                          decoration: const InputDecoration(
+                            labelText: 'Tipo de alerta',
+                          ),
+                          items: AlertType.values
+                              .map(
+                                (type) => DropdownMenuItem(
+                                  value: type,
+                                  child: Text(type.label),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _alertType = value ?? _alertType),
+                        ),
+                        const SizedBox(height: 10),
+                        DropdownButtonFormField<AlertSeverity>(
+                          initialValue: _severity,
+                          decoration: const InputDecoration(
+                            labelText: 'Severidad',
+                          ),
+                          items: AlertSeverity.values
+                              .map(
+                                (severity) => DropdownMenuItem(
+                                  value: severity,
+                                  child: Text(severity.label),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _severity = value ?? _severity),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _departmentController,
+                          decoration: const InputDecoration(
+                            labelText: 'Departamento',
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _municipalityController,
+                          decoration: const InputDecoration(
+                            labelText: 'Municipio',
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _zoneController,
+                          decoration: const InputDecoration(labelText: 'Zona'),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 14),
+                  _SheetSection(
+                    title: 'Ubicacion',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 220,
+                          width: double.infinity,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: _buildLocationMap(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Lat ${_location.latitude.toStringAsFixed(5)}, Lng ${_location.longitude.toStringAsFixed(5)}',
+                          style: TextStyle(
+                            color:
+                                isInsideBolivia(
+                                  _location.latitude,
+                                  _location.longitude,
+                                )
+                                ? const Color(0xFF64748B)
+                                : const Color(0xFFEF4444),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: _requestLocation,
+                          icon: const Icon(Icons.my_location_rounded),
+                          label: const Text('Usar ubicacion actual'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _SheetSection(
+                    title: 'Imagenes',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _images.length >= 3 ? null : _pickImages,
+                          icon: const Icon(Icons.photo_library_rounded),
+                          label: const Text('Agregar imagenes'),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final image in _images)
+                              _ImagePreview(
+                                image: image,
+                                onRemove: () => setState(
+                                  () => _images = _images
+                                      .where((item) => item != image)
+                                      .toList(),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: Color(0xFFEF4444),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: const TextStyle(
-                  color: Color(0xFFEF4444),
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            FilledButton.icon(
+          ),
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF8FAFC),
+              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+            ),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + safeBottom),
+            child: FilledButton.icon(
               onPressed: _isPublishing ? null : _publish,
               icon: _isPublishing
                   ? const SizedBox(
@@ -1591,8 +1808,9 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                   : const Icon(Icons.publish_rounded),
               label: const Text('Publicar'),
             ),
-          ],
-        ),
+          ),
+          if (bottomInset > 0) SizedBox(height: bottomInset),
+        ],
       ),
     );
   }

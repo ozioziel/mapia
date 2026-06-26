@@ -4,12 +4,22 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:mapiafrontend/core/config/app_config.dart';
 
+typedef TokenRefreshCallback = Future<String?> Function();
+
 class ApiClient {
-  ApiClient({http.Client? httpClient}) : _http = httpClient ?? http.Client();
+  ApiClient({
+    http.Client? httpClient,
+    this._accessTokenProvider,
+    this._onUnauthorized,
+  }) : _http = httpClient ?? http.Client();
 
   static const _timeout = Duration(seconds: 12);
 
   final http.Client _http;
+  final String? Function()? _accessTokenProvider;
+  final TokenRefreshCallback? _onUnauthorized;
+
+  String? Function()? get accessTokenProvider => _accessTokenProvider;
 
   Uri uri(String path, [Map<String, String?> query = const {}]) {
     final base = Uri.parse(AppConfig.apiBaseUrl);
@@ -28,10 +38,82 @@ class ApiClient {
   Future<Map<String, dynamic>> getJson(
     String path, [
     Map<String, String?> query = const {},
+    String? accessToken,
   ]) async {
+    return _request(
+      method: 'GET',
+      path: path,
+      query: query,
+      accessToken: accessToken,
+    );
+  }
+
+  Future<Map<String, dynamic>> postJson(
+    String path,
+    Map<String, dynamic> body, {
+    String? accessToken,
+  }) async {
+    return _request(
+      method: 'POST',
+      path: path,
+      body: body,
+      accessToken: accessToken,
+    );
+  }
+
+  Future<Map<String, dynamic>> patchJson(
+    String path,
+    Map<String, dynamic> body, {
+    String? accessToken,
+  }) async {
+    return _request(
+      method: 'PATCH',
+      path: path,
+      body: body,
+      accessToken: accessToken,
+    );
+  }
+
+  Future<Map<String, dynamic>> delete(
+    String path, {
+    String? accessToken,
+  }) async {
+    return _request(method: 'DELETE', path: path, accessToken: accessToken);
+  }
+
+  Future<Map<String, dynamic>> _request({
+    required String method,
+    required String path,
+    Map<String, String?> query = const {},
+    Map<String, dynamic>? body,
+    String? accessToken,
+    bool retried = false,
+  }) async {
     final requestUri = uri(path, query);
+    final token = accessToken ?? _accessTokenProvider?.call();
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+
     try {
-      final response = await _http.get(requestUri).timeout(_timeout);
+      final response = await _send(method, requestUri, headers, body);
+      if (response.statusCode == 401 &&
+          !retried &&
+          _onUnauthorized != null &&
+          accessToken == null) {
+        final newToken = await _onUnauthorized();
+        if (newToken != null && newToken.isNotEmpty) {
+          return _request(
+            method: method,
+            path: path,
+            query: query,
+            body: body,
+            accessToken: newToken,
+            retried: true,
+          );
+        }
+      }
       return _decode(response);
     } on TimeoutException {
       throw ApiException('Tiempo de espera agotado: $requestUri', 0);
@@ -42,26 +124,34 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> postJson(
-    String path,
-    Map<String, dynamic> body,
+  Future<http.Response> _send(
+    String method,
+    Uri requestUri,
+    Map<String, String> headers,
+    Map<String, dynamic>? body,
   ) async {
-    final requestUri = uri(path);
-    try {
-      final response = await _http
-          .post(
-            requestUri,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(body),
-          )
-          .timeout(_timeout);
-      return _decode(response);
-    } on TimeoutException {
-      throw ApiException('Tiempo de espera agotado: $requestUri', 0);
-    } on ApiException {
-      rethrow;
-    } catch (_) {
-      throw ApiException('No se pudo conectar con $requestUri', 0);
+    switch (method) {
+      case 'GET':
+        return _http.get(requestUri, headers: headers).timeout(_timeout);
+      case 'DELETE':
+        return _http.delete(requestUri, headers: headers).timeout(_timeout);
+      case 'PATCH':
+        return _http
+            .patch(
+              requestUri,
+              headers: headers,
+              body: body == null ? null : jsonEncode(body),
+            )
+            .timeout(_timeout);
+      case 'POST':
+      default:
+        return _http
+            .post(
+              requestUri,
+              headers: headers,
+              body: body == null ? null : jsonEncode(body),
+            )
+            .timeout(_timeout);
     }
   }
 
@@ -69,7 +159,10 @@ class ApiClient {
     var decoded = <String, dynamic>{};
     if (response.body.isNotEmpty) {
       try {
-        decoded = jsonDecode(response.body) as Map<String, dynamic>;
+        final raw = jsonDecode(response.body);
+        if (raw is Map<String, dynamic>) {
+          decoded = raw;
+        }
       } catch (_) {
         decoded = {'message': response.body};
       }

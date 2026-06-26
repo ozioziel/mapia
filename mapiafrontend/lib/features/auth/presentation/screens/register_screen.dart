@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
+import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
 import 'package:mapiafrontend/features/auth/presentation/widgets/auth_widgets.dart';
-import 'package:mapiafrontend/features/profile/data/datasources/profile_mock_datasource.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isSubmitting = false;
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
+  late final TextEditingController _usernameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
@@ -28,6 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.initState();
     _firstNameController = TextEditingController();
     _lastNameController = TextEditingController();
+    _usernameController = TextEditingController();
     _phoneController = TextEditingController();
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
@@ -38,6 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
+    _usernameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -45,23 +48,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  String _buildUsername(String email) {
+    final local = email.split('@').first.toLowerCase();
+    final cleaned = local.replaceAll(RegExp(r'[^a-z0-9._]'), '_');
+    if (cleaned.length >= 3) return cleaned.substring(0, 40);
+    return 'usuario_${DateTime.now().millisecondsSinceEpoch % 100000}';
+  }
+
   Future<void> _submit() async {
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
+    final usernameInput = _usernameController.text.trim();
     final phone = _phoneController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
+    final username = usernameInput.isNotEmpty
+        ? usernameInput
+        : _buildUsername(email);
 
     String? message;
-    if (firstName.isEmpty || lastName.isEmpty || phone.isEmpty) {
-      message = 'Nombre, apellido y telefono son obligatorios.';
-    } else if (!_isValidPhone(phone)) {
-      message = 'Ingresa un telefono valido.';
+    if (firstName.isEmpty || lastName.isEmpty) {
+      message = 'Nombre y apellido son obligatorios.';
+    } else if (username.length < 3 || !RegExp(r'^[a-zA-Z0-9._]+$').hasMatch(username)) {
+      message = 'El usuario debe tener 3-40 caracteres (letras, numeros, punto o _).';
     } else if (email.isEmpty || !email.contains('@')) {
       message = 'Ingresa un correo electronico valido.';
-    } else if (password.length < 6) {
-      message = 'La contrasena debe tener al menos 6 caracteres.';
+    } else if (password.length < 8) {
+      message = 'La contrasena debe tener al menos 8 caracteres.';
     } else if (password != confirmPassword) {
       message = 'Las contrasenas no coinciden.';
     } else if (!_acceptedTerms) {
@@ -76,19 +90,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() => _isSubmitting = true);
-    await ProfileMockDatasource().registerProfile(
+    final auth = AuthScope.of(context);
+    final ok = await auth.register(
+      email: email,
+      password: password,
       firstName: firstName,
       lastName: lastName,
-      phone: phone,
-      email: email,
+      username: username,
+      phone: phone.isEmpty ? null : phone,
     );
     if (!mounted) return;
     setState(() => _isSubmitting = false);
-    Navigator.of(context).pushReplacementNamed('/map');
-  }
 
-  bool _isValidPhone(String phone) {
-    return RegExp(r'^\+?[0-9 ]{7,15}$').hasMatch(phone);
+    if (ok) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/map', (_) => false);
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(auth.error ?? 'No se pudo crear la cuenta.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -127,8 +151,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 SizedBox(height: 10 * scale),
                 AuthTextField(
+                  controller: _usernameController,
+                  hintText: 'Usuario (ej: carla_m)',
+                  icon: Icons.alternate_email_rounded,
+                  iconColor: AppTheme.primaryBlue,
+                  textInputAction: TextInputAction.next,
+                ),
+                SizedBox(height: 10 * scale),
+                AuthTextField(
                   controller: _phoneController,
-                  hintText: 'Telefono',
+                  hintText: 'Telefono (opcional)',
                   icon: Icons.phone_outlined,
                   iconColor: AppTheme.boliviaGreen,
                   keyboardType: TextInputType.phone,
@@ -180,7 +212,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 SizedBox(height: 12 * scale),
                 AuthDivider(text: context.l10n.or),
                 SizedBox(height: 10 * scale),
-                GoogleAuthButton(text: context.l10n.continueWithGoogle),
+                GoogleAuthButton(
+                  text: context.l10n.continueWithGoogle,
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Inicio con Google estara disponible pronto.'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                ),
                 SizedBox(height: compact ? 8 * scale : 14 * scale),
                 AuthPenguin(
                   asset: RegisterScreen.penguinAsset,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
+import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider_factory.dart';
 import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider.dart';
 import 'package:mapiafrontend/features/profile/presentation/widgets/editable_avatar.dart';
 import 'package:mapiafrontend/shared/widgets/app_surface.dart';
@@ -13,7 +14,7 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  late final EditProfileProvider _provider;
+  EditProfileProvider? _provider;
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
   late final TextEditingController _phoneController;
@@ -22,20 +23,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _formReady = false;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_provider == null) {
+      _provider = createProfileProvider(context)..loadProfile();
+      _provider!.addListener(_syncProfileOnce);
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
-    _provider = EditProfileProvider()..loadProfile();
     _firstNameController = TextEditingController();
     _lastNameController = TextEditingController();
     _phoneController = TextEditingController();
     _bioController = TextEditingController();
-    _provider.addListener(_syncProfileOnce);
   }
 
   @override
   void dispose() {
-    _provider.removeListener(_syncProfileOnce);
-    _provider.dispose();
+    _provider?.removeListener(_syncProfileOnce);
+    _provider?.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
@@ -44,7 +52,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _syncProfileOnce() {
-    final profile = _provider.profile;
+    final profile = _provider?.profile;
     if (_formReady || profile == null) return;
     _firstNameController.text = profile.firstName;
     _lastNameController.text = profile.lastName;
@@ -95,7 +103,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
-    final ok = await _provider.updateProfile(
+    final ok = await _provider!.updateProfile(
       firstName: firstName,
       lastName: lastName,
       phone: phone,
@@ -110,7 +118,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_provider.error ?? context.l10n.couldNotSaveChanges),
+          content: Text(_provider!.error ?? context.l10n.couldNotSaveChanges),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -123,24 +131,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = _provider;
+    if (provider == null) {
+      return AppGradientScaffold(
+        appBar: AppBar(title: Text(context.l10n.editProfile)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return AppGradientScaffold(
       appBar: AppBar(title: Text(context.l10n.editProfile)),
       body: SafeArea(
         child: AnimatedBuilder(
-          animation: _provider,
+          animation: provider,
           builder: (context, _) {
-            if (_provider.isLoading && _provider.profile == null) {
+            if (provider.isLoading && provider.profile == null) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (_provider.error != null && _provider.profile == null) {
+            if (provider.error != null && provider.profile == null) {
               return _EditProfileError(
-                message: _provider.error!,
-                onRetry: _provider.loadProfile,
+                message: provider.error!,
+                onRetry: provider.loadProfile,
               );
             }
 
-            final profile = _provider.profile;
+            final profile = provider.profile;
             if (profile == null || !_formReady) return const SizedBox.shrink();
 
             return SingleChildScrollView(
@@ -160,7 +176,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     const SizedBox(height: 12),
                     TextButton.icon(
-                      onPressed: _provider.isSaving
+                      onPressed: provider.isSaving
                           ? null
                           : _simulatePhotoSelection,
                       icon: const Icon(Icons.photo_camera_outlined),
@@ -199,8 +215,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     const SizedBox(height: 22),
                     FilledButton.icon(
-                      onPressed: _provider.isSaving ? null : _save,
-                      icon: _provider.isSaving
+                      onPressed: provider.isSaving ? null : _save,
+                      icon: provider.isSaving
                           ? const SizedBox(
                               width: 18,
                               height: 18,
@@ -211,7 +227,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     const SizedBox(height: 10),
                     OutlinedButton(
-                      onPressed: _provider.isSaving
+                      onPressed: provider.isSaving
                           ? null
                           : () => Navigator.of(context).pop(false),
                       child: Text(context.l10n.cancel),

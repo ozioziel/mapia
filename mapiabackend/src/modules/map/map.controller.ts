@@ -1,5 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { OptionalAuth } from '@common/decorators/optional-auth.decorator';
 import { Public } from '@common/decorators/public.decorator';
 import { MapService } from './map.service';
 import { MapAlertsQueryDto } from './dto/map-alerts-query.dto';
@@ -24,11 +26,15 @@ export class MapController {
     return this.mapService.nearby(query);
   }
 
-  @Public()
+  @OptionalAuth()
+  @ApiBearerAuth()
   @Get('alerts')
   @ApiOperation({ summary: 'Alertas ciudadanas para el mapa de Bolivia' })
-  alerts(@Query() query: MapAlertsQueryDto) {
-    return this.mapService.alerts(query);
+  alerts(
+    @Query() query: MapAlertsQueryDto,
+    @CurrentUser('userId') userId?: string,
+  ) {
+    return this.mapService.alerts(query, userId);
   }
 
   @Public()

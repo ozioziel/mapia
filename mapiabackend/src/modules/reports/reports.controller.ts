@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -40,7 +41,6 @@ export class ReportsController {
     return this.reportsService.parseCitizenReport(dto);
   }
 
-  @Public()
   @Post('reports')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Publicar reporte ciudadano para el mapa de alertas' })
@@ -51,10 +51,28 @@ export class ReportsController {
     }),
   )
   createCitizenReport(
+    @CurrentUser('userId') userId: string,
     @Body() dto: CreateCitizenReportDto,
     @UploadedFiles() files?: { images?: Express.Multer.File[] },
   ) {
-    return this.reportsService.createCitizenReport(dto, files?.images ?? []);
+    return this.reportsService.createCitizenReport(dto, files?.images ?? [], userId);
+  }
+
+  @Get('reports/mine')
+  @ApiOperation({ summary: 'Listar mis reportes ciudadanos' })
+  findMyCitizenReports(@CurrentUser('userId') userId: string) {
+    return this.reportsService.findMyCitizenReports(userId);
+  }
+
+  @Delete('reports/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Eliminar un reporte ciudadano propio' })
+  deleteCitizenReport(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.reportsService.deleteCitizenReport(id, userId, role);
   }
 
   @Post('posts/:postId/report')

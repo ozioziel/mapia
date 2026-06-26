@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaginatedResult, PaginationQueryDto } from '@common/dtos/pagination.dto';
@@ -10,6 +10,7 @@ import { AlertReportImage } from './entities/alert-report-image.entity';
 import { CreateReportDto } from './dto/create-report.dto';
 import { CreateCitizenReportDto } from './dto/create-citizen-report.dto';
 import { ParseCitizenReportDto } from './dto/parse-citizen-report.dto';
+import { Role } from '@common/enums/role.enum';
 
 const BOLIVIA_BOUNDS = {
   minLat: -22.9,
@@ -86,6 +87,7 @@ export class ReportsService {
   async createCitizenReport(
     dto: CreateCitizenReportDto,
     images: Express.Multer.File[],
+    userId: string,
   ): Promise<{ id: string; status: 'created'; message: string }> {
     this.assertInsideBolivia(dto.latitude, dto.longitude);
     if (images.length > 3) {
@@ -98,6 +100,7 @@ export class ReportsService {
     }
 
     const report = this.alertReportRepo.create({
+      userId,
       title: dto.title,
       description: dto.description ?? null,
       product: dto.product ?? null,
@@ -139,6 +142,37 @@ export class ReportsService {
     };
   }
 
+  async deleteCitizenReport(id: string, userId: string, role: Role): Promise<void> {
+    const report = await this.alertReportRepo.findOne({ where: { id } });
+    if (!report) {
+      throw new NotFoundException('Reporte no encontrado');
+    }
+    const isStaff = role === Role.ADMIN || role === Role.MODERATOR;
+    if (report.userId !== userId && !isStaff) {
+      throw new ForbiddenException('No puedes eliminar este reporte');
+    }
+    await this.alertReportRepo.delete(id);
+  }
+
+  async findMyCitizenReports(userId: string) {
+    const reports = await this.alertReportRepo.find({
+      where: { userId, status: 'active' },
+      order: { createdAt: 'DESC' },
+      take: 100,
+    });
+    return {
+      items: reports.map((report) => ({
+        id: report.id,
+        title: report.title,
+        alertType: report.alertType,
+        severity: report.severity,
+        latitude: Number(report.latitude),
+        longitude: Number(report.longitude),
+        createdAt: report.createdAt.toISOString(),
+      })),
+    };
+  }
+
   async create(
     postId: string,
     reporterId: string,
@@ -146,7 +180,6 @@ export class ReportsService {
   ): Promise<ContentReport> {
     await this.postsService.getVisibleEntityOrFail(postId);
 
-    // Un usuario no reporta dos veces la misma publicación.
     const existing = await this.reportRepo.findOne({ where: { postId, reporterId } });
     if (existing) {
       throw new ConflictException('Ya reportaste esta publicación');

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
-import 'package:mapiafrontend/features/profile/data/services/otp_service.dart';
 import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider.dart';
+import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider_factory.dart';
 import 'package:mapiafrontend/shared/widgets/app_surface.dart';
 
 class VerifyPhoneScreen extends StatefulWidget {
@@ -12,33 +12,41 @@ class VerifyPhoneScreen extends StatefulWidget {
 }
 
 class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
-  late final ProfileProvider _provider;
+  ProfileProvider? _provider;
   late final TextEditingController _codeController;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _provider ??= createProfileProvider(context)..loadProfile();
+  }
 
   @override
   void initState() {
     super.initState();
-    _provider = ProfileProvider()..loadProfile();
     _codeController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _provider.dispose();
+    _provider?.dispose();
     _codeController.dispose();
     super.dispose();
   }
 
   Future<void> _sendCode() async {
-    final sent = await _provider.sendPhoneVerificationCode();
+    final provider = _provider;
+    if (provider == null) return;
+
+    final sent = await provider.sendPhoneVerificationCode();
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           sent
-              ? 'Codigo enviado. Modo desarrollo: ${OtpService.developmentCode}.'
-              : (_provider.error ?? 'No pudimos enviar el codigo.'),
+              ? 'Codigo enviado. Revisa tu telefono o el log del backend en desarrollo.'
+              : (provider.error ?? 'No pudimos enviar el codigo.'),
         ),
         behavior: SnackBarBehavior.floating,
       ),
@@ -46,7 +54,10 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
   }
 
   Future<void> _verifyCode() async {
-    final ok = await _provider.verifyPhoneCode(_codeController.text);
+    final provider = _provider;
+    if (provider == null) return;
+
+    final ok = await provider.verifyPhoneCode(_codeController.text);
     if (!mounted) return;
 
     if (ok) {
@@ -62,7 +73,7 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_provider.error ?? 'Codigo invalido o expirado.'),
+        content: Text(provider.error ?? 'Codigo invalido o expirado.'),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -70,15 +81,23 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = _provider;
+    if (provider == null) {
+      return AppGradientScaffold(
+        appBar: AppBar(title: const Text('Verificar telefono')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return AppGradientScaffold(
       appBar: AppBar(title: const Text('Verificar telefono')),
       body: SafeArea(
         child: AnimatedBuilder(
-          animation: _provider,
+          animation: provider,
           builder: (context, _) {
-            final profile = _provider.profile;
+            final profile = provider.profile;
 
-            if (_provider.isLoading && profile == null) {
+            if (provider.isLoading && profile == null) {
               return const Center(child: CircularProgressIndicator());
             }
 
@@ -122,11 +141,10 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
                       ),
                       const SizedBox(height: 18),
                       OutlinedButton.icon(
-                        onPressed:
-                            _provider.isSendingCode || profile.phoneVerified
+                        onPressed: provider.isSendingCode || profile.phoneVerified
                             ? null
                             : _sendCode,
-                        icon: _provider.isSendingCode
+                        icon: provider.isSendingCode
                             ? const SizedBox(
                                 width: 17,
                                 height: 17,
@@ -146,20 +164,19 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
                         enabled: !profile.phoneVerified,
                         keyboardType: TextInputType.number,
                         maxLength: 6,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Codigo OTP',
-                          prefixIcon: const Icon(Icons.password_rounded),
+                          prefixIcon: Icon(Icons.password_rounded),
                           filled: true,
                           fillColor: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 8),
                       FilledButton.icon(
-                        onPressed:
-                            _provider.isVerifyingCode || profile.phoneVerified
+                        onPressed: provider.isVerifyingCode || profile.phoneVerified
                             ? null
                             : _verifyCode,
-                        icon: _provider.isVerifyingCode
+                        icon: provider.isVerifyingCode
                             ? const SizedBox(
                                 width: 17,
                                 height: 17,

@@ -23,16 +23,31 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) {
+    const isOptional = this.reflector.getAllAndOverride<boolean>(IS_OPTIONAL_AUTH_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic && !isOptional) {
       return true;
     }
+
+    if (isOptional) {
+      return this.runOptionalAuth(context);
+    }
+
     return super.canActivate(context);
   }
 
-  /**
-   * En rutas @OptionalAuth no lanzamos error si falta/expira el token:
-   * devolvemos el user si existe, o undefined.
-   */
+  private async runOptionalAuth(context: ExecutionContext): Promise<boolean> {
+    try {
+      const result = await super.canActivate(context);
+      return Boolean(result);
+    } catch {
+      return true;
+    }
+  }
+
   handleRequest<TUser = unknown>(
     err: unknown,
     user: TUser,

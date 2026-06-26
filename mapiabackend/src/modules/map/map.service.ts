@@ -86,7 +86,7 @@ export class MapService {
     return this.mapRows(await qb.getRawMany<MarkerRow>());
   }
 
-  async alerts(query: MapAlertsQueryDto) {
+  async alerts(query: MapAlertsQueryDto, currentUserId?: string) {
     const qb = this.filteredAlertsQuery(query)
       .leftJoinAndSelect('report.images', 'image')
       .orderBy('report.createdAt', 'DESC')
@@ -112,6 +112,8 @@ export class MapService {
         avgPrice: report.price === null ? null : Number(report.price),
         lastReportedAt: report.createdAt.toISOString(),
         images: (report.images ?? []).map((image) => image.url),
+        userId: report.userId,
+        isMine: currentUserId ? report.userId === currentUserId : false,
       })),
     };
   }

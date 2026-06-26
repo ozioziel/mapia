@@ -83,9 +83,8 @@ class PublishReportInput {
 }
 
 class ReportsApi {
-  ReportsApi({ApiClient? client, http.Client? httpClient})
-    : _client = client ?? ApiClient(),
-      _http = httpClient ?? http.Client();
+  ReportsApi({required this._client, http.Client? httpClient})
+    : _http = httpClient ?? http.Client();
 
   static const _uploadTimeout = Duration(seconds: 30);
 
@@ -108,6 +107,11 @@ class ReportsApi {
   Future<String> publishReport(PublishReportInput input) async {
     final requestUri = _client.uri(ApiEndpoints.publishReport);
     final request = http.MultipartRequest('POST', requestUri);
+
+    final token = _client.accessTokenProvider?.call();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
 
     request.fields.addAll({
       'title': input.title,
@@ -155,5 +159,9 @@ class ReportsApi {
     }
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
     return decoded['id'] as String? ?? '';
+  }
+
+  Future<void> deleteReport(String id) async {
+    await _client.delete('/reports/$id');
   }
 }

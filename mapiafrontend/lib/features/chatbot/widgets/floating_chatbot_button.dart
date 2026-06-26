@@ -9,6 +9,8 @@ class FloatingChatbotButton extends StatefulWidget {
 
   final Widget child;
 
+  static final ValueNotifier<bool> isVisible = ValueNotifier(true);
+
   @override
   State<FloatingChatbotButton> createState() => _FloatingChatbotButtonState();
 }
@@ -66,9 +68,15 @@ class _FloatingChatbotButtonState extends State<FloatingChatbotButton> {
             Positioned(
               right: 14,
               bottom: buttonBottom,
-              child: _ChatBubbleButton(
-                isOpen: _isPanelOpen,
-                onPressed: () => _openChatbot(context, compact),
+              child: ValueListenableBuilder<bool>(
+                valueListenable: FloatingChatbotButton.isVisible,
+                builder: (context, visible, child) {
+                  return visible ? child! : const SizedBox.shrink();
+                },
+                child: _ChatBubbleButton(
+                  isOpen: _isPanelOpen,
+                  onPressed: () => _openChatbot(context, compact),
+                ),
               ),
             ),
           ],

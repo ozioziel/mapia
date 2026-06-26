@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
+import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
 import 'package:mapiafrontend/features/profile/domain/entities/profile_entity.dart';
 import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider.dart';
+import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider_factory.dart';
 import 'package:mapiafrontend/features/profile/presentation/widgets/profile_action_buttons.dart';
 import 'package:mapiafrontend/features/profile/presentation/widgets/profile_header.dart';
 import 'package:mapiafrontend/features/profile/presentation/widgets/profile_stats.dart';
@@ -20,24 +22,28 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late final ProfileProvider _provider;
-
-  @override
-  void initState() {
-    super.initState();
-    _provider = ProfileProvider()..loadProfile();
-  }
+  ProfileProvider? _provider;
+  String? _activeUserId;
 
   @override
   void dispose() {
-    _provider.dispose();
+    _provider?.dispose();
     super.dispose();
+  }
+
+  void _ensureProvider() {
+    final userId = AuthScope.of(context).user?.id;
+    if (userId == null || userId == _activeUserId) return;
+
+    _provider?.dispose();
+    _activeUserId = userId;
+    _provider = createProfileProvider(context)..loadProfile();
   }
 
   Future<void> _openEditProfile() async {
     await Navigator.of(context).pushNamed('/profile/edit');
     if (mounted) {
-      _provider.loadProfile();
+      _provider?.loadProfile();
     }
   }
 
@@ -48,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _openVerifyPhone() async {
     await Navigator.of(context).pushNamed('/profile/verify-phone');
     if (mounted) {
-      _provider.loadProfile();
+      _provider?.loadProfile();
     }
   }
 
@@ -82,19 +88,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (confirmed != true || !mounted) return;
 
-    final ok = await _provider.logout();
+    await AuthScope.of(context).logout();
     if (!mounted) return;
-
-    if (ok) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_provider.error ?? context.l10n.couldNotLogout),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    setState(() {
+      _activeUserId = null;
+      _provider?.dispose();
+      _provider = null;
+    });
+    Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
   }
 
   void _onBottomNavTap(int index) {
@@ -115,6 +116,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _ensureProvider();
+    final provider = _provider;
+
+    if (provider == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return AppGradientScaffold(
       appBar: AppBar(title: Text(context.l10n.profile)),
       bottomNavigationBar: MapiaBottomNavigation(
@@ -123,20 +131,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: SafeArea(
         child: AnimatedBuilder(
-          animation: _provider,
+          animation: provider,
           builder: (context, _) {
-            if (_provider.isLoading && _provider.profile == null) {
+            if (provider.isLoading && provider.profile == null) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (_provider.error != null && _provider.profile == null) {
+            if (provider.error != null && provider.profile == null) {
               return _ProfileError(
-                message: _provider.error!,
-                onRetry: _provider.loadProfile,
+                message: provider.error!,
+                onRetry: provider.loadProfile,
               );
             }
 
-            final profile = _provider.profile;
+            final profile = provider.profile;
             if (profile == null) {
               return const SizedBox.shrink();
             }
@@ -148,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
 
             return RefreshIndicator(
-              onRefresh: _provider.loadProfile,
+              onRefresh: provider.loadProfile,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(18, 20, 18, 24),
@@ -171,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ReputationSummaryCard(reputation: reputation),
                     const SizedBox(height: 14),
                     ProfileActionButtons(
-                      isBusy: _provider.isSaving,
+                      isBusy: provider.isSaving,
                       phoneVerified: profile.phoneVerified,
                       onEdit: _openEditProfile,
                       onVerifyPhone: _openVerifyPhone,
