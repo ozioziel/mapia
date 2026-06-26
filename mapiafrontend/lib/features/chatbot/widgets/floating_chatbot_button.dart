@@ -45,7 +45,8 @@ class _FloatingChatbotButtonState extends State<FloatingChatbotButton> {
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 720;
         final safeBottom = MediaQuery.paddingOf(context).bottom;
-        final buttonBottom = compact ? 104.0 + safeBottom : 26.0 + safeBottom;
+        // Subimos el botón significativamente para que no tape las cards (las cards están en bottom 125)
+        final buttonBottom = compact ? 150.0 + safeBottom : 36.0 + safeBottom;
 
         return Stack(
           children: [
@@ -53,7 +54,7 @@ class _FloatingChatbotButtonState extends State<FloatingChatbotButton> {
             if (!compact && _isPanelOpen)
               Positioned(
                 right: 22,
-                bottom: 104 + safeBottom,
+                bottom: buttonBottom + 52,
                 child: SizedBox(
                   width: 390,
                   height: 560,
@@ -63,7 +64,7 @@ class _FloatingChatbotButtonState extends State<FloatingChatbotButton> {
                 ),
               ),
             Positioned(
-              right: 18,
+              right: 14,
               bottom: buttonBottom,
               child: _ChatBubbleButton(
                 isOpen: _isPanelOpen,
@@ -95,29 +96,14 @@ class _ChatBubbleButton extends StatelessWidget {
           onTap: onPressed,
           customBorder: const CircleBorder(),
           child: Ink(
-            width: 62,
-            height: 62,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFE65A52),
-                  Color(0xFFFFCC5C),
-                  Color(0xFF1B9B73),
-                ],
-                stops: [0, 0.52, 1],
-              ),
-              border: Border.all(color: Colors.white, width: 3),
+              color: AppTheme.primaryBlue,
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.boliviaGreen.withValues(alpha: 0.25),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.10),
+                  color: AppTheme.primaryBlue.withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -127,11 +113,11 @@ class _ChatBubbleButton extends StatelessWidget {
               duration: const Duration(milliseconds: 160),
               child: Icon(
                 isOpen
-                    ? Icons.keyboard_arrow_down_rounded
+                    ? Icons.close_rounded
                     : Icons.chat_bubble_rounded,
                 key: ValueKey(isOpen),
                 color: Colors.white,
-                size: 29,
+                size: 20,
               ),
             ),
           ),

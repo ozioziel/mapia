@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -48,11 +49,23 @@ class _MapScreenState extends State<MapScreen> {
   String? _error;
   LatLng? _currentLocation;
   static const double _nearbyRadiusKm = 3;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _initializeMap();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!_isLoading && _error == null) {
+        _loadAlertsQuietly();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _initializeMap() async {
@@ -140,6 +153,21 @@ class _MapScreenState extends State<MapScreen> {
       longitude: location.longitude,
       radiusKm: _nearbyRadiusKm,
     );
+  }
+
+  Future<void> _loadAlertsQuietly() async {
+    try {
+      final filters = _nearbyFilters;
+      final results = await Future.wait([
+        _mapApi.fetchAlerts(filters),
+        _mapApi.fetchFilters(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _alerts = results[0] as List<AlertMapItem>;
+        _filterOptions = results[1] as AlertFilterOptions;
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadAlerts({String? selectId}) async {
@@ -316,7 +344,7 @@ class _MapScreenState extends State<MapScreen> {
             Positioned(
               left: 12,
               right: 12,
-              bottom: 92,
+              bottom: 125,
               child: MapPostPreviewCard(
                 post: _selectedExplorePost!,
                 onGoTap: () => _openExplorePost(_selectedExplorePost!),
@@ -326,7 +354,7 @@ class _MapScreenState extends State<MapScreen> {
             Positioned(
               left: 12,
               right: 12,
-              bottom: 92,
+              bottom: 125,
               child: _SelectedAlertCard(
                 alert: _selected!,
                 onClose: () => setState(() => _selected = null),
@@ -417,7 +445,7 @@ class _MapCard extends StatelessWidget {
                   mapType: MapType.normal,
                   style: mapiaCleanMapStyle,
                   mapToolbarEnabled: false,
-                  myLocationButtonEnabled: hasLocationPermission,
+                  myLocationButtonEnabled: false,
                   myLocationEnabled: hasLocationPermission,
                   zoomControlsEnabled: false,
                   compassEnabled: true,
@@ -550,35 +578,6 @@ class _MapFilterBar extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.map_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 10),
-              if (!compact)
-                const Expanded(
-                  child: Text(
-                    'Mapa de alertas',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Color(0xFF0F172A),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                )
-              else
-                const Spacer(),
               TextButton.icon(
                 onPressed: onToggle,
                 icon: Icon(
@@ -588,6 +587,7 @@ class _MapFilterBar extends StatelessWidget {
                   activeFilters == 0 ? 'Categorias' : 'Filtros $activeFilters',
                 ),
               ),
+              const Spacer(),
               IconButton(
                 tooltip: hasLocation
                     ? 'Actualizar ubicacion'
@@ -603,17 +603,6 @@ class _MapFilterBar extends StatelessWidget {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.my_location_rounded),
-              ),
-              IconButton(
-                tooltip: 'Actualizar',
-                onPressed: isLoading ? null : () => onRefresh(),
-                icon: isLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh_rounded),
               ),
             ],
           ),
