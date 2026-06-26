@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 
 class PostPhotoPicker extends StatelessWidget {
@@ -13,6 +14,8 @@ class PostPhotoPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -20,20 +23,20 @@ class PostPhotoPicker extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => onSelectSource('Cámara'),
+                onPressed: () => onSelectSource(l10n.camera),
                 icon: const Icon(Icons.photo_camera_outlined),
-                label: const Text(
-                  'Tomar foto',
-                  overflow: TextOverflow.ellipsis,
-                ),
+                label: Text(l10n.takePhoto, overflow: TextOverflow.ellipsis),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => onSelectSource('Galería'),
+                onPressed: () => onSelectSource(l10n.gallery),
                 icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('Galería', overflow: TextOverflow.ellipsis),
+                label: Text(
+                  l10n.chooseFromGallery,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ],
@@ -54,7 +57,7 @@ class PostPhotoPicker extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Foto seleccionada desde $imageSource',
+                    l10n.photoSelectedFrom(imageSource!),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

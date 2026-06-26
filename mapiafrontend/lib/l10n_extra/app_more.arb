@@ -1,0 +1,14 @@
+﻿{
+  "@@locale": "x-more",
+  "appName": "Mapia",
+  "map": "Mapa",
+  "explore": "Explorar",
+  "publish": "Publicar",
+  "alerts": "Alertas",
+  "profile": "Perfil",
+  "language": "Moré",
+  "translationInPreparation": "Traducción en preparación",
+  "@language": {
+    "description": "PENDIENTE: traducción validada a Moré"
+  }
+}

@@ -1,0 +1,14 @@
+﻿{
+  "@@locale": "x-baure",
+  "appName": "Mapia",
+  "map": "Mapa",
+  "explore": "Explorar",
+  "publish": "Publicar",
+  "alerts": "Alertas",
+  "profile": "Perfil",
+  "language": "Baure",
+  "translationInPreparation": "Traducción en preparación",
+  "@language": {
+    "description": "PENDIENTE: traducción validada a Baure"
+  }
+}

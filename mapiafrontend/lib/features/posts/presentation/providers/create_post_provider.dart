@@ -6,20 +6,20 @@ class CreatePostProvider extends ChangeNotifier {
   String description = '';
   PostType selectedType = PostType.novelty;
   String? imageSource;
-  String address = 'La Paz, Bolivia - ubicación aproximada';
+  bool usesCurrentLocation = false;
   bool isLoading = false;
-  String? error;
+  bool hasValidationError = false;
   bool success = false;
 
   void updateTitle(String value) {
     title = value;
-    error = null;
+    hasValidationError = false;
     notifyListeners();
   }
 
   void updateDescription(String value) {
     description = value;
-    error = null;
+    hasValidationError = false;
     notifyListeners();
   }
 
@@ -34,19 +34,19 @@ class CreatePostProvider extends ChangeNotifier {
   }
 
   void useCurrentLocation() {
-    address = 'Sopocachi, La Paz - cerca de tu ubicación';
+    usesCurrentLocation = true;
     notifyListeners();
   }
 
   Future<bool> submit() async {
     if (title.trim().isEmpty || description.trim().isEmpty) {
-      error = 'Completa título y descripción para publicar.';
+      hasValidationError = true;
       notifyListeners();
       return false;
     }
 
     isLoading = true;
-    error = null;
+    hasValidationError = false;
     success = false;
     notifyListeners();
 

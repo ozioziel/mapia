@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/auth/presentation/widgets/auth_widgets.dart';
 
@@ -19,9 +20,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return AuthPageFrame(
       compactCard: true,
       children: [
-        const AuthHeader(
-          title: 'Create Mapia account',
-          subtitle: 'Join and report what is happening nearby.',
+        AuthHeader(
+          title: context.l10n.createAccountTitle,
+          subtitle: context.l10n.createAccountSubtitle,
           titleScale: 0.92,
         ),
         Builder(
@@ -33,28 +34,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
             return Column(
               children: [
                 SizedBox(height: compact ? 20 * scale : 30 * scale),
-                const AuthTextField(
-                  hintText: 'Full name',
+                AuthTextField(
+                  hintText: context.l10n.fullName,
                   icon: Icons.person_outline_rounded,
                   iconColor: Color(0xFF34A853),
                 ),
                 SizedBox(height: 16 * scale),
-                const AuthTextField(
-                  hintText: 'Email address',
+                AuthTextField(
+                  hintText: context.l10n.email,
                   icon: Icons.mail_outline_rounded,
                   iconColor: AppTheme.primaryBlue,
                 ),
                 SizedBox(height: 16 * scale),
-                const AuthTextField(
-                  hintText: 'Password',
+                AuthTextField(
+                  hintText: context.l10n.password,
                   icon: Icons.lock_outline_rounded,
                   iconColor: Color(0xFFEA4335),
                   obscureText: true,
                   suffixIcon: Icons.visibility_outlined,
                 ),
                 SizedBox(height: 16 * scale),
-                const AuthTextField(
-                  hintText: 'Confirm password',
+                AuthTextField(
+                  hintText: context.l10n.confirmPassword,
                   icon: Icons.verified_user_outlined,
                   iconColor: Color(0xFFFBBC05),
                   obscureText: true,
@@ -68,11 +69,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                 ),
                 SizedBox(height: 18 * scale),
-                const AuthPrimaryButton(text: 'Create account'),
+                AuthPrimaryButton(text: context.l10n.signUp),
                 SizedBox(height: 22 * scale),
-                const AuthDivider(),
+                AuthDivider(text: context.l10n.or),
                 SizedBox(height: 20 * scale),
-                const GoogleAuthButton(text: 'Continue with Google'),
+                GoogleAuthButton(text: context.l10n.continueWithGoogle),
                 SizedBox(height: compact ? 18 * scale : 28 * scale),
                 Image.asset(
                   RegisterScreen.penguinAsset,
@@ -81,8 +82,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 SizedBox(height: compact ? 10 * scale : 18 * scale),
                 AuthBottomLink(
-                  text: 'Already have an account?',
-                  actionText: 'Sign in',
+                  text: context.l10n.alreadyHaveAccount,
+                  actionText: context.l10n.signIn,
                   onPressed: () {
                     final navigator = Navigator.of(context);
                     if (navigator.canPop()) {
@@ -110,6 +111,7 @@ class _TermsCheckbox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = AuthScale.of(context).scale;
+    final l10n = context.l10n;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -131,19 +133,19 @@ class _TermsCheckbox extends StatelessWidget {
         Expanded(
           child: Text.rich(
             TextSpan(
-              text: 'I agree to the ',
-              children: const [
+              text: l10n.termsAgreementPrefix,
+              children: [
                 TextSpan(
-                  text: 'Terms',
-                  style: TextStyle(
+                  text: l10n.terms,
+                  style: const TextStyle(
                     color: AppTheme.primaryBlue,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                TextSpan(text: ' and '),
+                TextSpan(text: l10n.termsAgreementMiddle),
                 TextSpan(
-                  text: 'Privacy Policy',
-                  style: TextStyle(
+                  text: l10n.privacyPolicy,
+                  style: const TextStyle(
                     color: AppTheme.primaryBlue,
                     fontWeight: FontWeight.w700,
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/profile/domain/entities/profile_entity.dart';
 
@@ -132,10 +133,10 @@ class _EmptyPosts extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFE4EAF1)),
       ),
-      child: const Text(
-        'Todavia no hay publicaciones.',
+      child: Text(
+        context.l10n.noPostsYet,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: const TextStyle(
           color: AppTheme.mutedText,
           fontWeight: FontWeight.w700,
         ),

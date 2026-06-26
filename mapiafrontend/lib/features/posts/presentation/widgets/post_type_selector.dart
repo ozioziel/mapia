@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/localized_post_type.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
 class PostTypeSelector extends StatelessWidget {
@@ -19,7 +20,7 @@ class PostTypeSelector extends StatelessWidget {
       children: [
         for (final type in PostType.values)
           _PostTypeChip(
-            option: type.option,
+            type: type,
             selected: selectedType == type,
             onTap: () => onSelected(type),
           ),
@@ -30,17 +31,19 @@ class PostTypeSelector extends StatelessWidget {
 
 class _PostTypeChip extends StatelessWidget {
   const _PostTypeChip({
-    required this.option,
+    required this.type,
     required this.selected,
     required this.onTap,
   });
 
-  final PostTypeOption option;
+  final PostType type;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final option = type.option;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -63,7 +66,7 @@ class _PostTypeChip extends StatelessWidget {
               Icon(option.icon, color: option.color, size: 18),
               const SizedBox(width: 6),
               Text(
-                option.label,
+                type.label(context),
                 style: TextStyle(
                   color: selected ? option.color : const Color(0xFF1F2A44),
                   fontSize: 12.5,

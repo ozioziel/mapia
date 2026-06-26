@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/comment_entity.dart';
 
@@ -12,9 +13,9 @@ class CommentsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Comentarios',
-          style: TextStyle(
+        Text(
+          context.l10n.comments,
+          style: const TextStyle(
             color: AppTheme.textNavy,
             fontSize: 18,
             fontWeight: FontWeight.w900,

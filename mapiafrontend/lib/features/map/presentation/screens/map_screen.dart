@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/posts/data/datasources/mock_posts_datasource.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
@@ -12,7 +13,6 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final List<PostEntity> _posts = const MockPostsDatasource().getPosts();
-  PostEntity? _selectedPost;
   int _currentIndex = 0;
   bool _layersEnabled = false;
   bool _centered = false;
@@ -30,18 +30,22 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _openPost(PostEntity post) {
-    setState(() => _selectedPost = post);
-  }
-
-  void _closePost() {
-    if (_selectedPost != null) {
-      setState(() => _selectedPost = null);
-    }
+    Navigator.of(
+      context,
+    ).pushNamed('/publications/${Uri.encodeComponent(post.id)}');
   }
 
   void _handleNavTap(int index) {
+    if (index == 1) {
+      Navigator.of(context).pushNamed('/publications');
+      return;
+    }
     if (index == 2) {
       Navigator.of(context).pushNamed('/create-post');
+      return;
+    }
+    if (index == 3) {
+      Navigator.of(context).pushNamed('/alerts');
       return;
     }
     if (index == 4) {
@@ -50,7 +54,7 @@ class _MapScreenState extends State<MapScreen> {
     }
     setState(() => _currentIndex = index);
     if (index != 0) {
-      _showMessage('Sección lista para conectar');
+      _showMessage(context.l10n.sectionReady);
     }
   }
 
@@ -66,7 +70,6 @@ class _MapScreenState extends State<MapScreen> {
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: _closePost,
               child: const _LaPazMockMap(),
             ),
           ),
@@ -74,7 +77,7 @@ class _MapScreenState extends State<MapScreen> {
           Positioned.fill(
             child: _MapPostsOverlay(
               posts: _posts,
-              selectedPost: _selectedPost,
+              selectedPost: null,
               onPostTap: _openPost,
             ),
           ),
@@ -87,8 +90,8 @@ class _MapScreenState extends State<MapScreen> {
                   right: compact ? 12 : 18,
                   top: compact ? 8 : 12,
                   child: _MapiaHeader(
-                    onSearchTap: () => _showMessage('Buscar en Mapia'),
-                    onMicTap: () => _showMessage('Búsqueda por voz'),
+                    onSearchTap: () => _showMessage(context.l10n.searchMapia),
+                    onMicTap: () => _showMessage(context.l10n.voiceSearch),
                     onProfileTap: () => _handleNavTap(4),
                   ),
                 ),
@@ -101,31 +104,20 @@ class _MapScreenState extends State<MapScreen> {
                     onLayersTap: () {
                       setState(() => _layersEnabled = !_layersEnabled);
                       _showMessage(
-                        _layersEnabled ? 'Capas activadas' : 'Capas ocultas',
+                        _layersEnabled
+                            ? context.l10n.layersEnabled
+                            : context.l10n.layersHidden,
                       );
                     },
                     onCenterTap: () {
                       setState(() => _centered = !_centered);
-                      _showMessage('Centrado en tu ubicación');
+                      _showMessage(context.l10n.centeredOnLocation);
                     },
                   ),
                 ),
               ],
             ),
           ),
-          if (_selectedPost != null)
-            _SocialPostSheet(
-              post: _selectedPost!,
-              onClose: _closePost,
-              onDetailTap: () => Navigator.of(
-                context,
-              ).pushNamed('/posts/${_selectedPost!.id}'),
-              onLikeTap: () => _showMessage('Me gusta listo para conectar'),
-              onCommentsTap: () => Navigator.of(
-                context,
-              ).pushNamed('/posts/${_selectedPost!.id}'),
-              onShareTap: () => _showMessage('Compartir publicación'),
-            ),
           Positioned(
             left: 0,
             right: 0,
@@ -174,11 +166,11 @@ class _MapiaHeader extends StatelessWidget {
             children: [
               const _MapiaMark(),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Mapia',
                       style: TextStyle(
                         color: AppTheme.textNavy,
@@ -190,15 +182,15 @@ class _MapiaHeader extends StatelessWidget {
                     SizedBox(height: 3),
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.location_on_outlined,
                           size: 14,
                           color: Color(0xFF0B8063),
                         ),
-                        SizedBox(width: 3),
+                        const SizedBox(width: 3),
                         Text(
-                          'La Paz',
-                          style: TextStyle(
+                          context.l10n.laPaz,
+                          style: const TextStyle(
                             color: AppTheme.mutedText,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -245,12 +237,12 @@ class _MapiaHeader extends StatelessWidget {
                       size: 21,
                     ),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Buscar lugares, sucesos o novedades...',
+                        context.l10n.searchHint,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFF65758A),
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
@@ -731,7 +723,7 @@ class _PostMarker extends StatelessWidget {
       top: top,
       child: Semantics(
         button: true,
-        label: 'Publicación de ${post.authorName}',
+        label: context.l10n.postByAuthor(post.authorName),
         child: GestureDetector(
           onTap: onTap,
           child: AnimatedScale(
@@ -808,384 +800,6 @@ class _PostMarker extends StatelessWidget {
   }
 }
 
-class _SocialPostSheet extends StatelessWidget {
-  const _SocialPostSheet({
-    required this.post,
-    required this.onClose,
-    required this.onDetailTap,
-    required this.onLikeTap,
-    required this.onCommentsTap,
-    required this.onShareTap,
-  });
-
-  final PostEntity post;
-  final VoidCallback onClose;
-  final VoidCallback onDetailTap;
-  final VoidCallback onLikeTap;
-  final VoidCallback onCommentsTap;
-  final VoidCallback onShareTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).height < 720;
-
-    return NotificationListener<DraggableScrollableNotification>(
-      onNotification: (notification) {
-        if (notification.extent <= 0.13) {
-          Future.microtask(onClose);
-        }
-        return false;
-      },
-      child: DraggableScrollableSheet(
-        initialChildSize: compact ? 0.38 : 0.36,
-        minChildSize: 0.10,
-        maxChildSize: compact ? 0.66 : 0.58,
-        snap: true,
-        snapSizes: compact
-            ? const [0.10, 0.38, 0.66]
-            : const [0.10, 0.36, 0.58],
-        builder: (context, scrollController) {
-          final option = post.type.option;
-
-          return SafeArea(
-            top: false,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 76),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 22,
-                    offset: const Offset(0, -7),
-                  ),
-                ],
-              ),
-              child: ListView(
-                controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
-                children: [
-                  Center(
-                    child: Container(
-                      width: 48,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD4D9DF),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        radius: 23,
-                        backgroundColor: option.color.withValues(alpha: 0.12),
-                        child: Icon(option.icon, color: option.color, size: 24),
-                      ),
-                      const SizedBox(width: 11),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              post.authorName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppTheme.textNavy,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              '${_timeAgo(post.createdAt)} · ${post.address ?? 'La Paz'}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppTheme.mutedText,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _StatusBadge(isVerified: post.isVerified),
-                    ],
-                  ),
-                  const SizedBox(height: 13),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [_TypeBadge(option: option)],
-                  ),
-                  const SizedBox(height: 13),
-                  Text(
-                    post.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppTheme.textNavy,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    post.description,
-                    style: const TextStyle(
-                      color: Color(0xFF4F5B6B),
-                      fontSize: 14.5,
-                      height: 1.34,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (post.mediaUrl != null) ...[
-                    const SizedBox(height: 14),
-                    _MockPostImage(option: option),
-                  ],
-                  const SizedBox(height: 14),
-                  const Divider(height: 1),
-                  const SizedBox(height: 8),
-                  _SocialActions(
-                    likesCount: post.likesCount,
-                    commentsCount: post.commentsCount,
-                    isLiked: post.isLiked,
-                    onLikeTap: onLikeTap,
-                    onCommentsTap: onCommentsTap,
-                    onShareTap: onShareTap,
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: onDetailTap,
-                    icon: const Icon(Icons.open_in_new_rounded),
-                    label: const Text('Ver detalle'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  String _timeAgo(DateTime createdAt) {
-    final diff = DateTime.now().difference(createdAt);
-    if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'Hace ${diff.inHours} h';
-    return 'Hace ${diff.inDays} d';
-  }
-}
-
-class _MockPostImage extends StatelessWidget {
-  const _MockPostImage({required this.option});
-
-  final PostTypeOption option;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                option.color.withValues(alpha: 0.78),
-                const Color(0xFFFFC107).withValues(alpha: 0.62),
-                const Color(0xFF0B9E59).withValues(alpha: 0.70),
-              ],
-            ),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: -24,
-                top: -24,
-                child: Icon(
-                  option.icon,
-                  size: 116,
-                  color: Colors.white.withValues(alpha: 0.18),
-                ),
-              ),
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 16,
-                child: Text(
-                  option.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                    shadows: [Shadow(color: Colors.black26, blurRadius: 8)],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.isVerified});
-
-  final bool isVerified;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isVerified
-        ? const Color(0xFF0B8063)
-        : const Color(0xFFFFA000);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        isVerified ? 'Verificado' : 'En revisión',
-        style: TextStyle(
-          color: color,
-          fontSize: 11.5,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-}
-
-class _TypeBadge extends StatelessWidget {
-  const _TypeBadge({required this.option});
-
-  final PostTypeOption option;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: option.color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(option.icon, color: option.color, size: 15),
-          const SizedBox(width: 5),
-          Text(
-            option.label,
-            style: TextStyle(
-              color: option.color,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SocialActions extends StatelessWidget {
-  const _SocialActions({
-    required this.likesCount,
-    required this.commentsCount,
-    required this.isLiked,
-    required this.onLikeTap,
-    required this.onCommentsTap,
-    required this.onShareTap,
-  });
-
-  final int likesCount;
-  final int commentsCount;
-  final bool isLiked;
-  final VoidCallback onLikeTap;
-  final VoidCallback onCommentsTap;
-  final VoidCallback onShareTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 6,
-      children: [
-        _SocialActionButton(
-          icon: isLiked
-              ? Icons.favorite_rounded
-              : Icons.favorite_border_rounded,
-          label: '$likesCount',
-          color: isLiked ? const Color(0xFFE53935) : const Color(0xFF5F6B7A),
-          onTap: onLikeTap,
-        ),
-        _SocialActionButton(
-          icon: Icons.chat_bubble_outline_rounded,
-          label: '$commentsCount comentarios',
-          color: const Color(0xFF5F6B7A),
-          onTap: onCommentsTap,
-        ),
-        _SocialActionButton(
-          icon: Icons.ios_share_rounded,
-          label: 'Compartir',
-          color: const Color(0xFF5F6B7A),
-          onTap: onShareTap,
-        ),
-      ],
-    );
-  }
-}
-
-class _SocialActionButton extends StatelessWidget {
-  const _SocialActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, color: color, size: 19),
-      label: Text(
-        label,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: color,
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-    );
-  }
-}
-
 class _MapiaBottomNavigation extends StatelessWidget {
   const _MapiaBottomNavigation({
     required this.currentIndex,
@@ -1198,20 +812,28 @@ class _MapiaBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      _NavItemData('Mapa', Icons.map_rounded, const Color(0xFFE53935)),
       _NavItemData(
-        'Explorar',
+        context.l10n.map,
+        Icons.map_rounded,
+        const Color(0xFFE53935),
+      ),
+      _NavItemData(
+        context.l10n.explore,
         Icons.travel_explore_rounded,
         const Color(0xFFE53935),
       ),
-      _NavItemData('Publicar', Icons.add_rounded, const Color(0xFFFFB300)),
       _NavItemData(
-        'Alertas',
+        context.l10n.publish,
+        Icons.add_rounded,
+        const Color(0xFFFFB300),
+      ),
+      _NavItemData(
+        context.l10n.alerts,
         Icons.notifications_none_rounded,
         const Color(0xFF0B8063),
       ),
       _NavItemData(
-        'Perfil',
+        context.l10n.profile,
         Icons.person_outline_rounded,
         const Color(0xFF0B8063),
       ),

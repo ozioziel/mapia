@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 
 class PostInteractionBar extends StatelessWidget {
   const PostInteractionBar({
@@ -31,13 +32,13 @@ class PostInteractionBar extends StatelessWidget {
         ),
         _ActionButton(
           icon: Icons.chat_bubble_outline_rounded,
-          label: '$commentsCount comentarios',
+          label: context.l10n.commentsCount(commentsCount),
           color: const Color(0xFF5F6B7A),
           onTap: () {},
         ),
         _ActionButton(
           icon: Icons.ios_share_rounded,
-          label: 'Compartir',
+          label: context.l10n.share,
           color: const Color(0xFF5F6B7A),
           onTap: onShareTap,
         ),

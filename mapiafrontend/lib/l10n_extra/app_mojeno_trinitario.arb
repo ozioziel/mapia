@@ -1,0 +1,14 @@
+﻿{
+  "@@locale": "x-mojeno-trinitario",
+  "appName": "Mapia",
+  "map": "Mapa",
+  "explore": "Explorar",
+  "publish": "Publicar",
+  "alerts": "Alertas",
+  "profile": "Perfil",
+  "language": "Mojeño-trinitario",
+  "translationInPreparation": "Traducción en preparación",
+  "@language": {
+    "description": "PENDIENTE: traducción validada a Mojeño-trinitario"
+  }
+}

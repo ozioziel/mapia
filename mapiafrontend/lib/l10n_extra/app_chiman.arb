@@ -1,0 +1,14 @@
+﻿{
+  "@@locale": "x-chiman",
+  "appName": "Mapia",
+  "map": "Mapa",
+  "explore": "Explorar",
+  "publish": "Publicar",
+  "alerts": "Alertas",
+  "profile": "Perfil",
+  "language": "Chimán / Tsimané",
+  "translationInPreparation": "Traducción en preparación",
+  "@language": {
+    "description": "PENDIENTE: traducción validada a Chimán / Tsimané"
+  }
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 
 class PostLocationPreview extends StatelessWidget {
@@ -13,6 +14,8 @@ class PostLocationPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -39,9 +42,9 @@ class PostLocationPreview extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Ubicación',
-                  style: TextStyle(
+                Text(
+                  l10n.location,
+                  style: const TextStyle(
                     color: AppTheme.textNavy,
                     fontWeight: FontWeight.w900,
                   ),
@@ -59,10 +62,7 @@ class PostLocationPreview extends StatelessWidget {
               ],
             ),
           ),
-          TextButton(
-            onPressed: onUseCurrentLocation,
-            child: const Text('Usar'),
-          ),
+          TextButton(onPressed: onUseCurrentLocation, child: Text(l10n.use)),
         ],
       ),
     );

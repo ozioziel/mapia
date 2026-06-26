@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 
 class CommentInput extends StatelessWidget {
   const CommentInput({super.key});
@@ -9,7 +10,7 @@ class CommentInput extends StatelessWidget {
       minLines: 1,
       maxLines: 3,
       decoration: InputDecoration(
-        hintText: 'Escribe un comentario...',
+        hintText: context.l10n.writeComment,
         filled: true,
         fillColor: Colors.white,
         prefixIcon: const Icon(Icons.mode_comment_outlined),

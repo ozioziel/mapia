@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 
 class ProfileStats extends StatelessWidget {
@@ -26,10 +27,10 @@ class ProfileStats extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _StatItem(value: '$postsCount', label: 'Publicaciones'),
-          _StatItem(value: '$followersCount', label: 'Seguidores'),
-          _StatItem(value: '$followingCount', label: 'Siguiendo'),
-          _StatItem(value: _formatCount(likesCount), label: 'Likes'),
+          _StatItem(value: '$postsCount', label: context.l10n.publications),
+          _StatItem(value: '$followersCount', label: context.l10n.followers),
+          _StatItem(value: '$followingCount', label: context.l10n.following),
+          _StatItem(value: _formatCount(likesCount), label: context.l10n.likes),
         ],
       ),
     );
