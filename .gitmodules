@@ -1,0 +1,3 @@
+[submodule "mapiabackend"]
+	path = mapiabackend
+	url = https://github.com/daniel69zz/mapia_backend
