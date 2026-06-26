@@ -1,4 +1,4 @@
-
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -6,6 +6,8 @@ import 'package:mapiafrontend/core/config/app_config.dart';
 
 class ApiClient {
   ApiClient({http.Client? httpClient}) : _http = httpClient ?? http.Client();
+
+  static const _timeout = Duration(seconds: 12);
 
   final http.Client _http;
 
@@ -27,26 +29,51 @@ class ApiClient {
     String path, [
     Map<String, String?> query = const {},
   ]) async {
-    final response = await _http.get(uri(path, query));
-    return _decode(response);
+    final requestUri = uri(path, query);
+    try {
+      final response = await _http.get(requestUri).timeout(_timeout);
+      return _decode(response);
+    } on TimeoutException {
+      throw ApiException('Tiempo de espera agotado: $requestUri', 0);
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException('No se pudo conectar con $requestUri', 0);
+    }
   }
 
   Future<Map<String, dynamic>> postJson(
     String path,
     Map<String, dynamic> body,
   ) async {
-    final response = await _http.post(
-      uri(path),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
-    return _decode(response);
+    final requestUri = uri(path);
+    try {
+      final response = await _http
+          .post(
+            requestUri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(_timeout);
+      return _decode(response);
+    } on TimeoutException {
+      throw ApiException('Tiempo de espera agotado: $requestUri', 0);
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException('No se pudo conectar con $requestUri', 0);
+    }
   }
 
   Map<String, dynamic> _decode(http.Response response) {
-    final decoded = response.body.isEmpty
-        ? <String, dynamic>{}
-        : jsonDecode(response.body) as Map<String, dynamic>;
+    var decoded = <String, dynamic>{};
+    if (response.body.isNotEmpty) {
+      try {
+        decoded = jsonDecode(response.body) as Map<String, dynamic>;
+      } catch (_) {
+        decoded = {'message': response.body};
+      }
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final message = decoded['message'];
       throw ApiException(

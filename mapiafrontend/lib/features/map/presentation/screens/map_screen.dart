@@ -530,63 +530,6 @@ class _MapCard extends StatelessWidget {
   }
 }
 
-class _MapStateMessage extends StatelessWidget {
-  const _MapStateMessage({
-    required this.icon,
-    required this.title,
-    required this.message,
-    this.action,
-    this.onAction,
-  });
-
-  final IconData icon;
-  final String title;
-  final String message;
-  final String? action;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: const Color(0xFFF8FAFC),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 42, color: const Color(0xFF64748B)),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF0F172A),
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (action != null && onAction != null) ...[
-                const SizedBox(height: 14),
-                FilledButton(onPressed: onAction, child: Text(action!)),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _MapNotice extends StatelessWidget {
   const _MapNotice({
     required this.icon,
@@ -1417,9 +1360,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                           target: _location,
                           zoom: 13,
                         ),
-                        cameraTargetBounds: CameraTargetBounds(
-                          boliviaBounds,
-                        ),
+                        cameraTargetBounds: CameraTargetBounds(boliviaBounds),
                         minMaxZoomPreference: const MinMaxZoomPreference(
                           5.2,
                           18,
