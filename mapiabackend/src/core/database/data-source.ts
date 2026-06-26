@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import 'tsconfig-paths/register';
 import { DataSource, DataSourceOptions } from 'typeorm';
 
 /**
@@ -10,6 +11,8 @@ import { DataSource, DataSourceOptions } from 'typeorm';
  */
 const toBool = (v: string | undefined, def = false): boolean =>
   v === undefined ? def : v === 'true' || v === '1';
+
+const isTsRuntime = __filename.endsWith('.ts');
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
@@ -23,8 +26,9 @@ export const dataSourceOptions: DataSourceOptions = {
   // Globs: en dev (ts-node) toma .ts; tras compilar toma .js en dist/.
   entities: ['src/**/*.entity.{ts,js}', 'dist/**/*.entity.js'],
   migrations: [
-    'src/core/database/migrations/*.{ts,js}',
-    'dist/core/database/migrations/*.js',
+    isTsRuntime
+      ? 'src/core/database/migrations/*.{ts,js}'
+      : 'dist/core/database/migrations/*.js',
   ],
   migrationsTableName: 'mapia_migrations',
 };

@@ -76,6 +76,8 @@ __pycache__/
 venv/
 env/
 ENV/
+!**/src/core/env/
+!**/src/core/env/**
 pip-wheel-metadata/
 .pytest_cache/
 .mypy_cache/
@@ -97,6 +99,8 @@ site/
 media/
 uploads/
 storage/
+!**/src/core/storage/
+!**/src/core/storage/**
 
 # Dart / Flutter
 **/.dart_tool/
