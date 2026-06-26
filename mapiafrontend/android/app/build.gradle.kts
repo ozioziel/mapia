@@ -1,5 +1,6 @@
 import java.io.FileInputStream
 import java.nio.charset.StandardCharsets
+import java.util.Base64
 import java.util.Properties
 
 plugins {
@@ -20,7 +21,7 @@ val googleMapsApiKey = System.getenv("GOOGLE_MAPS_API_KEY")
     ?: (project.findProperty("dart-defines") as? String)
         ?.split(",")
         ?.mapNotNull { encoded ->
-            val decoded = String(java.util.Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8)
+            val decoded = String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8)
             val separator = decoded.indexOf("=")
             if (separator <= 0) null else decoded.substring(0, separator) to decoded.substring(separator + 1)
         }
