@@ -5,6 +5,7 @@ import 'package:mapiafrontend/features/posts/presentation/providers/create_post_
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_location_preview.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_photo_picker.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_type_selector.dart';
+import 'package:mapiafrontend/shared/widgets/app_surface.dart';
 
 class CreatePostForm extends StatelessWidget {
   const CreatePostForm({
@@ -25,7 +26,7 @@ class CreatePostForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SectionTitle(l10n.whatIsHappening),
+        SectionLabel(l10n.whatIsHappening),
         TextField(
           onChanged: provider.updateTitle,
           textInputAction: TextInputAction.next,
@@ -35,7 +36,7 @@ class CreatePostForm extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        _SectionTitle(l10n.tellUsMore),
+        SectionLabel(l10n.tellUsMore),
         TextField(
           onChanged: provider.updateDescription,
           minLines: 4,
@@ -46,19 +47,19 @@ class CreatePostForm extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        _SectionTitle(l10n.postType),
+        SectionLabel(l10n.postType),
         PostTypeSelector(
           selectedType: provider.selectedType,
           onSelected: provider.selectType,
         ),
         const SizedBox(height: 18),
-        _SectionTitle(l10n.optionalPhoto),
+        SectionLabel(l10n.optionalPhoto),
         PostPhotoPicker(
           imageSource: provider.imageSource,
           onSelectSource: provider.selectImageSource,
         ),
         const SizedBox(height: 18),
-        _SectionTitle(l10n.location),
+        SectionLabel(l10n.location),
         PostLocationPreview(
           address: provider.usesCurrentLocation
               ? l10n.nearCurrentLocation
@@ -112,7 +113,7 @@ class CreatePostForm extends StatelessWidget {
                   : l10n.publish,
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFB300),
+              backgroundColor: AppTheme.boliviaYellow,
               foregroundColor: AppTheme.textNavy,
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -136,9 +137,11 @@ class _PhoneVerificationWarning extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF4E0),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFFB300)),
+        color: AppTheme.boliviaYellow.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(
+          color: AppTheme.boliviaYellow.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -158,27 +161,6 @@ class _PhoneVerificationWarning extends StatelessWidget {
             label: const Text('Verificar celular'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: AppTheme.textNavy,
-          fontSize: 16,
-          fontWeight: FontWeight.w900,
-        ),
       ),
     );
   }

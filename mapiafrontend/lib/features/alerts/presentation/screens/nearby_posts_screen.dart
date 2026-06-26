@@ -5,6 +5,7 @@ import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:mapiafrontend/features/alerts/presentation/widgets/nearby_post_card.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
+import 'package:mapiafrontend/shared/widgets/app_surface.dart';
 
 class NearbyPostsScreen extends StatefulWidget {
   const NearbyPostsScreen({
@@ -43,16 +44,11 @@ class _NearbyPostsScreenState extends State<NearbyPostsScreen> {
   Widget build(BuildContext context) {
     final option = widget.type.option;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FB),
+    return AppGradientScaffold(
       appBar: AppBar(
         title: Text(
           context.l10n.postsNearYou(widget.type.pluralLabel(context)),
         ),
-        centerTitle: false,
-        backgroundColor: Colors.white,
-        foregroundColor: AppTheme.textNavy,
-        elevation: 0,
       ),
       body: SafeArea(
         child: AnimatedBuilder(
@@ -111,12 +107,12 @@ class _NearbyPostsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E8EF)),
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      gradient: LinearGradient(
+        colors: [color.withValues(alpha: 0.08), Colors.white],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
       child: Row(
         children: [

@@ -9,6 +9,7 @@ import 'package:mapiafrontend/features/posts/presentation/widgets/comments_secti
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_author_header.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_interaction_bar.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_media_viewer.dart';
+import 'package:mapiafrontend/shared/widgets/app_surface.dart';
 
 class PostDetailScreen extends StatefulWidget {
   const PostDetailScreen({super.key, required this.postId});
@@ -58,15 +59,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FB),
-      appBar: AppBar(
-        title: Text(context.l10n.publication),
-        centerTitle: false,
-        backgroundColor: Colors.white,
-        foregroundColor: AppTheme.textNavy,
-        elevation: 0,
-      ),
+    return AppGradientScaffold(
+      appBar: AppBar(title: Text(context.l10n.publication)),
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _provider,
@@ -89,58 +83,61 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  PostAuthorHeader(post: post),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _StatusBadge(isVerified: post.isVerified),
-                      _TypeBadge(type: type),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    post.title,
-                    style: const TextStyle(
-                      color: AppTheme.textNavy,
-                      fontSize: 23,
-                      height: 1.12,
-                      fontWeight: FontWeight.w900,
+              child: AppCard(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PostAuthorHeader(post: post),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _StatusBadge(isVerified: post.isVerified),
+                        _TypeBadge(type: type),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    post.description,
-                    style: const TextStyle(
-                      color: Color(0xFF4F5B6B),
-                      fontSize: 15.5,
-                      height: 1.42,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 16),
+                    Text(
+                      post.title,
+                      style: const TextStyle(
+                        color: AppTheme.textNavy,
+                        fontSize: 23,
+                        height: 1.12,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  PostMediaViewer(post: post),
-                  if (post.mediaUrl != null) const SizedBox(height: 16),
-                  const Divider(height: 1),
-                  const SizedBox(height: 8),
-                  PostInteractionBar(
-                    likesCount: likes,
-                    commentsCount: post.commentsCount,
-                    isLiked: liked,
-                    onLikeTap: () => _toggleLike(post),
-                    onShareTap: _sharePost,
-                  ),
-                  const SizedBox(height: 8),
-                  const Divider(height: 1),
-                  const SizedBox(height: 18),
-                  CommentsSection(comments: _provider.comments),
-                  const SizedBox(height: 8),
-                  const CommentInput(),
-                ],
+                    const SizedBox(height: 10),
+                    Text(
+                      post.description,
+                      style: const TextStyle(
+                        color: Color(0xFF4F5B6B),
+                        fontSize: 15.5,
+                        height: 1.42,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    PostMediaViewer(post: post),
+                    if (post.mediaUrl != null) const SizedBox(height: 16),
+                    const Divider(height: 1),
+                    const SizedBox(height: 8),
+                    PostInteractionBar(
+                      likesCount: likes,
+                      commentsCount: post.commentsCount,
+                      isLiked: liked,
+                      onLikeTap: () => _toggleLike(post),
+                      onShareTap: _sharePost,
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(height: 1),
+                    const SizedBox(height: 18),
+                    CommentsSection(comments: _provider.comments),
+                    const SizedBox(height: 8),
+                    const CommentInput(),
+                  ],
+                ),
               ),
             );
           },

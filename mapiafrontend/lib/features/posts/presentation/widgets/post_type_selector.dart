@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/core/localization/localized_post_type.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
@@ -50,15 +51,16 @@ class _PostTypeChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: selected
-                ? option.color.withValues(alpha: 0.12)
+                ? option.color.withValues(alpha: 0.13)
                 : Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected ? option.color : const Color(0xFFD8DEE8),
             ),
+            boxShadow: selected ? AppTheme.softShadow : null,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

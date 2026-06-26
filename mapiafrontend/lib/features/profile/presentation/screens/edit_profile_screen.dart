@@ -3,6 +3,7 @@ import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider.dart';
 import 'package:mapiafrontend/features/profile/presentation/widgets/editable_avatar.dart';
+import 'package:mapiafrontend/shared/widgets/app_surface.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -122,14 +123,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FB),
-      appBar: AppBar(
-        title: Text(context.l10n.editProfile),
-        backgroundColor: Colors.white,
-        foregroundColor: AppTheme.textNavy,
-        elevation: 0,
-      ),
+    return AppGradientScaffold(
+      appBar: AppBar(title: Text(context.l10n.editProfile)),
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _provider,
@@ -150,89 +145,79 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: EditableAvatar(
-                      name: _firstNameController.text,
-                      avatarUrl: _avatarUrl,
-                      onTap: _simulatePhotoSelection,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton.icon(
-                    onPressed: _provider.isSaving
-                        ? null
-                        : _simulatePhotoSelection,
-                    icon: const Icon(Icons.photo_camera_outlined),
-                    label: Text(context.l10n.changePhoto),
-                  ),
-                  const SizedBox(height: 16),
-                  _ProfileTextField(
-                    controller: _firstNameController,
-                    label: 'Nombre',
-                    icon: Icons.badge_outlined,
-                    textInputAction: TextInputAction.next,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 14),
-                  _ProfileTextField(
-                    controller: _lastNameController,
-                    label: 'Apellido',
-                    icon: Icons.badge_rounded,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 14),
-                  _ProfileTextField(
-                    controller: _phoneController,
-                    label: 'Telefono',
-                    icon: Icons.phone_outlined,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 14),
-                  _ProfileTextField(
-                    controller: _bioController,
-                    label: context.l10n.bio,
-                    icon: Icons.notes_rounded,
-                    maxLines: 4,
-                    textInputAction: TextInputAction.newline,
-                  ),
-                  const SizedBox(height: 22),
-                  FilledButton.icon(
-                    onPressed: _provider.isSaving ? null : _save,
-                    icon: _provider.isSaving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.save_outlined),
-                    label: Text(context.l10n.saveChanges),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF0B8063),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.fromHeight(50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+              child: AppCard(
+                padding: const EdgeInsets.all(18),
+                gradient: AppTheme.mintGradient,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: EditableAvatar(
+                        name: _firstNameController.text,
+                        avatarUrl: _avatarUrl,
+                        onTap: _simulatePhotoSelection,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  OutlinedButton(
-                    onPressed: _provider.isSaving
-                        ? null
-                        : () => Navigator.of(context).pop(false),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: _provider.isSaving
+                          ? null
+                          : _simulatePhotoSelection,
+                      icon: const Icon(Icons.photo_camera_outlined),
+                      label: Text(context.l10n.changePhoto),
                     ),
-                    child: Text(context.l10n.cancel),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    _ProfileTextField(
+                      controller: _firstNameController,
+                      label: 'Nombre',
+                      icon: Icons.badge_outlined,
+                      textInputAction: TextInputAction.next,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 14),
+                    _ProfileTextField(
+                      controller: _lastNameController,
+                      label: 'Apellido',
+                      icon: Icons.badge_rounded,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 14),
+                    _ProfileTextField(
+                      controller: _phoneController,
+                      label: 'Telefono',
+                      icon: Icons.phone_outlined,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 14),
+                    _ProfileTextField(
+                      controller: _bioController,
+                      label: context.l10n.bio,
+                      icon: Icons.notes_rounded,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.newline,
+                    ),
+                    const SizedBox(height: 22),
+                    FilledButton.icon(
+                      onPressed: _provider.isSaving ? null : _save,
+                      icon: _provider.isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: Text(context.l10n.saveChanges),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton(
+                      onPressed: _provider.isSaving
+                          ? null
+                          : () => Navigator.of(context).pop(false),
+                      child: Text(context.l10n.cancel),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -274,11 +259,6 @@ class _ProfileTextField extends StatelessWidget {
         prefixIcon: Icon(icon),
         filled: true,
         fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFE4EAF1)),
-        ),
       ),
     );
   }

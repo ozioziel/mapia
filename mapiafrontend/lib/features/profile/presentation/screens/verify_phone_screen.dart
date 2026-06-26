@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/profile/data/services/otp_service.dart';
 import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider.dart';
+import 'package:mapiafrontend/shared/widgets/app_surface.dart';
 
 class VerifyPhoneScreen extends StatefulWidget {
   const VerifyPhoneScreen({super.key});
@@ -69,14 +70,8 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FB),
-      appBar: AppBar(
-        title: const Text('Verificar telefono'),
-        backgroundColor: Colors.white,
-        foregroundColor: AppTheme.textNavy,
-        elevation: 0,
-      ),
+    return AppGradientScaffold(
+      appBar: AppBar(title: const Text('Verificar telefono')),
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _provider,
@@ -92,13 +87,9 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
               children: [
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE4EAF1)),
-                  ),
+                AppCard(
+                  padding: const EdgeInsets.all(20),
+                  gradient: AppTheme.warmGradient,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -145,6 +136,9 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
                               )
                             : const Icon(Icons.send_to_mobile_outlined),
                         label: const Text('Enviar codigo'),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextField(
@@ -157,9 +151,6 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
                           prefixIcon: const Icon(Icons.password_rounded),
                           filled: true,
                           fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -179,12 +170,8 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
                             : const Icon(Icons.verified_user_outlined),
                         label: const Text('Verificar'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF0B8063),
+                          backgroundColor: AppTheme.boliviaGreen,
                           foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
                         ),
                       ),
                     ],

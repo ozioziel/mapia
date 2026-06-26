@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             return Column(
               children: [
-                SizedBox(height: auth.compact ? 26 * scale : 42 * scale),
+                SizedBox(height: auth.compact ? 18 * scale : 30 * scale),
                 AuthTextField(
                   controller: _emailController,
                   hintText: context.l10n.email,
@@ -73,17 +73,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                 ),
-                SizedBox(height: 22 * scale),
+                SizedBox(height: 16 * scale),
                 AuthTextField(
                   controller: _passwordController,
                   hintText: context.l10n.password,
                   icon: Icons.lock_outline_rounded,
-                  iconColor: const Color(0xFFEA4335),
+                  iconColor: AppTheme.boliviaRed,
                   obscureText: true,
                   suffixIcon: Icons.visibility_outlined,
                   textInputAction: TextInputAction.done,
                 ),
-                SizedBox(height: 18 * scale),
+                SizedBox(height: 12 * scale),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -96,32 +96,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text(
                       context.l10n.forgotPassword,
                       style: TextStyle(
-                        color: AppTheme.primaryBlue,
+                        color: AppTheme.boliviaGreen,
                         fontSize: 14 * scale,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: 24 * scale),
+                SizedBox(height: 18 * scale),
                 AuthPrimaryButton(
                   text: context.l10n.signIn,
                   onPressed: _signIn,
                 ),
-                SizedBox(height: 26 * scale),
+                SizedBox(height: 18 * scale),
                 AuthDivider(text: context.l10n.or),
-                SizedBox(height: 24 * scale),
+                SizedBox(height: 16 * scale),
                 GoogleAuthButton(
                   text: context.l10n.continueWithGoogle,
                   onPressed: _signIn,
                 ),
-                SizedBox(height: auth.compact ? 26 * scale : 46 * scale),
-                Image.asset(
-                  _penguinAsset,
-                  height: auth.compact ? 210 * scale : 335 * scale,
-                  fit: BoxFit.contain,
+                SizedBox(height: auth.compact ? 14 * scale : 24 * scale),
+                AuthPenguin(
+                  asset: _penguinAsset,
+                  maxHeight: auth.compact ? 132 * scale : 210 * scale,
+                  minHeight: 58 * scale,
                 ),
-                SizedBox(height: auth.compact ? 14 * scale : 26 * scale),
+                SizedBox(height: auth.compact ? 8 * scale : 14 * scale),
                 AuthBottomLink(
                   text: context.l10n.dontHaveAccount,
                   actionText: context.l10n.signUp,

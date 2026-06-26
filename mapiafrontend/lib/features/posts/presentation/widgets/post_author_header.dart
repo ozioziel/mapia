@@ -3,6 +3,8 @@ import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/localization/time_ago.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
+import 'package:mapiafrontend/features/reputation/domain/reputation_helper.dart';
+import 'package:mapiafrontend/features/reputation/presentation/widgets/reputation_badge.dart';
 
 class PostAuthorHeader extends StatelessWidget {
   const PostAuthorHeader({super.key, required this.post});
@@ -12,6 +14,7 @@ class PostAuthorHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = post.type.option;
+    final reputation = authorReputationInfo(post.authorName);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,6 +61,8 @@ class PostAuthorHeader extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              const SizedBox(height: 8),
+              ReputationBadge(reputation: reputation),
             ],
           ),
         ),

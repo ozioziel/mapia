@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 
@@ -13,81 +15,109 @@ class AuthPageFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardVisible = mediaQuery.viewInsets.bottom > 0;
+
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF6FBFF), Color(0xFFEAF6FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFFFCF5), Color(0xFFEAF4F8), Color(0xFFF2FBF6)],
+            stops: [0, 0.55, 1],
           ),
         ),
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
               final width = constraints.maxWidth;
-              final compact = constraints.maxHeight < 760;
-              final cardWidth = width > 560 ? 510.0 : width - 28;
-              final scale = (cardWidth / 390).clamp(0.9, 1.32).toDouble();
+              final height = constraints.maxHeight;
+              final compact = height < 760 || width < 370 || keyboardVisible;
+              final horizontalPadding = width > 560 ? 24.0 : 14.0;
+              final verticalPadding = compact ? 8.0 : 18.0;
+              final availableWidth = math.max(
+                0.0,
+                width - (horizontalPadding * 2),
+              );
+              final availableHeight = math.max(
+                0.0,
+                height - (verticalPadding * 2),
+              );
+              final cardWidth = width > 560
+                  ? 510.0
+                  : math.max(300.0, availableWidth);
+              final widthScale = (cardWidth / 390).clamp(0.82, 1.22);
+              final heightScale = (height / 760).clamp(0.76, 1.0);
+              final scale =
+                  (math.min(widthScale, heightScale) *
+                          (keyboardVisible ? 0.88 : 1.0))
+                      .toDouble();
 
-              return SingleChildScrollView(
+              return Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: width > 560 ? 24 : 14,
-                  vertical: compact ? 12 : 22,
+                  horizontal: horizontalPadding,
+                  vertical: verticalPadding,
                 ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - (compact ? 28 : 44),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: cardWidth,
-                      padding: EdgeInsets.fromLTRB(
-                        32 * scale,
-                        compact ? 24 * scale : 38 * scale,
-                        32 * scale,
-                        compact ? 22 * scale : 32 * scale,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(38 * scale),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF92A9BF,
-                            ).withValues(alpha: 0.24),
-                            blurRadius: 34,
-                            offset: const Offset(0, 18),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Positioned(
-                            left: -16 * scale,
-                            top: 44 * scale,
-                            child: AuthCloudDecoration(width: 118 * scale),
-                          ),
-                          Positioned(
-                            right: -24 * scale,
-                            top: compactCard ? 136 * scale : 178 * scale,
-                            child: AuthCloudDecoration(width: 86 * scale),
-                          ),
-                          Positioned(
-                            right: 40 * scale,
-                            top: 36 * scale,
-                            child: AuthMusicNote(size: 30 * scale),
-                          ),
-                          AuthScale(
-                            scale: scale,
-                            compact: compact,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: children,
+                child: Center(
+                  child: SizedBox(
+                    width: availableWidth,
+                    height: availableHeight,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: Container(
+                        width: cardWidth,
+                        padding: EdgeInsets.fromLTRB(
+                          compact ? 24 * scale : 32 * scale,
+                          compact ? 18 * scale : 34 * scale,
+                          compact ? 24 * scale : 32 * scale,
+                          compact ? 16 * scale : 28 * scale,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30 * scale),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF92A9BF,
+                              ).withValues(alpha: 0.24),
+                              blurRadius: 34,
+                              offset: const Offset(0, 18),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Positioned(
+                              left: -16 * scale,
+                              top: 44 * scale,
+                              child: AuthCloudDecoration(width: 118 * scale),
+                            ),
+                            Positioned(
+                              right: -24 * scale,
+                              top: compactCard ? 136 * scale : 178 * scale,
+                              child: AuthCloudDecoration(width: 86 * scale),
+                            ),
+                            Positioned(
+                              right: 40 * scale,
+                              top: 36 * scale,
+                              child: AuthMusicNote(size: 30 * scale),
+                            ),
+                            AuthScale(
+                              scale: scale,
+                              compact: compact,
+                              keyboardVisible: keyboardVisible,
+                              availableHeight: availableHeight,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: children,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -106,11 +136,15 @@ class AuthScale extends InheritedWidget {
     super.key,
     required this.scale,
     required this.compact,
+    required this.keyboardVisible,
+    required this.availableHeight,
     required super.child,
   });
 
   final double scale;
   final bool compact;
+  final bool keyboardVisible;
+  final double availableHeight;
 
   static AuthScale of(BuildContext context) {
     final result = context.dependOnInheritedWidgetOfExactType<AuthScale>();
@@ -120,7 +154,40 @@ class AuthScale extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AuthScale oldWidget) {
-    return scale != oldWidget.scale || compact != oldWidget.compact;
+    return scale != oldWidget.scale ||
+        compact != oldWidget.compact ||
+        keyboardVisible != oldWidget.keyboardVisible ||
+        availableHeight != oldWidget.availableHeight;
+  }
+}
+
+class AuthPenguin extends StatelessWidget {
+  const AuthPenguin({
+    super.key,
+    required this.asset,
+    required this.maxHeight,
+    this.minHeight = 72,
+  });
+
+  static const double aspectRatio = 1448 / 1086;
+
+  final String asset;
+  final double maxHeight;
+  final double minHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AuthScale.of(context);
+    final reducedHeight = auth.keyboardVisible ? maxHeight * 0.42 : maxHeight;
+    final height = reducedHeight.clamp(minHeight, maxHeight).toDouble();
+
+    return SizedBox(
+      height: height,
+      child: AspectRatio(
+        aspectRatio: aspectRatio,
+        child: Image.asset(asset, fit: BoxFit.contain),
+      ),
+    );
   }
 }
 
@@ -303,7 +370,7 @@ class AuthTextField extends StatelessWidget {
                 ),
           contentPadding: EdgeInsets.symmetric(horizontal: 18 * scale),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: const Color(0xFFFBFDFE),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(11 * scale),
             borderSide: const BorderSide(color: AppTheme.softBorder),
@@ -311,7 +378,7 @@ class AuthTextField extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(11 * scale),
             borderSide: const BorderSide(
-              color: AppTheme.primaryBlue,
+              color: AppTheme.boliviaGreen,
               width: 1.2,
             ),
           ),
@@ -342,8 +409,8 @@ class AuthPrimaryButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryBlue,
-          foregroundColor: Colors.white,
+          backgroundColor: AppTheme.boliviaYellow,
+          foregroundColor: AppTheme.textNavy,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12 * scale),
@@ -488,7 +555,7 @@ class AuthBottomLink extends StatelessWidget {
           child: Text(
             actionText,
             style: TextStyle(
-              color: AppTheme.primaryBlue,
+              color: AppTheme.boliviaGreen,
               fontSize: 15 * scale,
               fontWeight: FontWeight.w700,
             ),

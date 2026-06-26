@@ -26,6 +26,10 @@ class PostPhotoPicker extends StatelessWidget {
                 onPressed: () => onSelectSource(l10n.camera),
                 icon: const Icon(Icons.photo_camera_outlined),
                 label: Text(l10n.takePhoto, overflow: TextOverflow.ellipsis),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: AppTheme.softBorder),
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -37,6 +41,10 @@ class PostPhotoPicker extends StatelessWidget {
                   l10n.chooseFromGallery,
                   overflow: TextOverflow.ellipsis,
                 ),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: AppTheme.softBorder),
+                ),
               ),
             ),
           ],
@@ -46,8 +54,8 @@ class PostPhotoPicker extends StatelessWidget {
           Container(
             height: 96,
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF4F0),
-              borderRadius: BorderRadius.circular(18),
+              gradient: AppTheme.mintGradient,
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               border: Border.all(color: AppTheme.softBorder),
             ),
             child: Row(

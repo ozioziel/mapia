@@ -4,6 +4,8 @@ import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:mapiafrontend/features/alerts/presentation/widgets/alert_radius_selector.dart';
 import 'package:mapiafrontend/features/alerts/presentation/widgets/nearby_alert_group_card.dart';
+import 'package:mapiafrontend/shared/widgets/app_surface.dart';
+import 'package:mapiafrontend/shared/widgets/mapia_bottom_navigation.dart';
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -55,16 +57,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FB),
-      appBar: AppBar(
-        title: Text(context.l10n.alertsNearYou),
-        centerTitle: false,
-        backgroundColor: Colors.white,
-        foregroundColor: AppTheme.textNavy,
-        elevation: 0,
-      ),
-      bottomNavigationBar: _AlertsBottomNavigation(
+    return AppGradientScaffold(
+      appBar: AppBar(title: Text(context.l10n.alertsNearYou)),
+      bottomNavigationBar: MapiaBottomNavigation(
         currentIndex: 3,
         onIndexChanged: _onBottomNavTap,
       ),
@@ -133,13 +128,9 @@ class _LocationSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E8EF)),
-      ),
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      gradient: AppTheme.mintGradient,
       child: Row(
         children: [
           Container(
@@ -240,203 +231,6 @@ class _AlertsMessage extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-}
-
-class _AlertsBottomNavigation extends StatelessWidget {
-  const _AlertsBottomNavigation({
-    required this.currentIndex,
-    required this.onIndexChanged,
-  });
-
-  final int currentIndex;
-  final ValueChanged<int> onIndexChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      _NavItemData(
-        context.l10n.map,
-        Icons.map_rounded,
-        const Color(0xFFE53935),
-      ),
-      _NavItemData(
-        context.l10n.explore,
-        Icons.travel_explore_rounded,
-        const Color(0xFFE53935),
-      ),
-      _NavItemData(
-        context.l10n.publish,
-        Icons.add_rounded,
-        const Color(0xFFFFB300),
-      ),
-      _NavItemData(
-        context.l10n.alerts,
-        Icons.notifications_none_rounded,
-        const Color(0xFF0B8063),
-      ),
-      _NavItemData(
-        context.l10n.profile,
-        Icons.person_outline_rounded,
-        const Color(0xFF0B8063),
-      ),
-    ];
-
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-        padding: const EdgeInsets.fromLTRB(8, 5, 8, 7),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.16),
-              blurRadius: 18,
-              offset: const Offset(0, 7),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Row(
-              children: [
-                Expanded(child: _BoliviaStripe(color: Color(0xFFE53935))),
-                Expanded(child: _BoliviaStripe(color: Color(0xFFFFC107))),
-                Expanded(child: _BoliviaStripe(color: Color(0xFF0B9E59))),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                for (var i = 0; i < items.length; i++)
-                  Expanded(
-                    child: _BottomNavButton(
-                      data: items[i],
-                      active: currentIndex == i,
-                      prominent: i == 2,
-                      onTap: () => onIndexChanged(i),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BoliviaStripe extends StatelessWidget {
-  const _BoliviaStripe({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(height: 3, color: color);
-  }
-}
-
-class _NavItemData {
-  const _NavItemData(this.label, this.icon, this.color);
-
-  final String label;
-  final IconData icon;
-  final Color color;
-}
-
-class _BottomNavButton extends StatelessWidget {
-  const _BottomNavButton({
-    required this.data,
-    required this.active,
-    required this.prominent,
-    required this.onTap,
-  });
-
-  final _NavItemData data;
-  final bool active;
-  final bool prominent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(2, prominent ? 0 : 3, 2, 3),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (prominent)
-              Transform.translate(
-                offset: const Offset(0, -10),
-                child: const _PublishCircle(),
-              )
-            else
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 42,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: active
-                      ? data.color.withValues(alpha: 0.13)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: Icon(
-                  data.icon,
-                  color: active ? data.color : const Color(0xFF5F6B7A),
-                  size: 22,
-                ),
-              ),
-            SizedBox(height: prominent ? 0 : 2),
-            Text(
-              data.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: active ? data.color : const Color(0xFF5F6B7A),
-                fontSize: 10.5,
-                fontWeight: active ? FontWeight.w900 : FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PublishCircle extends StatelessWidget {
-  const _PublishCircle();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 58,
-      height: 58,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFC107), Color(0xFFFFA000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFFA000).withValues(alpha: 0.34),
-            blurRadius: 18,
-            offset: const Offset(0, 7),
-          ),
-        ],
-      ),
-      child: const Icon(Icons.add_rounded, color: Colors.white, size: 34),
     );
   }
 }

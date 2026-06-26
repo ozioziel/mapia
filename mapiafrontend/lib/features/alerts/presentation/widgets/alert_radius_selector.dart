@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/theme/app_theme.dart';
 
 class AlertRadiusSelector extends StatelessWidget {
   const AlertRadiusSelector({
@@ -26,16 +27,16 @@ class AlertRadiusSelector extends StatelessWidget {
             showCheckmark: false,
             labelStyle: TextStyle(
               color: selectedRadiusKm == option
-                  ? Colors.white
-                  : const Color(0xFF1F2A44),
+                  ? AppTheme.textNavy
+                  : AppTheme.textNavy,
               fontWeight: FontWeight.w900,
             ),
-            selectedColor: const Color(0xFF0B8063),
+            selectedColor: AppTheme.boliviaYellow.withValues(alpha: 0.85),
             backgroundColor: Colors.white,
             side: BorderSide(
               color: selectedRadiusKm == option
-                  ? const Color(0xFF0B8063)
-                  : const Color(0xFFD8DEE8),
+                  ? AppTheme.boliviaYellow
+                  : AppTheme.softBorder,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),

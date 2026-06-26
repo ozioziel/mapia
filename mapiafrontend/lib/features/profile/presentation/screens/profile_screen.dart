@@ -7,6 +7,10 @@ import 'package:mapiafrontend/features/profile/presentation/widgets/profile_acti
 import 'package:mapiafrontend/features/profile/presentation/widgets/profile_header.dart';
 import 'package:mapiafrontend/features/profile/presentation/widgets/profile_stats.dart';
 import 'package:mapiafrontend/features/profile/presentation/widgets/user_posts_grid.dart';
+import 'package:mapiafrontend/features/reputation/domain/reputation_helper.dart';
+import 'package:mapiafrontend/features/reputation/presentation/widgets/reputation_summary_card.dart';
+import 'package:mapiafrontend/shared/widgets/app_surface.dart';
+import 'package:mapiafrontend/shared/widgets/mapia_bottom_navigation.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -142,15 +146,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FB),
-      appBar: AppBar(
-        title: Text(context.l10n.profile),
-        backgroundColor: Colors.white,
-        foregroundColor: AppTheme.textNavy,
-        elevation: 0,
-      ),
-      bottomNavigationBar: _ProfileBottomNavigation(
+    return AppGradientScaffold(
+      appBar: AppBar(title: Text(context.l10n.profile)),
+      bottomNavigationBar: MapiaBottomNavigation(
         currentIndex: 4,
         onIndexChanged: _onBottomNavTap,
       ),
@@ -174,6 +172,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               return const SizedBox.shrink();
             }
 
+            final reputation = profileReputationInfo(
+              postsCount: profile.postsCount,
+              likesCount: profile.likesCount,
+              followersCount: profile.followersCount,
+            );
+
             return RefreshIndicator(
               onRefresh: _provider.loadProfile,
               child: SingleChildScrollView(
@@ -182,7 +186,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ProfileHeader(profile: profile),
+                    AppCard(
+                      padding: const EdgeInsets.all(18),
+                      gradient: AppTheme.profileGradient,
+                      child: ProfileHeader(profile: profile),
+                    ),
                     const SizedBox(height: 18),
                     ProfileStats(
                       postsCount: profile.postsCount,
@@ -190,6 +198,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       followingCount: profile.followingCount,
                       likesCount: profile.likesCount,
                     ),
+                    const SizedBox(height: 14),
+                    ReputationSummaryCard(reputation: reputation),
                     const SizedBox(height: 14),
                     ProfileActionButtons(
                       isBusy: _provider.isSaving,
@@ -255,205 +265,6 @@ class _ProfileError extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ProfileBottomNavigation extends StatelessWidget {
-  const _ProfileBottomNavigation({
-    required this.currentIndex,
-    required this.onIndexChanged,
-  });
-
-  final int currentIndex;
-  final ValueChanged<int> onIndexChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      _NavItemData(
-        context.l10n.map,
-        Icons.map_rounded,
-        const Color(0xFFE53935),
-      ),
-      _NavItemData(
-        context.l10n.explore,
-        Icons.travel_explore_rounded,
-        const Color(0xFFE53935),
-      ),
-      _NavItemData(
-        context.l10n.publish,
-        Icons.add_rounded,
-        const Color(0xFFFFB300),
-      ),
-      _NavItemData(
-        context.l10n.alerts,
-        Icons.notifications_none_rounded,
-        const Color(0xFF0B8063),
-      ),
-      _NavItemData(
-        context.l10n.profile,
-        Icons.person_outline_rounded,
-        const Color(0xFF0B8063),
-      ),
-    ];
-
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-        padding: const EdgeInsets.fromLTRB(8, 5, 8, 7),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.16),
-              blurRadius: 18,
-              offset: const Offset(0, 7),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Row(
-              children: [
-                Expanded(child: _BoliviaStripe(color: Color(0xFFE53935))),
-                Expanded(child: _BoliviaStripe(color: Color(0xFFFFC107))),
-                Expanded(child: _BoliviaStripe(color: Color(0xFF0B9E59))),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                for (var i = 0; i < items.length; i++)
-                  Expanded(
-                    child: _BottomNavButton(
-                      data: items[i],
-                      active: currentIndex == i,
-                      prominent: i == 2,
-                      onTap: () => onIndexChanged(i),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BoliviaStripe extends StatelessWidget {
-  const _BoliviaStripe({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(height: 3, color: color);
-  }
-}
-
-class _NavItemData {
-  const _NavItemData(this.label, this.icon, this.color);
-
-  final String label;
-  final IconData icon;
-  final Color color;
-}
-
-class _BottomNavButton extends StatelessWidget {
-  const _BottomNavButton({
-    required this.data,
-    required this.active,
-    required this.prominent,
-    required this.onTap,
-  });
-
-  final _NavItemData data;
-  final bool active;
-  final bool prominent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(2, prominent ? 0 : 3, 2, 3),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (prominent)
-              Transform.translate(
-                offset: const Offset(0, -10),
-                child: _PublishCircle(data: data),
-              )
-            else
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 42,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: active
-                      ? data.color.withValues(alpha: 0.13)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: Icon(
-                  data.icon,
-                  color: active ? data.color : const Color(0xFF5F6B7A),
-                  size: 22,
-                ),
-              ),
-            SizedBox(height: prominent ? 0 : 2),
-            Text(
-              data.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: active ? data.color : const Color(0xFF5F6B7A),
-                fontSize: 10.5,
-                fontWeight: active ? FontWeight.w900 : FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PublishCircle extends StatelessWidget {
-  const _PublishCircle({required this.data});
-
-  final _NavItemData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 58,
-      height: 58,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFC107), Color(0xFFFFA000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: data.color.withValues(alpha: 0.34),
-            blurRadius: 18,
-            offset: const Offset(0, 7),
-          ),
-        ],
-      ),
-      child: const Icon(Icons.add_rounded, color: Colors.white, size: 34),
     );
   }
 }

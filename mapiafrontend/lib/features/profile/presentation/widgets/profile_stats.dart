@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
+import 'package:mapiafrontend/shared/widgets/app_surface.dart';
 
 class ProfileStats extends StatelessWidget {
   const ProfileStats({
@@ -18,13 +19,8 @@ class ProfileStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE4EAF1)),
-      ),
       child: Row(
         children: [
           _StatItem(value: '$postsCount', label: context.l10n.publications),

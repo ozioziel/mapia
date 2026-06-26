@@ -16,20 +16,34 @@ class ProfileHeader extends StatelessWidget {
 
     return Column(
       children: [
-        CircleAvatar(
-          radius: 52,
-          backgroundColor: const Color(0xFFE7F7EF),
-          backgroundImage: avatarUrl == null ? null : NetworkImage(avatarUrl),
-          child: avatarUrl == null
-              ? Text(
-                  initial,
-                  style: const TextStyle(
-                    color: Color(0xFF0B8063),
-                    fontSize: 38,
-                    fontWeight: FontWeight.w900,
-                  ),
-                )
-              : null,
+        Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [
+                AppTheme.boliviaRed,
+                AppTheme.boliviaYellow,
+                AppTheme.boliviaGreen,
+              ],
+            ),
+            boxShadow: AppTheme.softShadow,
+          ),
+          child: CircleAvatar(
+            radius: 52,
+            backgroundColor: const Color(0xFFE7F7EF),
+            backgroundImage: avatarUrl == null ? null : NetworkImage(avatarUrl),
+            child: avatarUrl == null
+                ? Text(
+                    initial,
+                    style: const TextStyle(
+                      color: AppTheme.boliviaGreen,
+                      fontSize: 38,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  )
+                : null,
+          ),
         ),
         const SizedBox(height: 14),
         Text(
