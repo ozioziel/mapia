@@ -769,7 +769,7 @@ class _EnumFilter<T> extends StatelessWidget {
         value: values.contains(value) ? value : null,
         decoration: InputDecoration(labelText: label),
         items: [
-          const DropdownMenuItem<T>(value: null, child: Text('Todos')),
+          DropdownMenuItem<T>(value: null, child: const Text('Todos')),
           ...values.map((value) => DropdownMenuItem(value: value, child: Text(labelOf(value)))),
         ],
         onChanged: onChanged,

@@ -2,7 +2,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 const boliviaCenter = LatLng(-16.2902, -63.5887);
 
-const boliviaBounds = LatLngBounds(
+final boliviaBounds = LatLngBounds(
   southwest: LatLng(-22.9, -69.7),
   northeast: LatLng(-9.6, -57.4),
 );
