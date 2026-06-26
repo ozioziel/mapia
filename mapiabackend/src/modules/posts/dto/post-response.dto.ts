@@ -57,6 +57,9 @@ export class PostResponseDto {
   @ApiProperty()
   isVerified: boolean;
 
+  @ApiProperty({ description: 'Si el usuario autenticado dio like (false si no hay sesión)' })
+  isLiked: boolean;
+
   @ApiProperty()
   likesCount: number;
 

@@ -2,7 +2,7 @@ import { Post } from '../entities/post.entity';
 import { PostResponseDto } from '../dto/post-response.dto';
 
 /** Mapea la entidad Post (con author.profile y media) a su DTO de respuesta. */
-export function toPostResponse(post: Post): PostResponseDto {
+export function toPostResponse(post: Post, isLiked = false): PostResponseDto {
   const profile = post.author?.profile;
   return {
     id: post.id,
@@ -15,6 +15,7 @@ export function toPostResponse(post: Post): PostResponseDto {
     longitude: Number(post.longitude),
     address: post.address,
     isVerified: post.isVerified,
+    isLiked,
     likesCount: post.likesCount,
     commentsCount: post.commentsCount,
     reportsCount: post.reportsCount,

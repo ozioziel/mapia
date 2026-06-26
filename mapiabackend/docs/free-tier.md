@@ -50,8 +50,17 @@ STORAGE_DRIVER=local        # o gcs en producción
 > `DB_SSL=true` ya está soportado por `DatabaseModule`/`data-source.ts`
 > (usa `ssl: { rejectUnauthorized: false }`).
 
-### 1.4 Migrar y sembrar (desde tu máquina)
+### 1.4 Crear el esquema en Supabase
 
+Tienes dos opciones equivalentes:
+
+**Opción 1 (recomendada): SQL Editor de Supabase.** Abre
+`Dashboard -> SQL Editor -> New query`, pega el contenido de
+[`db/supabase-migration.sql`](../db/supabase-migration.sql) y ejecútalo.
+Crea todas las tablas, el índice GIST, el trigger de `location` y siembra los idiomas.
+Es idempotente (se puede repetir). Deja `DB_RUN_MIGRATIONS=false` en el `.env`.
+
+**Opción 2: migraciones TypeORM desde tu máquina** (apuntando el `.env` a Supabase):
 ```bash
 npm install
 npm run migration:run     # crea tablas, índice GIST y trigger de location
@@ -59,6 +68,9 @@ npm run seed              # idiomas
 ```
 
 La misma migración PostGIS de siempre corre tal cual contra Supabase.
+
+> Si el SQL Editor no deja crear la extensión PostGIS, habilítala antes en
+> `Dashboard -> Database -> Extensions` (busca `postgis` y `uuid-ossp`) y vuelve a ejecutar.
 
 ### 1.5 Probar
 ```bash

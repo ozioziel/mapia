@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, Length, Matches } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsOptional, IsString, Length, Matches } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'carla@example.com' })
@@ -11,10 +11,15 @@ export class RegisterDto {
   @Length(8, 72)
   password: string;
 
-  @ApiProperty({ example: 'Carla Méndez' })
+  @ApiProperty({ example: 'Carla' })
   @IsString()
-  @Length(2, 120)
-  name: string;
+  @Length(1, 80)
+  firstName: string;
+
+  @ApiProperty({ example: 'Méndez' })
+  @IsString()
+  @Length(1, 80)
+  lastName: string;
 
   @ApiProperty({ example: 'carla_m', description: 'Único; letras, números, punto, guion bajo' })
   @IsString()
@@ -23,4 +28,10 @@ export class RegisterDto {
     message: 'username solo admite letras, números, punto y guion bajo',
   })
   username: string;
+
+  @ApiPropertyOptional({ example: '+59171234567' })
+  @IsOptional()
+  @IsString()
+  @Length(7, 20)
+  phone?: string;
 }

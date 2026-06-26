@@ -23,6 +23,18 @@ export class AuthUserDto {
 
   @ApiProperty()
   name: string;
+
+  @ApiProperty()
+  firstName: string;
+
+  @ApiProperty()
+  lastName: string;
+
+  @ApiProperty({ nullable: true })
+  phone: string | null;
+
+  @ApiProperty()
+  phoneVerified: boolean;
 }
 
 export class AuthResponseDto {

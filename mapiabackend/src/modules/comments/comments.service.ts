@@ -32,7 +32,11 @@ export class CommentsService {
     });
     const saved = await this.commentRepo.save(comment);
     await this.postsService.incrementComments(postId, 1);
-    return saved;
+    // Recargar con el autor + perfil para que el frontend pinte el comentario sin refetch.
+    return this.commentRepo.findOneOrFail({
+      where: { id: saved.id },
+      relations: { author: { profile: true } },
+    });
   }
 
   async findByPost(

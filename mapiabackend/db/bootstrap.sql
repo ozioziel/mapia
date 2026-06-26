@@ -6,6 +6,10 @@
 -- Idempotente: se puede correr varias veces sin error.
 -- Requisito previo: PostGIS instalado en este PostgreSQL
 -- (Stack Builder -> Spatial Extensions -> PostGIS).
+--
+-- NOTA: este archivo es SOLO para LOCAL (crea rol + base + extensiones) y usa
+-- meta-comandos de psql (\gexec, \connect). Para SUPABASE usa en cambio
+-- db/supabase-migration.sql (esquema completo en SQL plano, sin rol/base).
 -- ============================================================
 
 -- 1) Rol de la app. SUPERUSER solo para DESARROLLO local

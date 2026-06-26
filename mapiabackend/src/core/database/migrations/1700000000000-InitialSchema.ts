@@ -29,6 +29,9 @@ export class InitialSchema1700000000000 implements MigrationInterface {
     await queryRunner.query(
       `CREATE TYPE "post_visibility_enum" AS ENUM ('PUBLIC','HIDDEN','DELETED');`,
     );
+    await queryRunner.query(
+      `CREATE TYPE "report_reason_enum" AS ENUM ('SPAM','FALSE_INFO','OFFENSIVE','DANGEROUS','OTHER');`,
+    );
 
     // --- users ---
     await queryRunner.query(`
@@ -53,8 +56,12 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         "created_at" timestamptz NOT NULL DEFAULT now(),
         "updated_at" timestamptz NOT NULL DEFAULT now(),
         "user_id" uuid NOT NULL,
-        "name" varchar(120) NOT NULL,
+        "first_name" varchar(80) NOT NULL,
+        "last_name" varchar(80) NOT NULL,
+        "name" varchar(160) NOT NULL,
         "username" varchar(40) NOT NULL,
+        "phone" varchar(20),
+        "phone_verified" boolean NOT NULL DEFAULT false,
         "bio" varchar(280),
         "avatar_url" varchar(500),
         "avatar_key" varchar(500),
@@ -180,6 +187,42 @@ export class InitialSchema1700000000000 implements MigrationInterface {
     `);
     await queryRunner.query(`CREATE INDEX "idx_reactions_post" ON "reactions" ("post_id");`);
 
+    // --- content_reports ---
+    await queryRunner.query(`
+      CREATE TABLE "content_reports" (
+        "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
+        "reporter_id" uuid NOT NULL,
+        "post_id" uuid NOT NULL,
+        "reason" "report_reason_enum" NOT NULL,
+        "description" varchar(500),
+        "created_at" timestamptz NOT NULL DEFAULT now(),
+        CONSTRAINT "pk_content_reports" PRIMARY KEY ("id"),
+        CONSTRAINT "uq_report_reporter_post" UNIQUE ("reporter_id","post_id"),
+        CONSTRAINT "fk_content_reports_reporter" FOREIGN KEY ("reporter_id") REFERENCES "users"("id") ON DELETE CASCADE,
+        CONSTRAINT "fk_content_reports_post" FOREIGN KEY ("post_id") REFERENCES "posts"("id") ON DELETE CASCADE
+      );
+    `);
+    await queryRunner.query(
+      `CREATE INDEX "idx_content_reports_post" ON "content_reports" ("post_id");`,
+    );
+
+    // --- follows ---
+    await queryRunner.query(`
+      CREATE TABLE "follows" (
+        "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
+        "follower_id" uuid NOT NULL,
+        "following_id" uuid NOT NULL,
+        "created_at" timestamptz NOT NULL DEFAULT now(),
+        CONSTRAINT "pk_follows" PRIMARY KEY ("id"),
+        CONSTRAINT "uq_follow_pair" UNIQUE ("follower_id","following_id"),
+        CONSTRAINT "chk_follow_not_self" CHECK ("follower_id" <> "following_id"),
+        CONSTRAINT "fk_follows_follower" FOREIGN KEY ("follower_id") REFERENCES "users"("id") ON DELETE CASCADE,
+        CONSTRAINT "fk_follows_following" FOREIGN KEY ("following_id") REFERENCES "users"("id") ON DELETE CASCADE
+      );
+    `);
+    await queryRunner.query(`CREATE INDEX "idx_follows_follower" ON "follows" ("follower_id");`);
+    await queryRunner.query(`CREATE INDEX "idx_follows_following" ON "follows" ("following_id");`);
+
     // --- languages (catálogo) ---
     await queryRunner.query(`
       CREATE TABLE "languages" (
@@ -194,6 +237,8 @@ export class InitialSchema1700000000000 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP TABLE IF EXISTS "languages";`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "follows";`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "content_reports";`);
     await queryRunner.query(`DROP TABLE IF EXISTS "reactions";`);
     await queryRunner.query(`DROP TABLE IF EXISTS "comments";`);
     await queryRunner.query(`DROP TABLE IF EXISTS "post_media";`);
@@ -203,6 +248,7 @@ export class InitialSchema1700000000000 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE IF EXISTS "user_settings";`);
     await queryRunner.query(`DROP TABLE IF EXISTS "profiles";`);
     await queryRunner.query(`DROP TABLE IF EXISTS "users";`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "report_reason_enum";`);
     await queryRunner.query(`DROP TYPE IF EXISTS "post_visibility_enum";`);
     await queryRunner.query(`DROP TYPE IF EXISTS "post_status_enum";`);
     await queryRunner.query(`DROP TYPE IF EXISTS "post_type_enum";`);

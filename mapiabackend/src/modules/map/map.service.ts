@@ -15,6 +15,7 @@ interface MarkerRow {
   latitude: number;
   longitude: number;
   address: string | null;
+  isVerified: boolean;
   authorId: string;
   authorName: string;
   authorAvatarUrl: string | null;
@@ -91,6 +92,7 @@ export class MapService {
       .addSelect('post.latitude', 'latitude')
       .addSelect('post.longitude', 'longitude')
       .addSelect('post.address', 'address')
+      .addSelect('post.isVerified', 'isVerified')
       .addSelect('profile.user_id', 'authorId')
       .addSelect('profile.name', 'authorName')
       .addSelect('profile.avatar_url', 'authorAvatarUrl')
@@ -105,6 +107,7 @@ export class MapService {
       latitude: Number(r.latitude),
       longitude: Number(r.longitude),
       address: r.address,
+      isVerified: Boolean(r.isVerified),
       author: {
         id: r.authorId,
         name: r.authorName,

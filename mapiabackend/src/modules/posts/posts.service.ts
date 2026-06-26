@@ -1,9 +1,10 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Repository } from 'typeorm';
 import { PaginatedResult } from '@common/dtos/pagination.dto';
 import { PostStatus, PostVisibility } from '@common/enums/post.enums';
 import { ProfilesService } from '@modules/profiles/profiles.service';
+import { Reaction } from '@modules/reactions/entities/reaction.entity';
 import { Post } from './entities/post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -18,8 +19,22 @@ export class PostsService {
   constructor(
     @InjectRepository(Post)
     private readonly postRepo: Repository<Post>,
+    @InjectRepository(Reaction)
+    private readonly reactionRepo: Repository<Reaction>,
     private readonly profilesService: ProfilesService,
   ) {}
+
+  /** Devuelve el conjunto de postIds (de la lista dada) que el usuario ya likeó. */
+  private async likedSet(currentUserId: string | undefined, postIds: string[]): Promise<Set<string>> {
+    if (!currentUserId || postIds.length === 0) {
+      return new Set<string>();
+    }
+    const reactions = await this.reactionRepo.find({
+      where: { userId: currentUserId, postId: In(postIds) },
+      select: { postId: true },
+    });
+    return new Set(reactions.map((r) => r.postId));
+  }
 
   async create(authorId: string, dto: CreatePostDto): Promise<PostResponseDto> {
     const post = this.postRepo.create({
@@ -36,10 +51,13 @@ export class PostsService {
     });
     const saved = await this.postRepo.save(post);
     await this.profilesService.incrementPosts(authorId, 1);
-    return this.findOne(saved.id);
+    return this.findOne(saved.id, authorId);
   }
 
-  async findAll(query: QueryPostsDto): Promise<PaginatedResult<PostResponseDto>> {
+  async findAll(
+    query: QueryPostsDto,
+    currentUserId?: string,
+  ): Promise<PaginatedResult<PostResponseDto>> {
     const where: FindOptionsWhere<Post> = { visibility: PostVisibility.PUBLIC };
     if (query.type) {
       where.type = query.type;
@@ -51,12 +69,19 @@ export class PostsService {
       skip: query.skip,
       take: query.limit,
     });
-    return new PaginatedResult(items.map(toPostResponse), total, query.page, query.limit);
+    const liked = await this.likedSet(currentUserId, items.map((p) => p.id));
+    return new PaginatedResult(
+      items.map((p) => toPostResponse(p, liked.has(p.id))),
+      total,
+      query.page,
+      query.limit,
+    );
   }
 
   async findByUser(
     userId: string,
     query: QueryPostsDto,
+    currentUserId?: string,
   ): Promise<PaginatedResult<PostResponseDto>> {
     const [items, total] = await this.postRepo.findAndCount({
       where: { authorId: userId, visibility: PostVisibility.PUBLIC },
@@ -65,15 +90,22 @@ export class PostsService {
       skip: query.skip,
       take: query.limit,
     });
-    return new PaginatedResult(items.map(toPostResponse), total, query.page, query.limit);
+    const liked = await this.likedSet(currentUserId, items.map((p) => p.id));
+    return new PaginatedResult(
+      items.map((p) => toPostResponse(p, liked.has(p.id))),
+      total,
+      query.page,
+      query.limit,
+    );
   }
 
-  async findOne(id: string): Promise<PostResponseDto> {
+  async findOne(id: string, currentUserId?: string): Promise<PostResponseDto> {
     const post = await this.postRepo.findOne({ where: { id }, relations: POST_RELATIONS });
     if (!post || post.visibility === PostVisibility.DELETED) {
       throw new NotFoundException('Publicación no encontrada');
     }
-    return toPostResponse(post);
+    const liked = await this.likedSet(currentUserId, [post.id]);
+    return toPostResponse(post, liked.has(post.id));
   }
 
   async update(id: string, userId: string, dto: UpdatePostDto): Promise<PostResponseDto> {
@@ -87,7 +119,7 @@ export class PostsService {
       address: dto.address ?? post.address,
     });
     await this.postRepo.save(post);
-    return this.findOne(id);
+    return this.findOne(id, userId);
   }
 
   async remove(id: string, userId: string): Promise<{ success: true }> {

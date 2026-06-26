@@ -37,5 +37,7 @@ export class MapMarkerDto {
   @ApiProperty() latitude: number;
   @ApiProperty() longitude: number;
   @ApiProperty({ nullable: true }) address: string | null;
+  @ApiProperty({ description: 'Para derivar status/insignia "verificado" en el mapa' })
+  isVerified: boolean;
   @ApiProperty({ type: MapMarkerAuthorDto }) author: MapMarkerAuthorDto;
 }

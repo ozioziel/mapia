@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
-import { Public } from '@common/decorators/public.decorator';
+import { OptionalAuth } from '@common/decorators/optional-auth.decorator';
 import { PaginatedResult } from '@common/dtos/pagination.dto';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -34,28 +34,38 @@ export class PostsController {
     return this.postsService.create(userId, dto);
   }
 
-  @Public()
+  @OptionalAuth()
+  @ApiBearerAuth()
   @Get()
   @ApiOperation({ summary: 'Listar publicaciones (paginado, filtro por tipo)' })
-  findAll(@Query() query: QueryPostsDto): Promise<PaginatedResult<PostResponseDto>> {
-    return this.postsService.findAll(query);
+  findAll(
+    @Query() query: QueryPostsDto,
+    @CurrentUser('userId') currentUserId?: string,
+  ): Promise<PaginatedResult<PostResponseDto>> {
+    return this.postsService.findAll(query, currentUserId);
   }
 
-  @Public()
+  @OptionalAuth()
+  @ApiBearerAuth()
   @Get('user/:userId')
   @ApiOperation({ summary: 'Publicaciones de un usuario' })
   findByUser(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query() query: QueryPostsDto,
+    @CurrentUser('userId') currentUserId?: string,
   ): Promise<PaginatedResult<PostResponseDto>> {
-    return this.postsService.findByUser(userId, query);
+    return this.postsService.findByUser(userId, query, currentUserId);
   }
 
-  @Public()
+  @OptionalAuth()
+  @ApiBearerAuth()
   @Get(':id')
   @ApiOperation({ summary: 'Detalle de publicación' })
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<PostResponseDto> {
-    return this.postsService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') currentUserId?: string,
+  ): Promise<PostResponseDto> {
+    return this.postsService.findOne(id, currentUserId);
   }
 
   @ApiBearerAuth()

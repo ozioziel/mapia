@@ -62,8 +62,11 @@ export class AuthService {
       await manager.save(
         manager.create(Profile, {
           userId: savedUser.id,
-          name: dto.name,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          name: `${dto.firstName} ${dto.lastName}`.trim(),
           username: dto.username,
+          phone: dto.phone ?? null,
         }),
       );
       await manager.save(
@@ -126,13 +129,7 @@ export class AuthService {
   async me(userId: string): Promise<AuthResponseDto['user']> {
     const user = await this.usersService.findByIdOrFail(userId);
     const profile = await this.profilesService.getByUserId(userId);
-    return {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      username: profile.username,
-      name: profile.name,
-    };
+    return this.toAuthUser(user, profile);
   }
 
   // --- helpers ---
@@ -144,14 +141,32 @@ export class AuthService {
 
     const profile = await this.profilesService.getByUserId(user.id);
     return {
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        username: profile.username,
-        name: profile.name,
-      },
+      user: this.toAuthUser(user, profile),
       tokens,
+    };
+  }
+
+  private toAuthUser(
+    user: { id: string; email: string; role: string },
+    profile: {
+      username: string;
+      name: string;
+      firstName: string;
+      lastName: string;
+      phone: string | null;
+      phoneVerified: boolean;
+    },
+  ): AuthResponseDto['user'] {
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      username: profile.username,
+      name: profile.name,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      phone: profile.phone,
+      phoneVerified: profile.phoneVerified,
     };
   }
 

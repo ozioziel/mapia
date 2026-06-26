@@ -16,13 +16,30 @@ export class Profile extends BaseEntity {
   user?: User;
 
   @ApiProperty()
-  @Column({ type: 'varchar', length: 120 })
+  @Column({ name: 'first_name', type: 'varchar', length: 80 })
+  firstName: string;
+
+  @ApiProperty()
+  @Column({ name: 'last_name', type: 'varchar', length: 80 })
+  lastName: string;
+
+  /** Nombre completo denormalizado (firstName + lastName). Lo usan map/alerts vía SQL. */
+  @ApiProperty()
+  @Column({ type: 'varchar', length: 160 })
   name: string;
 
   @ApiProperty()
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 40, unique: true })
   username: string;
+
+  @ApiPropertyOptional({ example: '+59171234567' })
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone: string | null;
+
+  @ApiProperty({ default: false })
+  @Column({ name: 'phone_verified', type: 'boolean', default: false })
+  phoneVerified: boolean;
 
   @ApiPropertyOptional()
   @Column({ type: 'varchar', length: 280, nullable: true })

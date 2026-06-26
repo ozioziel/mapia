@@ -27,6 +27,8 @@ import { AlertsModule } from '@modules/alerts/alerts.module';
 import { LocationsModule } from '@modules/locations/locations.module';
 import { SettingsModule } from '@modules/settings/settings.module';
 import { LanguagesModule } from '@modules/languages/languages.module';
+import { ReportsModule } from '@modules/reports/reports.module';
+import { FollowsModule } from '@modules/follows/follows.module';
 import { HealthModule } from '@modules/health/health.module';
 
 @Module({
@@ -65,6 +67,8 @@ import { HealthModule } from '@modules/health/health.module';
     LocationsModule,
     SettingsModule,
     LanguagesModule,
+    ReportsModule,
+    FollowsModule,
     HealthModule,
   ],
   providers: [
