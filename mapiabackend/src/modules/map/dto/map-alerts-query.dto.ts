@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsISO8601, IsOptional, IsString, Length } from 'class-validator';
+import { IsIn, IsISO8601, IsOptional, IsString, Length } from 'class-validator';
 import { ALERT_TYPES, REPORT_SEVERITIES } from '@modules/reports/dto/create-citizen-report.dto';
 import { AlertType, ReportSeverity } from '@modules/reports/entities/alert-report.entity';
 
@@ -30,12 +30,12 @@ export class MapAlertsQueryDto {
 
   @ApiPropertyOptional({ enum: ALERT_TYPES })
   @IsOptional()
-  @IsEnum(ALERT_TYPES)
+  @IsIn(ALERT_TYPES)
   alertType?: AlertType;
 
   @ApiPropertyOptional({ enum: REPORT_SEVERITIES })
   @IsOptional()
-  @IsEnum(REPORT_SEVERITIES)
+  @IsIn(REPORT_SEVERITIES)
   severity?: ReportSeverity;
 
   @ApiPropertyOptional()

@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsEnum,
+  IsIn,
   IsLatitude,
   IsLongitude,
   IsNumber,
@@ -44,11 +44,11 @@ export class CreateCitizenReportDto {
   product?: string;
 
   @ApiProperty({ enum: ALERT_TYPES })
-  @IsEnum(ALERT_TYPES)
+  @IsIn(ALERT_TYPES)
   alertType: AlertType;
 
   @ApiProperty({ enum: REPORT_SEVERITIES })
-  @IsEnum(REPORT_SEVERITIES)
+  @IsIn(REPORT_SEVERITIES)
   severity: ReportSeverity;
 
   @ApiProperty({ example: -16.495 })
