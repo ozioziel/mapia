@@ -15,7 +15,11 @@ class ProfilePostEntity {
 class ProfileEntity {
   const ProfileEntity({
     required this.id,
-    required this.name,
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.phone,
+    required this.phoneVerified,
     required this.username,
     required this.bio,
     required this.avatarUrl,
@@ -29,7 +33,11 @@ class ProfileEntity {
   });
 
   final String id;
-  final String name;
+  final String firstName;
+  final String lastName;
+  final String email;
+  final String phone;
+  final bool phoneVerified;
   final String username;
   final String? bio;
   final String? avatarUrl;
@@ -41,15 +49,27 @@ class ProfileEntity {
   final String? location;
   final DateTime? createdAt;
 
+  String get name => '$firstName $lastName'.trim();
+
+  bool get canPublish => phoneVerified;
+
   ProfileEntity copyWith({
-    String? name,
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+    bool? phoneVerified,
     String? username,
     String? bio,
     String? avatarUrl,
   }) {
     return ProfileEntity(
       id: id,
-      name: name ?? this.name,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      phoneVerified: phoneVerified ?? this.phoneVerified,
       username: username ?? this.username,
       bio: bio ?? this.bio,
       avatarUrl: avatarUrl ?? this.avatarUrl,

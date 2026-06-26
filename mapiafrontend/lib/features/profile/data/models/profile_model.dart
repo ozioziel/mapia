@@ -12,7 +12,11 @@ class ProfilePostModel extends ProfilePostEntity {
 class ProfileModel extends ProfileEntity {
   const ProfileModel({
     required super.id,
-    required super.name,
+    required super.firstName,
+    required super.lastName,
+    required super.email,
+    required super.phone,
+    required super.phoneVerified,
     required super.username,
     required super.bio,
     required super.avatarUrl,
@@ -28,7 +32,11 @@ class ProfileModel extends ProfileEntity {
   factory ProfileModel.fromEntity(ProfileEntity entity) {
     return ProfileModel(
       id: entity.id,
-      name: entity.name,
+      firstName: entity.firstName,
+      lastName: entity.lastName,
+      email: entity.email,
+      phone: entity.phone,
+      phoneVerified: entity.phoneVerified,
       username: entity.username,
       bio: entity.bio,
       avatarUrl: entity.avatarUrl,

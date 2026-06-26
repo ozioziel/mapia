@@ -5,7 +5,11 @@ class ProfileMockDatasource {
 
   static ProfileModel _profile = ProfileModel(
     id: 'user-daniel-rojas',
-    name: 'Daniel Rojas',
+    firstName: 'Daniel',
+    lastName: 'Rojas',
+    email: 'demo@mapia.app',
+    phone: '+59171234567',
+    phoneVerified: false,
     username: '@daniel.mapia',
     bio: 'Explorando La Paz y compartiendo lo que pasa cerca.',
     avatarUrl: null,
@@ -51,6 +55,40 @@ class ProfileMockDatasource {
   Future<ProfileModel> updateProfile(ProfileModel profile) async {
     await Future<void>.delayed(const Duration(milliseconds: 250));
     _profile = profile;
+    return _profile;
+  }
+
+  Future<ProfileModel> registerProfile({
+    required String firstName,
+    required String lastName,
+    required String phone,
+    required String email,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    _profile = ProfileModel(
+      id: 'user-${email.trim().toLowerCase()}',
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      phoneVerified: false,
+      username: '@${email.split('@').first.trim()}',
+      bio: '',
+      avatarUrl: null,
+      followersCount: 0,
+      followingCount: 0,
+      likesCount: 0,
+      postsCount: 0,
+      location: 'La Paz, Bolivia',
+      createdAt: DateTime.now(),
+      posts: const [],
+    );
+    return _profile;
+  }
+
+  Future<ProfileModel> markPhoneVerified() async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    _profile = ProfileModel.fromEntity(_profile.copyWith(phoneVerified: true));
     return _profile;
   }
 

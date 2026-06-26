@@ -55,6 +55,12 @@ class ProfileHeader extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
+        const SizedBox(height: 10),
+        _ContactLine(icon: Icons.mail_outline_rounded, text: profile.email),
+        const SizedBox(height: 6),
+        _ContactLine(icon: Icons.phone_outlined, text: profile.phone),
+        const SizedBox(height: 10),
+        _PhoneStatusBadge(isVerified: profile.phoneVerified),
         if ((profile.bio ?? '').trim().isNotEmpty) ...[
           const SizedBox(height: 10),
           Text(
@@ -71,6 +77,77 @@ class ProfileHeader extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ContactLine extends StatelessWidget {
+  const _ContactLine({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 17, color: const Color(0xFF4F5B6B)),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFF4F5B6B),
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PhoneStatusBadge extends StatelessWidget {
+  const _PhoneStatusBadge({required this.isVerified});
+
+  final bool isVerified;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isVerified
+        ? const Color(0xFF0B8063)
+        : const Color(0xFFE53935);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isVerified ? Icons.verified_rounded : Icons.error_outline_rounded,
+            size: 17,
+            color: color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            isVerified ? 'Telefono verificado' : 'Telefono no verificado',
+            style: TextStyle(
+              color: color,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

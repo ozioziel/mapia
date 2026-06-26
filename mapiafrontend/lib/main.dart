@@ -14,6 +14,7 @@ import 'package:mapiafrontend/features/posts/presentation/screens/post_detail_sc
 import 'package:mapiafrontend/features/posts/presentation/screens/posts_feed_screen.dart';
 import 'package:mapiafrontend/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:mapiafrontend/features/profile/presentation/screens/profile_screen.dart';
+import 'package:mapiafrontend/features/profile/presentation/screens/verify_phone_screen.dart';
 import 'package:mapiafrontend/l10n/app_localizations.dart';
 
 void main() {
@@ -51,14 +52,14 @@ class _MainAppState extends State<MainApp> {
           debugShowCheckedModeBanner: false,
           title: 'Mapia',
           theme: AppTheme.light,
-          locale: _languageProvider.locale,
+          locale: _languageProvider.frameworkLocale,
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: const [Locale('es')],
           initialRoute: '/login',
           routes: {
             '/login': (context) => const LoginScreen(),
@@ -69,6 +70,7 @@ class _MainAppState extends State<MainApp> {
             '/alerts': (context) => const AlertsScreen(),
             '/profile': (context) => const ProfileScreen(),
             '/profile/edit': (context) => const EditProfileScreen(),
+            '/profile/verify-phone': (context) => const VerifyPhoneScreen(),
             '/language': (context) =>
                 LanguageSettingsScreen(provider: _languageProvider),
           },

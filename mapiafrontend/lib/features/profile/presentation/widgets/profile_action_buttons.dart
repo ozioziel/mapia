@@ -5,14 +5,18 @@ class ProfileActionButtons extends StatelessWidget {
   const ProfileActionButtons({
     super.key,
     required this.onEdit,
+    required this.onVerifyPhone,
     required this.onLanguage,
     required this.onLogout,
+    required this.phoneVerified,
     this.isBusy = false,
   });
 
   final VoidCallback onEdit;
+  final VoidCallback onVerifyPhone;
   final VoidCallback onLanguage;
   final VoidCallback onLogout;
+  final bool phoneVerified;
   final bool isBusy;
 
   @override
@@ -28,6 +32,26 @@ class ProfileActionButtons extends StatelessWidget {
             backgroundColor: const Color(0xFFE53935),
             foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: isBusy || phoneVerified ? null : onVerifyPhone,
+          icon: Icon(
+            phoneVerified
+                ? Icons.verified_rounded
+                : Icons.phone_android_outlined,
+          ),
+          label: Text(
+            phoneVerified ? 'Telefono verificado' : 'Verificar telefono',
+          ),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF0B8063),
+            minimumSize: const Size.fromHeight(46),
+            side: const BorderSide(color: Color(0xFF0B8063)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),

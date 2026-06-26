@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/auth/presentation/widgets/auth_widgets.dart';
+import 'package:mapiafrontend/features/profile/data/datasources/profile_mock_datasource.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -14,6 +15,81 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   bool _acceptedTerms = true;
+  bool _isSubmitting = false;
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _passwordController;
+  late final TextEditingController _confirmPasswordController;
+
+  @override
+  void initState() {
+    super.initState();
+    _firstNameController = TextEditingController();
+    _lastNameController = TextEditingController();
+    _phoneController = TextEditingController();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _confirmPasswordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    String? message;
+    if (firstName.isEmpty || lastName.isEmpty || phone.isEmpty) {
+      message = 'Nombre, apellido y telefono son obligatorios.';
+    } else if (!_isValidPhone(phone)) {
+      message = 'Ingresa un telefono valido.';
+    } else if (email.isEmpty || !email.contains('@')) {
+      message = 'Ingresa un correo electronico valido.';
+    } else if (password.length < 6) {
+      message = 'La contrasena debe tener al menos 6 caracteres.';
+    } else if (password != confirmPassword) {
+      message = 'Las contrasenas no coinciden.';
+    } else if (!_acceptedTerms) {
+      message = 'Debes aceptar los terminos para crear tu cuenta.';
+    }
+
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    await ProfileMockDatasource().registerProfile(
+      firstName: firstName,
+      lastName: lastName,
+      phone: phone,
+      email: email,
+    );
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+    Navigator.of(context).pushReplacementNamed('/map');
+  }
+
+  bool _isValidPhone(String phone) {
+    return RegExp(r'^\+?[0-9 ]{7,15}$').hasMatch(phone);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,31 +111,57 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 SizedBox(height: compact ? 20 * scale : 30 * scale),
                 AuthTextField(
-                  hintText: context.l10n.fullName,
+                  controller: _firstNameController,
+                  hintText: 'Nombre',
                   icon: Icons.person_outline_rounded,
                   iconColor: Color(0xFF34A853),
+                  textInputAction: TextInputAction.next,
                 ),
                 SizedBox(height: 16 * scale),
                 AuthTextField(
+                  controller: _lastNameController,
+                  hintText: 'Apellido',
+                  icon: Icons.badge_outlined,
+                  iconColor: Color(0xFFFBBC05),
+                  textInputAction: TextInputAction.next,
+                ),
+                SizedBox(height: 16 * scale),
+                AuthTextField(
+                  controller: _phoneController,
+                  hintText: 'Telefono',
+                  icon: Icons.phone_outlined,
+                  iconColor: Color(0xFF0B8063),
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
+                ),
+                SizedBox(height: 16 * scale),
+                AuthTextField(
+                  controller: _emailController,
                   hintText: context.l10n.email,
                   icon: Icons.mail_outline_rounded,
                   iconColor: AppTheme.primaryBlue,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                 ),
                 SizedBox(height: 16 * scale),
                 AuthTextField(
+                  controller: _passwordController,
                   hintText: context.l10n.password,
                   icon: Icons.lock_outline_rounded,
                   iconColor: Color(0xFFEA4335),
                   obscureText: true,
                   suffixIcon: Icons.visibility_outlined,
+                  textInputAction: TextInputAction.next,
                 ),
                 SizedBox(height: 16 * scale),
                 AuthTextField(
+                  controller: _confirmPasswordController,
                   hintText: context.l10n.confirmPassword,
                   icon: Icons.verified_user_outlined,
                   iconColor: Color(0xFFFBBC05),
                   obscureText: true,
                   suffixIcon: Icons.visibility_outlined,
+                  textInputAction: TextInputAction.done,
                 ),
                 SizedBox(height: 14 * scale),
                 _TermsCheckbox(
@@ -69,7 +171,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                 ),
                 SizedBox(height: 18 * scale),
-                AuthPrimaryButton(text: context.l10n.signUp),
+                AuthPrimaryButton(
+                  text: _isSubmitting
+                      ? 'Creando cuenta...'
+                      : context.l10n.signUp,
+                  onPressed: _isSubmitting ? null : _submit,
+                ),
                 SizedBox(height: 22 * scale),
                 AuthDivider(text: context.l10n.or),
                 SizedBox(height: 20 * scale),

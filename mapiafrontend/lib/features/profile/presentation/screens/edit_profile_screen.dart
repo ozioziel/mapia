@@ -13,8 +13,9 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late final EditProfileProvider _provider;
-  late final TextEditingController _nameController;
-  late final TextEditingController _usernameController;
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  late final TextEditingController _phoneController;
   late final TextEditingController _bioController;
   String? _avatarUrl;
   bool _formReady = false;
@@ -23,8 +24,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     _provider = EditProfileProvider()..loadProfile();
-    _nameController = TextEditingController();
-    _usernameController = TextEditingController();
+    _firstNameController = TextEditingController();
+    _lastNameController = TextEditingController();
+    _phoneController = TextEditingController();
     _bioController = TextEditingController();
     _provider.addListener(_syncProfileOnce);
   }
@@ -33,8 +35,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _provider.removeListener(_syncProfileOnce);
     _provider.dispose();
-    _nameController.dispose();
-    _usernameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _phoneController.dispose();
     _bioController.dispose();
     super.dispose();
   }
@@ -42,8 +45,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void _syncProfileOnce() {
     final profile = _provider.profile;
     if (_formReady || profile == null) return;
-    _nameController.text = profile.name;
-    _usernameController.text = profile.username;
+    _firstNameController.text = profile.firstName;
+    _lastNameController.text = profile.lastName;
+    _phoneController.text = profile.phone;
     _bioController.text = profile.bio ?? '';
     _avatarUrl = profile.avatarUrl;
     _formReady = true;
@@ -66,13 +70,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _save() async {
-    final name = _nameController.text.trim();
-    final username = _usernameController.text.trim();
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final phone = _phoneController.text.trim();
 
-    if (name.isEmpty || username.isEmpty) {
+    if (firstName.isEmpty || lastName.isEmpty || phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.nameAndUsernameRequired),
+        const SnackBar(
+          content: Text('Nombre, apellido y telefono son obligatorios.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (!_isValidPhone(phone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ingresa un telefono valido.'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -80,8 +95,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     final ok = await _provider.updateProfile(
-      name: name,
-      username: username,
+      firstName: firstName,
+      lastName: lastName,
+      phone: phone,
       bio: _bioController.text,
       avatarUrl: _avatarUrl,
     );
@@ -98,6 +114,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       );
     }
+  }
+
+  bool _isValidPhone(String phone) {
+    return RegExp(r'^\+?[0-9 ]{7,15}$').hasMatch(phone);
   }
 
   @override
@@ -135,7 +155,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 children: [
                   Center(
                     child: EditableAvatar(
-                      name: _nameController.text,
+                      name: _firstNameController.text,
                       avatarUrl: _avatarUrl,
                       onTap: _simulatePhotoSelection,
                     ),
@@ -150,17 +170,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   _ProfileTextField(
-                    controller: _nameController,
-                    label: context.l10n.name,
+                    controller: _firstNameController,
+                    label: 'Nombre',
                     icon: Icons.badge_outlined,
                     textInputAction: TextInputAction.next,
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 14),
                   _ProfileTextField(
-                    controller: _usernameController,
-                    label: context.l10n.username,
-                    icon: Icons.alternate_email_rounded,
+                    controller: _lastNameController,
+                    label: 'Apellido',
+                    icon: Icons.badge_rounded,
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 14),
+                  _ProfileTextField(
+                    controller: _phoneController,
+                    label: 'Telefono',
+                    icon: Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
@@ -222,6 +250,7 @@ class _ProfileTextField extends StatelessWidget {
     this.maxLines = 1,
     this.textInputAction,
     this.onChanged,
+    this.keyboardType,
   });
 
   final TextEditingController controller;
@@ -230,12 +259,14 @@ class _ProfileTextField extends StatelessWidget {
   final int maxLines;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
+  final TextInputType? keyboardType;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      keyboardType: keyboardType,
       textInputAction: textInputAction,
       onChanged: onChanged,
       decoration: InputDecoration(

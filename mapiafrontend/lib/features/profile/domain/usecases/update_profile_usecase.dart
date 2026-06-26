@@ -7,14 +7,16 @@ class UpdateProfileUsecase {
   final ProfileRepository _repository;
 
   Future<ProfileEntity> call({
-    required String name,
-    required String username,
+    required String firstName,
+    required String lastName,
+    required String phone,
     required String bio,
     String? avatarUrl,
   }) {
     return _repository.updateProfile(
-      name: name,
-      username: username,
+      firstName: firstName,
+      lastName: lastName,
+      phone: phone,
       bio: bio,
       avatarUrl: avatarUrl,
     );

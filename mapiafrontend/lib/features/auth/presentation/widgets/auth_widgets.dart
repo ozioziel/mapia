@@ -340,7 +340,7 @@ class AuthPrimaryButton extends StatelessWidget {
       width: double.infinity,
       height: 62 * scale,
       child: ElevatedButton(
-        onPressed: onPressed ?? () {},
+        onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryBlue,
           foregroundColor: Colors.white,

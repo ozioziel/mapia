@@ -11,10 +11,12 @@ class CreatePostForm extends StatelessWidget {
     super.key,
     required this.provider,
     required this.onSubmit,
+    required this.onVerifyPhone,
   });
 
   final CreatePostProvider provider;
   final VoidCallback onSubmit;
+  final VoidCallback onVerifyPhone;
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +65,20 @@ class CreatePostForm extends StatelessWidget {
               : l10n.defaultApproxLocation,
           onUseCurrentLocation: provider.useCurrentLocation,
         ),
+        if (!provider.phoneVerified && !provider.isCheckingProfile) ...[
+          const SizedBox(height: 14),
+          _PhoneVerificationWarning(onVerifyPhone: onVerifyPhone),
+        ],
+        if (provider.hasPhoneVerificationError) ...[
+          const SizedBox(height: 14),
+          const Text(
+            'Debes verificar tu numero de celular antes de publicar.',
+            style: TextStyle(
+              color: Color(0xFFE53935),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
         if (provider.hasValidationError) ...[
           const SizedBox(height: 14),
           Text(
@@ -77,15 +93,24 @@ class CreatePostForm extends StatelessWidget {
         SizedBox(
           height: 54,
           child: ElevatedButton.icon(
-            onPressed: provider.isLoading ? null : onSubmit,
-            icon: provider.isLoading
+            onPressed:
+                provider.isLoading ||
+                    provider.isCheckingProfile ||
+                    !provider.phoneVerified
+                ? null
+                : onSubmit,
+            icon: provider.isLoading || provider.isCheckingProfile
                 ? const SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.publish_rounded),
-            label: Text(provider.isLoading ? l10n.publishing : l10n.publish),
+            label: Text(
+              provider.isLoading || provider.isCheckingProfile
+                  ? l10n.publishing
+                  : l10n.publish,
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFFB300),
               foregroundColor: AppTheme.textNavy,
@@ -97,6 +122,43 @@ class CreatePostForm extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PhoneVerificationWarning extends StatelessWidget {
+  const _PhoneVerificationWarning({required this.onVerifyPhone});
+
+  final VoidCallback onVerifyPhone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF4E0),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFFB300)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Debes verificar tu numero de celular antes de publicar.',
+            style: TextStyle(
+              color: AppTheme.textNavy,
+              fontWeight: FontWeight.w800,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: onVerifyPhone,
+            icon: const Icon(Icons.phone_android_outlined),
+            label: const Text('Verificar celular'),
+          ),
+        ],
+      ),
     );
   }
 }
