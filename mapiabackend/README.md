@@ -149,11 +149,14 @@ El driver se elige por variable de entorno; el código de los módulos no cambia
 
 ---
 
-## Despliegue en Google Cloud (opcional, futuro)
+## Despliegue (opcional, futuro)
 
-Guía completa en [`docs/deploy-gcp.md`](docs/deploy-gcp.md):
-**Cloud SQL** (base de datos, misma migración PostGIS) + **Cloud Storage** (archivos)
-+ **Cloud Run** (API) + **Secret Manager** (credenciales).
+- **Free tier (~$0) — recomendado:** [`docs/free-tier.md`](docs/free-tier.md).
+  Base de datos en **Supabase** (Postgres + PostGIS gratis), API en **Cloud Run**
+  (escala a 0), media en **Cloud Storage**. La misma migración PostGIS corre igual;
+  solo cambia el `.env` (`DB_SSL=true`).
+- **Google Cloud completo (Cloud SQL):** [`docs/deploy-gcp.md`](docs/deploy-gcp.md).
+  ⚠️ Cloud SQL **no** está en el free tier; usar solo si aceptas su costo.
 
 ---
 
