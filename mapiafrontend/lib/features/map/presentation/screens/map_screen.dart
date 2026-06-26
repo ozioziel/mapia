@@ -35,7 +35,6 @@ class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
   AlertFilters _filters = const AlertFilters();
   AlertFilterOptions _filterOptions = const AlertFilterOptions();
-  AlertMapSummary _summary = AlertMapSummary.empty();
   List<AlertMapItem> _alerts = [];
   AlertMapItem? _selected;
   PostEntity? _selectedExplorePost;
@@ -45,6 +44,7 @@ class _MapScreenState extends State<MapScreen> {
   bool _isLocating = true;
   bool _isMapSdkLoading = kIsWeb && AppConfig.googleMapsApiKey.isNotEmpty;
   bool _hasLocationPermission = false;
+  bool _filtersOpen = false;
   String? _error;
   LatLng? _currentLocation;
   static const double _nearbyRadiusKm = 3;
@@ -82,7 +82,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  Future<void> _requestCurrentLocation({bool moveCamera = true}) async {
+  Future<void> _requestCurrentLocation({bool moveCamera = false}) async {
     setState(() => _isLocating = true);
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -152,31 +152,23 @@ class _MapScreenState extends State<MapScreen> {
       final filters = _nearbyFilters;
       final results = await Future.wait([
         _mapApi.fetchAlerts(filters),
-        _mapApi.fetchSummary(filters),
         _mapApi.fetchFilters(),
       ]);
       final alerts = results[0] as List<AlertMapItem>;
-      final summary = results[1] as AlertMapSummary;
-      final options = results[2] as AlertFilterOptions;
+      final options = results[1] as AlertFilterOptions;
       final selected = selectId == null
-          ? _findAlert(alerts, _selected?.id) ??
-                (alerts.isEmpty ? null : alerts.first)
+          ? _findAlert(alerts, _selected?.id)
           : _findAlert(alerts, selectId);
 
       if (!mounted) return;
       setState(() {
         _alerts = alerts;
-        _summary = summary;
         _filterOptions = options;
         _selected = selected;
         _isLoading = false;
       });
 
-      if (_currentLocation != null && selectId == null) {
-        await _mapController?.animateCamera(
-          CameraUpdate.newLatLngZoom(_currentLocation!, 14),
-        );
-      } else if (selected != null) {
+      if (selected != null && selectId != null) {
         await _mapController?.animateCamera(
           CameraUpdate.newLatLngZoom(selected.position, 12.5),
         );
@@ -191,7 +183,11 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _applyFilters(AlertFilters filters) {
-    setState(() => _filters = filters);
+    setState(() {
+      _filters = filters;
+      _selected = null;
+      _selectedExplorePost = null;
+    });
     _loadAlerts();
   }
 
@@ -261,143 +257,93 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final viewport = MediaQuery.sizeOf(context);
-    final compact = viewport.width < 820;
-    final compactMapHeight = (viewport.height * 0.46)
-        .clamp(320.0, 440.0)
-        .toDouble();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      extendBody: true,
       bottomNavigationBar: MapiaBottomNavigation(
         currentIndex: 0,
         onIndexChanged: _onBottomNavTap,
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton.small(
         onPressed: _openPublishReport,
         backgroundColor: const Color(0xFF2563EB),
         foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_location_alt_rounded),
-        label: const Text('Publicar reporte'),
+        tooltip: 'Publicar reporte',
+        child: const Icon(Icons.add_location_alt_rounded),
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadAlerts,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-                  child: _Header(summary: _summary),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _SummaryCards(summary: _summary),
-                ),
-              ),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 104),
-                  child: compact
-                      ? Column(
-                          children: [
-                            SizedBox(
-                              height: compactMapHeight,
-                              child: _MapCard(
-                                alerts: _alerts,
-                                selected: _selected,
-                                isLoading: _isLoading,
-                                error: _error,
-                                currentLocation: _currentLocation,
-                                explorePosts: _explorePosts,
-                                selectedExplorePost: _selectedExplorePost,
-                                enabledPostTypes: _enabledPostTypes,
-                                postMarkerIcons: _postMarkerIcons,
-                                isLocating: _isLocating,
-                                isMapSdkLoading: _isMapSdkLoading,
-                                hasLocationPermission: _hasLocationPermission,
-                                onMapCreated: _handleMapCreated,
-                                onAlertSelected: _selectAlertFromMap,
-                                onExplorePostSelected: _selectExplorePost,
-                                onExplorePostOpen: _openExplorePost,
-                                onPostTypeToggled: _togglePostType,
-                                onLocatePressed: _handleLocatePressed,
-                                onRetry: _loadAlerts,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            _SidePanel(
-                              filters: _filters,
-                              options: _filterOptions,
-                              selected: _selected,
-                              selectedExplorePost: _selectedExplorePost,
-                              onExplorePostOpen: _openExplorePost,
-                              onFiltersChanged: _applyFilters,
-                            ),
-                          ],
-                        )
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              flex: 7,
-                              child: _MapCard(
-                                alerts: _alerts,
-                                selected: _selected,
-                                isLoading: _isLoading,
-                                error: _error,
-                                currentLocation: _currentLocation,
-                                explorePosts: _explorePosts,
-                                selectedExplorePost: _selectedExplorePost,
-                                enabledPostTypes: _enabledPostTypes,
-                                postMarkerIcons: _postMarkerIcons,
-                                isLocating: _isLocating,
-                                isMapSdkLoading: _isMapSdkLoading,
-                                hasLocationPermission: _hasLocationPermission,
-                                onMapCreated: _handleMapCreated,
-                                onAlertSelected: _selectAlertFromMap,
-                                onExplorePostSelected: _selectExplorePost,
-                                onExplorePostOpen: _openExplorePost,
-                                onPostTypeToggled: _togglePostType,
-                                onLocatePressed: _handleLocatePressed,
-                                onRetry: _loadAlerts,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            SizedBox(
-                              width: 360,
-                              child: _SidePanel(
-                                filters: _filters,
-                                options: _filterOptions,
-                                selected: _selected,
-                                selectedExplorePost: _selectedExplorePost,
-                                onExplorePostOpen: _openExplorePost,
-                                onFiltersChanged: _applyFilters,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-            ],
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: _MapCard(
+              alerts: _alerts,
+              selected: _selected,
+              isLoading: _isLoading,
+              error: _error,
+              currentLocation: _currentLocation,
+              explorePosts: _explorePosts,
+              enabledPostTypes: _enabledPostTypes,
+              postMarkerIcons: _postMarkerIcons,
+              isMapSdkLoading: _isMapSdkLoading,
+              hasLocationPermission: _hasLocationPermission,
+              onMapCreated: _handleMapCreated,
+              onAlertSelected: _selectAlertFromMap,
+              onExplorePostSelected: _selectExplorePost,
+              onRetry: _loadAlerts,
+            ),
           ),
-        ),
+          Positioned(
+            top: 0,
+            left: 12,
+            right: 12,
+            child: SafeArea(
+              bottom: false,
+              child: _MapFilterBar(
+                filters: _filters,
+                options: _filterOptions,
+                enabledPostTypes: _enabledPostTypes,
+                isOpen: _filtersOpen,
+                isLoading: _isLoading,
+                isLocating: _isLocating,
+                hasLocation: _currentLocation != null,
+                onToggle: () => setState(() => _filtersOpen = !_filtersOpen),
+                onRefresh: _loadAlerts,
+                onLocatePressed: _handleLocatePressed,
+                onPostTypeToggled: _togglePostType,
+                onFiltersChanged: _applyFilters,
+              ),
+            ),
+          ),
+          if (_selectedExplorePost != null)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 92,
+              child: MapPostPreviewCard(
+                post: _selectedExplorePost!,
+                onGoTap: () => _openExplorePost(_selectedExplorePost!),
+              ),
+            )
+          else if (_selected != null)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 92,
+              child: _SelectedAlertCard(
+                alert: _selected!,
+                onClose: () => setState(() => _selected = null),
+              ),
+            ),
+        ],
       ),
     );
   }
 
   void _handleMapCreated(GoogleMapController controller) {
     _mapController = controller;
-    final location = _currentLocation;
-    if (location == null) return;
-    controller.animateCamera(CameraUpdate.newLatLngZoom(location, 14));
   }
 
   Future<void> _handleLocatePressed() async {
-    await _requestCurrentLocation();
+    await _requestCurrentLocation(moveCamera: true);
     await _loadAlerts();
   }
 
@@ -410,187 +356,6 @@ class _MapScreenState extends State<MapScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({required this.summary});
-
-  final AlertMapSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Mapa de Alertas',
-                style: TextStyle(
-                  color: Color(0xFF0F172A),
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Monitoreo de abastecimiento, precios y reportes ciudadanos en Bolivia',
-                style: TextStyle(
-                  color: const Color(0xFF64748B),
-                  fontSize: MediaQuery.sizeOf(context).width < 420 ? 13 : 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        _UpdatedPill(updatedAt: summary.updatedAt),
-      ],
-    );
-  }
-}
-
-class _UpdatedPill extends StatelessWidget {
-  const _UpdatedPill({required this.updatedAt});
-
-  final DateTime updatedAt;
-
-  @override
-  Widget build(BuildContext context) {
-    final time = TimeOfDay.fromDateTime(updatedAt.toLocal()).format(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Text(
-        'Actualizado $time',
-        style: const TextStyle(
-          color: Color(0xFF64748B),
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _SummaryCards extends StatelessWidget {
-  const _SummaryCards({required this.summary});
-
-  final AlertMapSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final cards = [
-      _SummaryCardData(
-        'Total de alertas',
-        '${summary.totalAlerts}',
-        Icons.radar_rounded,
-      ),
-      _SummaryCardData(
-        'Alertas criticas',
-        '${summary.highRiskAlerts}',
-        Icons.warning_rounded,
-      ),
-      _SummaryCardData(
-        'Producto afectado',
-        summary.mostAffectedProduct ?? 'Sin datos',
-        Icons.inventory_2_rounded,
-      ),
-      _SummaryCardData(
-        'Departamento afectado',
-        summary.mostAffectedDepartment ?? 'Sin datos',
-        Icons.location_city_rounded,
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth > 860 ? 4 : 2;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: cards.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            mainAxisExtent: 92,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-          ),
-          itemBuilder: (context, index) => _SummaryCard(data: cards[index]),
-        );
-      },
-    );
-  }
-}
-
-class _SummaryCardData {
-  const _SummaryCardData(this.label, this.value, this.icon);
-
-  final String label;
-  final String value;
-  final IconData icon;
-}
-
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.data});
-
-  final _SummaryCardData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(data.icon, color: const Color(0xFF2563EB), size: 21),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  data.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  data.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF0F172A),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _MapCard extends StatelessWidget {
   const _MapCard({
     required this.alerts,
@@ -599,18 +364,13 @@ class _MapCard extends StatelessWidget {
     required this.error,
     required this.currentLocation,
     required this.explorePosts,
-    required this.selectedExplorePost,
     required this.enabledPostTypes,
     required this.postMarkerIcons,
-    required this.isLocating,
     required this.isMapSdkLoading,
     required this.hasLocationPermission,
     required this.onMapCreated,
     required this.onAlertSelected,
     required this.onExplorePostSelected,
-    required this.onExplorePostOpen,
-    required this.onPostTypeToggled,
-    required this.onLocatePressed,
     required this.onRetry,
   });
 
@@ -620,126 +380,87 @@ class _MapCard extends StatelessWidget {
   final String? error;
   final LatLng? currentLocation;
   final List<PostEntity> explorePosts;
-  final PostEntity? selectedExplorePost;
   final Set<PostType> enabledPostTypes;
   final PostMapMarkerIcons? postMarkerIcons;
-  final bool isLocating;
   final bool isMapSdkLoading;
   final bool hasLocationPermission;
   final ValueChanged<GoogleMapController> onMapCreated;
   final ValueChanged<AlertMapItem> onAlertSelected;
   final ValueChanged<PostEntity> onExplorePostSelected;
-  final ValueChanged<PostEntity> onExplorePostOpen;
-  final ValueChanged<PostType> onPostTypeToggled;
-  final Future<void> Function() onLocatePressed;
   final Future<void> Function({String? selectId}) onRetry;
 
   @override
   Widget build(BuildContext context) {
     final missingKey = kIsWeb && AppConfig.googleMapsApiKey.isEmpty;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: missingKey
-                ? const _MapStateMessage(
-                    icon: Icons.key_off_rounded,
-                    title: 'Falta la API key de Google Maps',
-                    message:
-                        'Ejecuta Flutter con GOOGLE_MAPS_API_KEY configurado.',
-                  )
-                : isMapSdkLoading
-                ? const _MapStateMessage(
-                    icon: Icons.map_rounded,
-                    title: 'Cargando Google Maps',
-                    message: 'Preparando el mapa en esta pantalla.',
-                  )
-                : GoogleMap(
-                    onMapCreated: onMapCreated,
-                    initialCameraPosition: CameraPosition(
-                      target: currentLocation ?? boliviaCenter,
-                      zoom: currentLocation == null ? 5.4 : 14,
-                    ),
-                    cameraTargetBounds: CameraTargetBounds(boliviaBounds),
-                    minMaxZoomPreference: const MinMaxZoomPreference(5.2, 18),
-                    mapType: MapType.normal,
-                    style: mapiaCleanMapStyle,
-                    mapToolbarEnabled: false,
-                    myLocationButtonEnabled: hasLocationPermission,
-                    myLocationEnabled: hasLocationPermission,
-                    zoomControlsEnabled: false,
-                    compassEnabled: false,
-                    rotateGesturesEnabled: false,
-                    markers: _markers(),
-                    circles: _circles(),
-                    onTap: (_) {},
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: missingKey
+              ? const _MapStateMessage(
+                  icon: Icons.key_off_rounded,
+                  title: 'Falta la API key de Google Maps',
+                  message:
+                      'Ejecuta Flutter con GOOGLE_MAPS_API_KEY configurado.',
+                )
+              : isMapSdkLoading
+              ? const _MapStateMessage(
+                  icon: Icons.map_rounded,
+                  title: 'Cargando Google Maps',
+                  message: 'Preparando el mapa en esta pantalla.',
+                )
+              : GoogleMap(
+                  onMapCreated: onMapCreated,
+                  initialCameraPosition: CameraPosition(
+                    target: currentLocation ?? boliviaCenter,
+                    zoom: currentLocation == null ? 5.4 : 14,
                   ),
-          ),
-          Positioned(
-            top: 14,
-            right: 14,
-            child: _LocateButton(
-              isLocating: isLocating,
-              hasLocation: currentLocation != null,
-              onPressed: onLocatePressed,
+                  mapType: MapType.normal,
+                  style: mapiaCleanMapStyle,
+                  mapToolbarEnabled: false,
+                  myLocationButtonEnabled: hasLocationPermission,
+                  myLocationEnabled: hasLocationPermission,
+                  zoomControlsEnabled: false,
+                  compassEnabled: true,
+                  rotateGesturesEnabled: true,
+                  tiltGesturesEnabled: true,
+                  markers: _markers(),
+                  circles: _circles(),
+                  onTap: (_) {},
+                ),
+        ),
+        if (isLoading)
+          const Positioned.fill(
+            child: ColoredBox(
+              color: Color(0x66FFFFFF),
+              child: Center(child: CircularProgressIndicator()),
             ),
           ),
+        if (!isLoading && error != null)
           Positioned(
-            top: 14,
             left: 14,
-            right: 76,
-            child: _MapCategoryFilters(
-              enabledTypes: enabledPostTypes,
-              onTypeToggled: onPostTypeToggled,
+            right: 14,
+            top: 14,
+            child: _MapNotice(
+              icon: Icons.cloud_off_rounded,
+              title: 'Sin conexion al backend',
+              message: error!,
+              action: 'Reintentar',
+              onAction: () => onRetry(),
             ),
           ),
-          if (selectedExplorePost != null && !isLoading && error == null)
-            Positioned(
-              left: 14,
-              right: 14,
-              bottom: 14,
-              child: MapPostPreviewCard(
-                post: selectedExplorePost!,
-                onGoTap: () => onExplorePostOpen(selectedExplorePost!),
-              ),
-            )
-          else
-            const Positioned(left: 14, bottom: 14, child: _Legend()),
-          if (isLoading)
-            const Positioned.fill(
-              child: ColoredBox(
-                color: Color(0x66FFFFFF),
-                child: Center(child: CircularProgressIndicator()),
-              ),
+        if (!isLoading && error == null && alerts.isEmpty)
+          const Positioned(
+            left: 14,
+            right: 14,
+            top: 88,
+            child: _MapNotice(
+              icon: Icons.map_outlined,
+              title: 'Sin alertas por ahora',
+              message: 'El mapa esta listo para mostrar nuevos reportes.',
             ),
-          if (!isLoading && error != null)
-            Positioned(
-              left: 14,
-              right: 14,
-              top: 14,
-              child: _MapNotice(
-                icon: Icons.cloud_off_rounded,
-                title: 'Sin conexion al backend',
-                message: error!,
-                action: 'Reintentar',
-                onAction: () => onRetry(),
-              ),
-            ),
-          if (!isLoading && error == null && alerts.isEmpty)
-            const Positioned(
-              left: 14,
-              right: 14,
-              top: 14,
-              child: _MapNotice(
-                icon: Icons.map_outlined,
-                title: 'Sin alertas por ahora',
-                message: 'El mapa esta listo para mostrar nuevos reportes.',
-              ),
-            ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
@@ -783,40 +504,149 @@ class _MapCard extends StatelessWidget {
   }
 }
 
-class _LocateButton extends StatelessWidget {
-  const _LocateButton({
+class _MapFilterBar extends StatelessWidget {
+  const _MapFilterBar({
+    required this.filters,
+    required this.options,
+    required this.enabledPostTypes,
+    required this.isOpen,
+    required this.isLoading,
     required this.isLocating,
     required this.hasLocation,
-    required this.onPressed,
+    required this.onToggle,
+    required this.onRefresh,
+    required this.onLocatePressed,
+    required this.onPostTypeToggled,
+    required this.onFiltersChanged,
   });
 
+  final AlertFilters filters;
+  final AlertFilterOptions options;
+  final Set<PostType> enabledPostTypes;
+  final bool isOpen;
+  final bool isLoading;
   final bool isLocating;
   final bool hasLocation;
-  final Future<void> Function() onPressed;
+  final VoidCallback onToggle;
+  final Future<void> Function({String? selectId}) onRefresh;
+  final Future<void> Function() onLocatePressed;
+  final ValueChanged<PostType> onPostTypeToggled;
+  final ValueChanged<AlertFilters> onFiltersChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: hasLocation ? 'Actualizar ubicacion' : 'Usar mi ubicacion',
-      child: Material(
-        color: Colors.white,
-        elevation: 3,
-        borderRadius: BorderRadius.circular(8),
-        child: IconButton(
-          onPressed: isLocating ? null : onPressed,
-          color: hasLocation
-              ? const Color(0xFF2563EB)
-              : const Color(0xFF64748B),
-          icon: isLocating
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+    final activeFilters = _activeFilterCount(filters);
+    final compact = MediaQuery.sizeOf(context).width < 520;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: AppTheme.softShadow,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.map_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              if (!compact)
+                const Expanded(
+                  child: Text(
+                    'Mapa de alertas',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                 )
-              : const Icon(Icons.my_location_rounded),
+              else
+                const Spacer(),
+              TextButton.icon(
+                onPressed: onToggle,
+                icon: Icon(
+                  isOpen ? Icons.keyboard_arrow_up_rounded : Icons.tune_rounded,
+                ),
+                label: Text(
+                  activeFilters == 0 ? 'Categorias' : 'Filtros $activeFilters',
+                ),
+              ),
+              IconButton(
+                tooltip: hasLocation
+                    ? 'Actualizar ubicacion'
+                    : 'Usar ubicacion',
+                onPressed: isLocating ? null : onLocatePressed,
+                color: hasLocation
+                    ? const Color(0xFF2563EB)
+                    : const Color(0xFF64748B),
+                icon: isLocating
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location_rounded),
+              ),
+              IconButton(
+                tooltip: 'Actualizar',
+                onPressed: isLoading ? null : () => onRefresh(),
+                icon: isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded),
+              ),
+            ],
+          ),
         ),
-      ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: isOpen
+              ? _FilterDropdown(
+                  key: const ValueKey('filters-open'),
+                  filters: filters,
+                  options: options,
+                  enabledPostTypes: enabledPostTypes,
+                  onPostTypeToggled: onPostTypeToggled,
+                  onFiltersChanged: onFiltersChanged,
+                )
+              : const SizedBox.shrink(key: ValueKey('filters-closed')),
+        ),
+      ],
     );
+  }
+
+  int _activeFilterCount(AlertFilters filters) {
+    var count = 0;
+    if (filters.department != null) count++;
+    if (filters.municipality != null) count++;
+    if (filters.zone != null) count++;
+    if (filters.product != null) count++;
+    if (filters.alertType != null) count++;
+    if (filters.severity != null) count++;
+    return count;
   }
 }
 
@@ -866,6 +696,147 @@ class _MapCategoryFilters extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterDropdown extends StatelessWidget {
+  const _FilterDropdown({
+    super.key,
+    required this.filters,
+    required this.options,
+    required this.enabledPostTypes,
+    required this.onPostTypeToggled,
+    required this.onFiltersChanged,
+  });
+
+  final AlertFilters filters;
+  final AlertFilterOptions options;
+  final Set<PostType> enabledPostTypes;
+  final ValueChanged<PostType> onPostTypeToggled;
+  final ValueChanged<AlertFilters> onFiltersChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      constraints: BoxConstraints(
+        maxHeight: (MediaQuery.sizeOf(context).height * 0.58).clamp(
+          280.0,
+          460.0,
+        ),
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.97),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Categorias de publicaciones',
+              style: TextStyle(
+                color: Color(0xFF0F172A),
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _MapCategoryFilters(
+              enabledTypes: enabledPostTypes,
+              onTypeToggled: onPostTypeToggled,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Filtros de alertas',
+                    style: TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                if (!filters.isEmpty)
+                  TextButton(
+                    onPressed: () => onFiltersChanged(const AlertFilters()),
+                    child: const Text('Limpiar'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _StringFilter(
+              label: 'Departamento',
+              value: filters.department,
+              values: options.departments,
+              onChanged: (value) => onFiltersChanged(
+                filters.copyWith(
+                  department: value,
+                  clearDepartment: value == null,
+                ),
+              ),
+            ),
+            _StringFilter(
+              label: 'Municipio',
+              value: filters.municipality,
+              values: options.municipalities,
+              onChanged: (value) => onFiltersChanged(
+                filters.copyWith(
+                  municipality: value,
+                  clearMunicipality: value == null,
+                ),
+              ),
+            ),
+            _StringFilter(
+              label: 'Zona',
+              value: filters.zone,
+              values: options.zones,
+              onChanged: (value) => onFiltersChanged(
+                filters.copyWith(zone: value, clearZone: value == null),
+              ),
+            ),
+            _StringFilter(
+              label: 'Producto',
+              value: filters.product,
+              values: options.products,
+              onChanged: (value) => onFiltersChanged(
+                filters.copyWith(product: value, clearProduct: value == null),
+              ),
+            ),
+            _EnumFilter<AlertType>(
+              label: 'Tipo de problema',
+              value: filters.alertType,
+              values: options.alertTypes.isEmpty
+                  ? AlertType.values
+                  : options.alertTypes,
+              labelOf: (value) => value.label,
+              onChanged: (value) => onFiltersChanged(
+                filters.copyWith(
+                  alertType: value,
+                  clearAlertType: value == null,
+                ),
+              ),
+            ),
+            _EnumFilter<AlertSeverity>(
+              label: 'Severidad',
+              value: filters.severity,
+              values: options.severities.isEmpty
+                  ? AlertSeverity.values
+                  : options.severities,
+              labelOf: (value) => value.label,
+              onChanged: (value) => onFiltersChanged(
+                filters.copyWith(severity: value, clearSeverity: value == null),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -987,189 +958,6 @@ class _MapStateMessage extends StatelessWidget {
   }
 }
 
-class _Legend extends StatelessWidget {
-  const _Legend();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: AlertSeverity.values
-            .map(
-              (severity) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: severityColor(severity),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      severity.label,
-                      style: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-}
-
-class _SidePanel extends StatelessWidget {
-  const _SidePanel({
-    required this.filters,
-    required this.options,
-    required this.selected,
-    required this.selectedExplorePost,
-    required this.onExplorePostOpen,
-    required this.onFiltersChanged,
-  });
-
-  final AlertFilters filters;
-  final AlertFilterOptions options;
-  final AlertMapItem? selected;
-  final PostEntity? selectedExplorePost;
-  final ValueChanged<PostEntity> onExplorePostOpen;
-  final ValueChanged<AlertFilters> onFiltersChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(14),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _PanelTitle(
-              title: 'Filtros',
-              action: filters.isEmpty
-                  ? null
-                  : TextButton(
-                      onPressed: () => onFiltersChanged(const AlertFilters()),
-                      child: const Text('Limpiar filtros'),
-                    ),
-            ),
-            const SizedBox(height: 10),
-            _StringFilter(
-              label: 'Departamento',
-              value: filters.department,
-              values: options.departments,
-              onChanged: (value) => onFiltersChanged(
-                filters.copyWith(
-                  department: value,
-                  clearDepartment: value == null,
-                ),
-              ),
-            ),
-            _StringFilter(
-              label: 'Municipio',
-              value: filters.municipality,
-              values: options.municipalities,
-              onChanged: (value) => onFiltersChanged(
-                filters.copyWith(
-                  municipality: value,
-                  clearMunicipality: value == null,
-                ),
-              ),
-            ),
-            _StringFilter(
-              label: 'Producto',
-              value: filters.product,
-              values: options.products,
-              onChanged: (value) => onFiltersChanged(
-                filters.copyWith(product: value, clearProduct: value == null),
-              ),
-            ),
-            _EnumFilter<AlertType>(
-              label: 'Tipo de problema',
-              value: filters.alertType,
-              values: options.alertTypes.isEmpty
-                  ? AlertType.values
-                  : options.alertTypes,
-              labelOf: (value) => value.label,
-              onChanged: (value) => onFiltersChanged(
-                filters.copyWith(
-                  alertType: value,
-                  clearAlertType: value == null,
-                ),
-              ),
-            ),
-            _EnumFilter<AlertSeverity>(
-              label: 'Severidad',
-              value: filters.severity,
-              values: options.severities.isEmpty
-                  ? AlertSeverity.values
-                  : options.severities,
-              labelOf: (value) => value.label,
-              onChanged: (value) => onFiltersChanged(
-                filters.copyWith(severity: value, clearSeverity: value == null),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const _PanelTitle(title: 'Detalle'),
-            const SizedBox(height: 10),
-            if (selectedExplorePost != null)
-              _ExplorePostDetail(
-                post: selectedExplorePost!,
-                onOpen: () => onExplorePostOpen(selectedExplorePost!),
-              )
-            else if (selected != null)
-              _AlertDetail(alert: selected!)
-            else
-              const _EmptyDetail(),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PanelTitle extends StatelessWidget {
-  const _PanelTitle({required this.title, this.action});
-
-  final String title;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: Color(0xFF0F172A),
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-        ?action,
-      ],
-    );
-  }
-}
-
 class _StringFilter extends StatelessWidget {
   const _StringFilter({
     required this.label,
@@ -1237,198 +1025,90 @@ class _EnumFilter<T> extends StatelessWidget {
   }
 }
 
-class _EmptyDetail extends StatelessWidget {
-  const _EmptyDetail();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Text(
-      'Selecciona un marcador para revisar su detalle.',
-      style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700),
-    );
-  }
-}
-
-class _ExplorePostDetail extends StatelessWidget {
-  const _ExplorePostDetail({required this.post, required this.onOpen});
-
-  final PostEntity post;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final option = post.type.option;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: option.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(option.icon, color: option.color, size: 18),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                post.title,
-                style: const TextStyle(
-                  color: Color(0xFF0F172A),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          post.description,
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontWeight: FontWeight.w700,
-            height: 1.35,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _DetailRow('Publicado por', post.authorName),
-        _DetailRow('Tipo', option.label),
-        _DetailRow('Ubicacion', post.address ?? 'Sin dato'),
-        _DetailRow('Likes', '${post.likesCount}'),
-        _DetailRow('Comentarios', '${post.commentsCount}'),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: onOpen,
-            icon: const Icon(Icons.open_in_new_rounded),
-            label: const Text('Ver publicacion'),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AlertDetail extends StatelessWidget {
-  const _AlertDetail({required this.alert});
+class _SelectedAlertCard extends StatelessWidget {
+  const _SelectedAlertCard({required this.alert, required this.onClose});
 
   final AlertMapItem alert;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: severityColor(alert.severity),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                alert.title,
-                style: const TextStyle(
-                  color: Color(0xFF0F172A),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (alert.description?.isNotEmpty == true) ...[
-          const SizedBox(height: 8),
-          Text(
-            alert.description!,
-            style: const TextStyle(
-              color: Color(0xFF64748B),
-              fontWeight: FontWeight.w700,
-              height: 1.35,
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        _DetailRow('Producto', alert.product ?? 'No especificado'),
-        _DetailRow('Tipo', alert.alertType.label),
-        _DetailRow('Severidad', alert.severity.label),
-        _DetailRow('Departamento', alert.department ?? 'Sin dato'),
-        _DetailRow('Municipio', alert.municipality ?? 'Sin dato'),
-        _DetailRow('Zona', alert.zone ?? 'Sin dato'),
-        _DetailRow('Reportes', '${alert.reportsCount}'),
-        _DetailRow('Confianza', '${(alert.confidence * 100).round()}%'),
-        _DetailRow(
-          'Precio promedio',
-          alert.avgPrice == null ? 'Sin dato' : '${alert.avgPrice} Bs',
-        ),
-        if (alert.images.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 76,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: alert.images.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (context, index) => ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  alert.images[index],
-                  width: 86,
-                  height: 76,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow(this.label, this.value);
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: AppTheme.softShadow,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 128,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-              ),
+          Container(
+            width: 12,
+            height: 12,
+            margin: const EdgeInsets.only(top: 5),
+            decoration: BoxDecoration(
+              color: severityColor(alert.severity),
+              shape: BoxShape.circle,
             ),
           ),
+          const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Color(0xFF0F172A),
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  alert.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  [
+                    alert.product ?? 'Producto no especificado',
+                    alert.alertType.label,
+                    alert.severity.label,
+                  ].join(' - '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  [
+                    alert.municipality ?? alert.department ?? 'Bolivia',
+                    '${(alert.confidence * 100).round()}% confianza',
+                  ].join(' - '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF334155),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Cerrar detalle',
+            visualDensity: VisualDensity.compact,
+            onPressed: onClose,
+            icon: const Icon(
+              Icons.close_rounded,
+              color: Color(0xFF64748B),
+              size: 20,
             ),
           ),
         ],
@@ -1834,13 +1514,6 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                                 zoom: 13,
                               ),
                               style: mapiaCleanMapStyle,
-                              cameraTargetBounds: CameraTargetBounds(
-                                boliviaBounds,
-                              ),
-                              minMaxZoomPreference: const MinMaxZoomPreference(
-                                5.2,
-                                18,
-                              ),
                               markers: {
                                 Marker(
                                   markerId: const MarkerId('report_location'),
