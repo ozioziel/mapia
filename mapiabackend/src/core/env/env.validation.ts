@@ -19,7 +19,7 @@ export const envValidationSchema = Joi.object({
   JWT_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d'),
 
-  STORAGE_DRIVER: Joi.string().valid('local', 'gcs').default('local'),
+  STORAGE_DRIVER: Joi.string().valid('local', 'gcs', 'supabase').default('local'),
   STORAGE_LOCAL_DIR: Joi.string().default('uploads'),
   STORAGE_PUBLIC_URL: Joi.string().uri({ allowRelative: false }).default('http://localhost:3000/static'),
   GCS_BUCKET_NAME: Joi.string().allow('').default('mapia-media'),

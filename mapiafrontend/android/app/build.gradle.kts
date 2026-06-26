@@ -1,8 +1,33 @@
+import java.io.FileInputStream
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    FileInputStream(localPropertiesFile).use { stream ->
+        localProperties.load(stream)
+    }
+}
+val googleMapsApiKey = System.getenv("GOOGLE_MAPS_API_KEY")
+    ?: localProperties.getProperty("GOOGLE_MAPS_API_KEY")
+    ?: (project.findProperty("dart-defines") as? String)
+        ?.split(",")
+        ?.mapNotNull { encoded ->
+            val decoded = String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8)
+            val separator = decoded.indexOf("=")
+            if (separator <= 0) null else decoded.substring(0, separator) to decoded.substring(separator + 1)
+        }
+        ?.firstOrNull { it.first == "GOOGLE_MAPS_API_KEY" }
+        ?.second
+    ?: ""
 
 android {
     namespace = "com.example.mapiafrontend"
@@ -23,6 +48,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["googleMapsApiKey"] = googleMapsApiKey
     }
 
     buildTypes {

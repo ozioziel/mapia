@@ -26,6 +26,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>GoogleMapsApiKey</key>
+	<string>$(GOOGLE_MAPS_API_KEY)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Mapia usa la camara para adjuntar imagenes a reportes ciudadanos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Mapia usa tu ubicacion para publicar reportes dentro de Bolivia.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Mapia usa el microfono para dictar reportes por voz.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Mapia usa tus fotos para adjuntar evidencia a reportes ciudadanos.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

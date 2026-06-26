@@ -3,6 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseConfig } from '../config/configuration';
 
+const isTsRuntime = __filename.endsWith('.ts');
+
 /**
  * Conexión a PostgreSQL (Cloud SQL / PostGIS).
  *
@@ -33,8 +35,9 @@ import { DatabaseConfig } from '../config/configuration';
           synchronize: false,
           migrationsRun: db.runMigrations,
           migrations: [
-            'dist/core/database/migrations/*.js',
-            'src/core/database/migrations/*.ts',
+            isTsRuntime
+              ? 'src/core/database/migrations/*.ts'
+              : 'dist/core/database/migrations/*.js',
           ],
           migrationsTableName: 'mapia_migrations',
           logging: configService.get<string>('app.nodeEnv') === 'development',
