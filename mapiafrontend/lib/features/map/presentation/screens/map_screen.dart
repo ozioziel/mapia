@@ -4,11 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-<<<<<<< HEAD
 import 'package:mapiafrontend/core/config/app_config.dart';
-=======
-import 'package:mapiafrontend/core/theme/app_theme.dart';
->>>>>>> dabcca7b27d03420742b26668858bf53ac86f568
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
@@ -431,12 +427,13 @@ class _MapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final missingKey = AppConfig.googleMapsApiKey.isEmpty;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Stack(
         children: [
           Positioned.fill(
-<<<<<<< HEAD
             child: missingKey
                 ? const _MapStateMessage(
                     icon: Icons.key_off_rounded,
@@ -445,9 +442,6 @@ class _MapCard extends StatelessWidget {
                         'Ejecuta Flutter con GOOGLE_MAPS_API_KEY configurado.',
                   )
                 : GoogleMap(
-=======
-            child: GoogleMap(
->>>>>>> dabcca7b27d03420742b26668858bf53ac86f568
                     onMapCreated: onMapCreated,
                     initialCameraPosition: const CameraPosition(
                       target: boliviaCenter,
@@ -756,7 +750,7 @@ class _PanelTitle extends StatelessWidget {
             ),
           ),
         ),
-        if (action != null) action!,
+        ?action,
       ],
     );
   }
@@ -780,7 +774,7 @@ class _StringFilter extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: DropdownButtonFormField<String>(
-        value: values.contains(value) ? value : null,
+        initialValue: values.contains(value) ? value : null,
         decoration: InputDecoration(labelText: label),
         items: [
           const DropdownMenuItem(value: null, child: Text('Todos')),
@@ -814,7 +808,7 @@ class _EnumFilter<T> extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: DropdownButtonFormField<T>(
-        value: values.contains(value) ? value : null,
+        initialValue: values.contains(value) ? value : null,
         decoration: InputDecoration(labelText: label),
         items: [
           DropdownMenuItem<T>(value: null, child: const Text('Todos')),
@@ -1054,7 +1048,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
       _error = null;
     });
     await _speech.listen(
-      localeId: 'es_BO',
+      listenOptions: SpeechListenOptions(localeId: 'es_BO'),
       onResult: (result) {
         setState(() => _sourceController.text = result.recognizedWords);
       },
@@ -1287,7 +1281,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<AlertType>(
-                    value: _alertType,
+                    initialValue: _alertType,
                     decoration: const InputDecoration(
                       labelText: 'Tipo de alerta',
                     ),
@@ -1304,7 +1298,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<AlertSeverity>(
-                    value: _severity,
+                    initialValue: _severity,
                     decoration: const InputDecoration(labelText: 'Severidad'),
                     items: AlertSeverity.values
                         .map(
@@ -1347,7 +1341,6 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                     height: 220,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-<<<<<<< HEAD
                       child: AppConfig.googleMapsApiKey.isEmpty
                           ? const _MapStateMessage(
                               icon: Icons.key_off_rounded,
@@ -1367,12 +1360,6 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                                 5.2,
                                 18,
                               ),
-=======
-                      child: GoogleMap(
-                              initialCameraPosition: CameraPosition(target: _location, zoom: 13),
-                              cameraTargetBounds: CameraTargetBounds(boliviaBounds),
-                              minMaxZoomPreference: const MinMaxZoomPreference(5.2, 18),
->>>>>>> dabcca7b27d03420742b26668858bf53ac86f568
                               markers: {
                                 Marker(
                                   markerId: const MarkerId('report_location'),

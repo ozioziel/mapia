@@ -96,8 +96,8 @@ class ReportsApi {
   }) async {
     final json = await _client.postJson(ApiEndpoints.parseReport, {
       'text': text,
-      if (latitude != null) 'latitude': latitude,
-      if (longitude != null) 'longitude': longitude,
+      ?'latitude': latitude,
+      ?'longitude': longitude,
     });
     return ParsedReport.fromJson(json);
   }
