@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider.dart';
 import 'package:mapiafrontend/features/profile/presentation/widgets/editable_avatar.dart';
@@ -57,8 +58,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(
-          content: Text('Foto simulada lista para guardar.'),
+        SnackBar(
+          content: Text(context.l10n.simulatedPhotoReady),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -70,8 +71,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (name.isEmpty || username.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nombre y usuario son obligatorios.'),
+        SnackBar(
+          content: Text(context.l10n.nameAndUsernameRequired),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -92,7 +93,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_provider.error ?? 'No pudimos guardar cambios.'),
+          content: Text(_provider.error ?? context.l10n.couldNotSaveChanges),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -104,7 +105,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FB),
       appBar: AppBar(
-        title: const Text('Editar perfil'),
+        title: Text(context.l10n.editProfile),
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textNavy,
         elevation: 0,
@@ -145,12 +146,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ? null
                         : _simulatePhotoSelection,
                     icon: const Icon(Icons.photo_camera_outlined),
-                    label: const Text('Cambiar foto'),
+                    label: Text(context.l10n.changePhoto),
                   ),
                   const SizedBox(height: 16),
                   _ProfileTextField(
                     controller: _nameController,
-                    label: 'Nombre',
+                    label: context.l10n.name,
                     icon: Icons.badge_outlined,
                     textInputAction: TextInputAction.next,
                     onChanged: (_) => setState(() {}),
@@ -158,14 +159,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 14),
                   _ProfileTextField(
                     controller: _usernameController,
-                    label: 'Usuario',
+                    label: context.l10n.username,
                     icon: Icons.alternate_email_rounded,
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
                   _ProfileTextField(
                     controller: _bioController,
-                    label: 'Bio',
+                    label: context.l10n.bio,
                     icon: Icons.notes_rounded,
                     maxLines: 4,
                     textInputAction: TextInputAction.newline,
@@ -180,7 +181,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.save_outlined),
-                    label: const Text('Guardar cambios'),
+                    label: Text(context.l10n.saveChanges),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF0B8063),
                       foregroundColor: Colors.white,
@@ -201,7 +202,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('Cancelar'),
+                    child: Text(context.l10n.cancel),
                   ),
                 ],
               ),
@@ -281,7 +282,7 @@ class _EditProfileError extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            FilledButton(onPressed: onRetry, child: const Text('Reintentar')),
+            FilledButton(onPressed: onRetry, child: Text(context.l10n.retry)),
           ],
         ),
       ),

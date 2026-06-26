@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
+import 'package:mapiafrontend/core/localization/localized_post_type.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
@@ -56,7 +58,7 @@ class MapPostPreviewCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${option.label} · ${post.authorName}',
+                      '${post.type.label(context)} - ${post.authorName}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -67,7 +69,7 @@ class MapPostPreviewCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      post.address ?? 'La Paz',
+                      post.address ?? context.l10n.laPaz,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -91,9 +93,9 @@ class MapPostPreviewCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text(
-                    'Ir',
-                    style: TextStyle(fontWeight: FontWeight.w900),
+                  child: Text(
+                    context.l10n.continueText,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
                 ),
               ),

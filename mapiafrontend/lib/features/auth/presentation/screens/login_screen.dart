@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/auth/presentation/widgets/auth_widgets.dart';
 
@@ -41,8 +42,8 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Use demo@mapia.app and mapia123 to sign in.'),
+      SnackBar(
+        content: Text(context.l10n.demoLoginMessage),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -52,9 +53,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return AuthPageFrame(
       children: [
-        const AuthHeader(
-          title: 'Welcome to Mapia',
-          subtitle: 'Sign in to view citizen alerts near you.',
+        AuthHeader(
+          title: context.l10n.welcomeTitle,
+          subtitle: context.l10n.welcomeSubtitle,
         ),
         Builder(
           builder: (context) {
@@ -66,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: auth.compact ? 26 * scale : 42 * scale),
                 AuthTextField(
                   controller: _emailController,
-                  hintText: 'Email address',
+                  hintText: context.l10n.email,
                   icon: Icons.mail_outline_rounded,
                   iconColor: AppTheme.primaryBlue,
                   keyboardType: TextInputType.emailAddress,
@@ -75,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: 22 * scale),
                 AuthTextField(
                   controller: _passwordController,
-                  hintText: 'Password',
+                  hintText: context.l10n.password,
                   icon: Icons.lock_outline_rounded,
                   iconColor: const Color(0xFFEA4335),
                   obscureText: true,
@@ -93,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       padding: EdgeInsets.zero,
                     ),
                     child: Text(
-                      'Forgot password?',
+                      context.l10n.forgotPassword,
                       style: TextStyle(
                         color: AppTheme.primaryBlue,
                         fontSize: 14 * scale,
@@ -103,12 +104,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 SizedBox(height: 24 * scale),
-                AuthPrimaryButton(text: 'Sign in', onPressed: _signIn),
+                AuthPrimaryButton(
+                  text: context.l10n.signIn,
+                  onPressed: _signIn,
+                ),
                 SizedBox(height: 26 * scale),
-                const AuthDivider(),
+                AuthDivider(text: context.l10n.or),
                 SizedBox(height: 24 * scale),
                 GoogleAuthButton(
-                  text: 'Continue with Google',
+                  text: context.l10n.continueWithGoogle,
                   onPressed: _signIn,
                 ),
                 SizedBox(height: auth.compact ? 26 * scale : 46 * scale),
@@ -119,8 +123,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 SizedBox(height: auth.compact ? 14 * scale : 26 * scale),
                 AuthBottomLink(
-                  text: "Don't have an account?",
-                  actionText: 'Sign up',
+                  text: context.l10n.dontHaveAccount,
+                  actionText: context.l10n.signUp,
                   onPressed: () => Navigator.of(context).pushNamed('/register'),
                 ),
               ],

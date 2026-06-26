@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
+import 'package:mapiafrontend/core/localization/localized_post_type.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 import 'package:mapiafrontend/features/posts/presentation/providers/post_detail_provider.dart';
@@ -47,8 +49,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(
-          content: Text('Compartir publicación listo para conectar'),
+        SnackBar(
+          content: Text(context.l10n.sharePostReady),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -59,7 +61,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FB),
       appBar: AppBar(
-        title: const Text('Publicación'),
+        title: Text(context.l10n.publication),
         centerTitle: false,
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textNavy,
@@ -75,7 +77,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
             if (_provider.error != null || _provider.post == null) {
               return _DetailError(
-                message: _provider.error ?? 'Publicación no encontrada.',
+                message: _provider.error ?? context.l10n.postNotFound,
                 onRetry: _provider.load,
               );
             }
@@ -160,7 +162,7 @@ class _StatusBadge extends StatelessWidget {
         : const Color(0xFFFFA000);
     return _Pill(
       icon: isVerified ? Icons.verified_rounded : Icons.hourglass_top_rounded,
-      label: isVerified ? 'Verificado' : 'En revisión',
+      label: isVerified ? context.l10n.verified : context.l10n.inReview,
       color: color,
     );
   }
@@ -173,7 +175,11 @@ class _TypeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Pill(icon: type.icon, label: type.label, color: type.color);
+    return _Pill(
+      icon: type.icon,
+      label: type.type.label(context),
+      color: type.color,
+    );
   }
 }
 
@@ -244,7 +250,7 @@ class _DetailError extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            FilledButton(onPressed: onRetry, child: const Text('Reintentar')),
+            FilledButton(onPressed: onRetry, child: Text(context.l10n.retry)),
           ],
         ),
       ),

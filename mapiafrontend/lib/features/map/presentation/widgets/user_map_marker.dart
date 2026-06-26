@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
 class UserMapMarker extends StatelessWidget {
@@ -26,7 +27,7 @@ class UserMapMarker extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Publicación de $authorName',
+      label: context.l10n.postByAuthor(authorName),
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedScale(

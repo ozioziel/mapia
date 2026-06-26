@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/profile/domain/entities/profile_entity.dart';
 import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider.dart';
@@ -36,6 +37,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _openLanguageSettings() async {
+    await Navigator.of(context).pushNamed('/language');
+  }
+
   void _openPost(ProfilePostEntity post) {
     Navigator.of(context).pushNamed('/posts/${Uri.encodeComponent(post.id)}');
   }
@@ -45,19 +50,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Cerrar sesion?'),
-          content: const Text('Tendras que iniciar sesion nuevamente.'),
+          title: Text(context.l10n.logoutQuestion),
+          content: Text(context.l10n.logoutMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancelar'),
+              child: Text(context.l10n.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFE53935),
               ),
-              child: const Text('Cerrar sesion'),
+              child: Text(context.l10n.logout),
             ),
           ],
         );
@@ -74,7 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_provider.error ?? 'No pudimos cerrar sesion.'),
+          content: Text(_provider.error ?? context.l10n.couldNotLogout),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -86,8 +91,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Navigator.of(context).pushReplacementNamed('/map');
       return;
     }
+    if (index == 1) {
+      Navigator.of(context).pushReplacementNamed('/publications');
+      return;
+    }
     if (index == 2) {
       Navigator.of(context).pushNamed('/create-post');
+      return;
+    }
+    if (index == 3) {
+      Navigator.of(context).pushReplacementNamed('/alerts');
       return;
     }
     if (index == 4) return;
@@ -95,8 +108,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(
-          content: Text('Seccion lista para conectar'),
+        SnackBar(
+          content: Text(context.l10n.sectionReady),
           behavior: SnackBarBehavior.floating,
           duration: Duration(milliseconds: 1200),
         ),
@@ -108,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FB),
       appBar: AppBar(
-        title: const Text('Perfil'),
+        title: Text(context.l10n.profile),
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textNavy,
         elevation: 0,
@@ -157,12 +170,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ProfileActionButtons(
                       isBusy: _provider.isSaving,
                       onEdit: _openEditProfile,
+                      onLanguage: _openLanguageSettings,
                       onLogout: _confirmLogout,
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Mis publicaciones',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.myPosts,
+                      style: const TextStyle(
                         color: AppTheme.textNavy,
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
@@ -211,7 +225,7 @@ class _ProfileError extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            FilledButton(onPressed: onRetry, child: const Text('Reintentar')),
+            FilledButton(onPressed: onRetry, child: Text(context.l10n.retry)),
           ],
         ),
       ),
@@ -231,20 +245,28 @@ class _ProfileBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      _NavItemData('Mapa', Icons.map_rounded, const Color(0xFFE53935)),
       _NavItemData(
-        'Explorar',
+        context.l10n.map,
+        Icons.map_rounded,
+        const Color(0xFFE53935),
+      ),
+      _NavItemData(
+        context.l10n.explore,
         Icons.travel_explore_rounded,
         const Color(0xFFE53935),
       ),
-      _NavItemData('Publicar', Icons.add_rounded, const Color(0xFFFFB300)),
       _NavItemData(
-        'Alertas',
+        context.l10n.publish,
+        Icons.add_rounded,
+        const Color(0xFFFFB300),
+      ),
+      _NavItemData(
+        context.l10n.alerts,
         Icons.notifications_none_rounded,
         const Color(0xFF0B8063),
       ),
       _NavItemData(
-        'Perfil',
+        context.l10n.profile,
         Icons.person_outline_rounded,
         const Color(0xFF0B8063),
       ),

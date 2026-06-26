@@ -1,0 +1,14 @@
+﻿{
+  "@@locale": "x-kallawaya",
+  "appName": "Mapia",
+  "map": "Mapa",
+  "explore": "Explorar",
+  "publish": "Publicar",
+  "alerts": "Alertas",
+  "profile": "Perfil",
+  "language": "Machajuyai-kallawaya",
+  "translationInPreparation": "Traducción en preparación",
+  "@language": {
+    "description": "PENDIENTE: traducción validada a Machajuyai-kallawaya"
+  }
+}

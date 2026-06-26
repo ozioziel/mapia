@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
+import 'package:mapiafrontend/core/localization/time_ago.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
@@ -47,7 +49,7 @@ class PostAuthorHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${_timeAgo(post.createdAt)} · ${post.address ?? 'La Paz'}',
+                '${localizedTimeAgo(context, post.createdAt)} - ${post.address ?? context.l10n.laPaz}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -62,12 +64,4 @@ class PostAuthorHeader extends StatelessWidget {
       ],
     );
   }
-}
-
-String _timeAgo(DateTime date) {
-  final difference = DateTime.now().difference(date);
-  if (difference.inMinutes < 1) return 'Ahora';
-  if (difference.inMinutes < 60) return 'Hace ${difference.inMinutes} min';
-  if (difference.inHours < 24) return 'Hace ${difference.inHours} h';
-  return 'Hace ${difference.inDays} d';
 }

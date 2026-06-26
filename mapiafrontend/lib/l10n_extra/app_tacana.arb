@@ -1,0 +1,14 @@
+﻿{
+  "@@locale": "x-tacana",
+  "appName": "Mapia",
+  "map": "Mapa",
+  "explore": "Explorar",
+  "publish": "Publicar",
+  "alerts": "Alertas",
+  "profile": "Perfil",
+  "language": "Tacana",
+  "translationInPreparation": "Traducción en preparación",
+  "@language": {
+    "description": "PENDIENTE: traducción validada a Tacana"
+  }
+}

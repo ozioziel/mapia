@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/posts/presentation/providers/create_post_provider.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/create_post_form.dart';
@@ -30,8 +31,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     if (!mounted || !created) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Publicación creada correctamente'),
+      SnackBar(
+        content: Text(context.l10n.postCreatedSuccessfully),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -43,7 +44,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FB),
       appBar: AppBar(
-        title: const Text('Crear publicación'),
+        title: Text(context.l10n.createPost),
         centerTitle: false,
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textNavy,

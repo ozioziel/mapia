@@ -1,0 +1,14 @@
+﻿{
+  "@@locale": "x-zamuco",
+  "appName": "Mapia",
+  "map": "Mapa",
+  "explore": "Explorar",
+  "publish": "Publicar",
+  "alerts": "Alertas",
+  "profile": "Perfil",
+  "language": "Zamuco / Ayoreo",
+  "translationInPreparation": "Traducción en preparación",
+  "@language": {
+    "description": "PENDIENTE: traducción validada a Zamuco / Ayoreo"
+  }
+}
