@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mapiafrontend/core/config/app_config.dart';
+import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
@@ -434,39 +434,30 @@ class _MapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final missingKey = AppConfig.googleMapsApiKey.isEmpty;
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Stack(
         children: [
           Positioned.fill(
-            child: missingKey
-                ? const _MapStateMessage(
-                    icon: Icons.key_off_rounded,
-                    title: 'Falta la API key de Google Maps',
-                    message:
-                        'Ejecuta Flutter con GOOGLE_MAPS_API_KEY configurado.',
-                  )
-                : GoogleMap(
-                    onMapCreated: onMapCreated,
-                    initialCameraPosition: const CameraPosition(
-                      target: boliviaCenter,
-                      zoom: 5.4,
-                    ),
-                    cameraTargetBounds: CameraTargetBounds(boliviaBounds),
-                    minMaxZoomPreference: const MinMaxZoomPreference(5.2, 18),
-                    mapType: MapType.normal,
-                    mapToolbarEnabled: false,
-                    myLocationButtonEnabled: true,
-                    myLocationEnabled: false,
-                    zoomControlsEnabled: false,
-                    compassEnabled: false,
-                    rotateGesturesEnabled: false,
-                    markers: _markers(),
-                    circles: _circles(),
-                    onTap: (_) {},
-                  ),
+            child: GoogleMap(
+              onMapCreated: onMapCreated,
+              initialCameraPosition: const CameraPosition(
+                target: boliviaCenter,
+                zoom: 5.4,
+              ),
+              cameraTargetBounds: CameraTargetBounds(boliviaBounds),
+              minMaxZoomPreference: const MinMaxZoomPreference(5.2, 18),
+              mapType: MapType.normal,
+              mapToolbarEnabled: false,
+              myLocationButtonEnabled: true,
+              myLocationEnabled: false,
+              zoomControlsEnabled: false,
+              compassEnabled: false,
+              rotateGesturesEnabled: false,
+              markers: _markers(),
+              circles: _circles(),
+              onTap: (_) {},
+            ),
           ),
           if (isLoading)
             const Positioned.fill(
@@ -476,21 +467,27 @@ class _MapCard extends StatelessWidget {
               ),
             ),
           if (!isLoading && error != null)
-            Positioned.fill(
-              child: _MapStateMessage(
+            Positioned(
+              left: 14,
+              right: 14,
+              top: 14,
+              child: _MapNotice(
                 icon: Icons.cloud_off_rounded,
-                title: 'No se pudo cargar el mapa',
+                title: 'Sin conexion al backend',
                 message: error!,
                 action: 'Reintentar',
                 onAction: () => onRetry(),
               ),
             ),
           if (!isLoading && error == null && alerts.isEmpty)
-            const Positioned.fill(
-              child: _MapStateMessage(
+            const Positioned(
+              left: 14,
+              right: 14,
+              top: 14,
+              child: _MapNotice(
                 icon: Icons.map_outlined,
                 title: 'Sin alertas por ahora',
-                message: 'Publica el primer reporte ciudadano para verlo aqui.',
+                message: 'El mapa esta listo para mostrar nuevos reportes.',
               ),
             ),
           const Positioned(left: 14, bottom: 14, child: _Legend()),
@@ -585,6 +582,73 @@ class _MapStateMessage extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MapNotice extends StatelessWidget {
+  const _MapNotice({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? action;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF64748B), size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  message,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (action != null && onAction != null) ...[
+            const SizedBox(width: 8),
+            TextButton(onPressed: onAction, child: Text(action!)),
+          ],
+        ],
       ),
     );
   }
@@ -1348,37 +1412,30 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                     height: 220,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: AppConfig.googleMapsApiKey.isEmpty
-                          ? const _MapStateMessage(
-                              icon: Icons.key_off_rounded,
-                              title: 'Configura Google Maps',
-                              message:
-                                  'No se puede seleccionar el punto sin API key.',
-                            )
-                          : GoogleMap(
-                              initialCameraPosition: CameraPosition(
-                                target: _location,
-                                zoom: 13,
-                              ),
-                              cameraTargetBounds: CameraTargetBounds(
-                                boliviaBounds,
-                              ),
-                              minMaxZoomPreference: const MinMaxZoomPreference(
-                                5.2,
-                                18,
-                              ),
-                              markers: {
-                                Marker(
-                                  markerId: const MarkerId('report_location'),
-                                  position: _location,
-                                  draggable: true,
-                                  onDragEnd: _setLocation,
-                                ),
-                              },
-                              onTap: _setLocation,
-                              myLocationButtonEnabled: false,
-                              zoomControlsEnabled: false,
-                            ),
+                      child: GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: _location,
+                          zoom: 13,
+                        ),
+                        cameraTargetBounds: CameraTargetBounds(
+                          boliviaBounds,
+                        ),
+                        minMaxZoomPreference: const MinMaxZoomPreference(
+                          5.2,
+                          18,
+                        ),
+                        markers: {
+                          Marker(
+                            markerId: const MarkerId('report_location'),
+                            position: _location,
+                            draggable: true,
+                            onDragEnd: _setLocation,
+                          ),
+                        },
+                        onTap: _setLocation,
+                        myLocationButtonEnabled: false,
+                        zoomControlsEnabled: false,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
