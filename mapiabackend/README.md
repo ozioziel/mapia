@@ -62,6 +62,48 @@ El `/health` devuelve la versión de PostGIS: útil para confirmar que la base q
 
 ---
 
+## Produccion / Supabase
+
+La API desplegada verificada es:
+
+| Recurso | URL |
+|---|---|
+| API | `http://144.22.43.169:3001/api/v1` |
+| Swagger (docs) | `http://144.22.43.169:3001/docs` |
+| Healthcheck | `http://144.22.43.169:3001/api/v1/health` |
+
+Para produccion con Supabase usa el Session Pooler y deja `DB_RUN_MIGRATIONS=false`.
+El esquema debe aplicarse manualmente desde los SQL en `db/`; no correr migraciones
+destructivas contra datos reales.
+
+Variables minimas del server:
+
+```env
+NODE_ENV=production
+PORT=3001
+API_PREFIX=api/v1
+CORS_ORIGINS=<FRONTEND_URL>
+DB_HOST=aws-0-<region>.pooler.supabase.com
+DB_PORT=5432
+DB_USERNAME=postgres.<project-ref>
+DB_PASSWORD=<SUPABASE_DB_PASSWORD>
+DB_DATABASE=postgres
+DB_SSL=true
+DB_RUN_MIGRATIONS=false
+JWT_ACCESS_SECRET=<JWT_ACCESS_SECRET>
+JWT_REFRESH_SECRET=<JWT_REFRESH_SECRET>
+STORAGE_DRIVER=supabase
+SUPABASE_URL=<SUPABASE_URL>
+SUPABASE_SERVICE_ROLE_KEY=<SUPABASE_SERVICE_ROLE_KEY>
+SUPABASE_STORAGE_BUCKET=alert-images
+GOOGLE_MAPS_SERVER_API_KEY=<GOOGLE_MAPS_SERVER_API_KEY>
+```
+
+Si el frontend web se sirve por HTTPS, la API tambien debe estar detras de HTTPS
+para evitar bloqueo por mixed content.
+
+---
+
 ## Variables de entorno
 
 Copiar `.env.example` a `.env`. Claves principales:
@@ -76,10 +118,10 @@ Copiar `.env.example` a `.env`. Claves principales:
 | `DB_DATABASE` | `mapia_db` | Base de datos |
 | `DB_SSL` | `false` | SSL (true si IP pública en cloud) |
 | `DB_RUN_MIGRATIONS` | `true` | Correr migraciones al arrancar |
-| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | `change_me_*` | Secretos JWT (cambiar) |
-| `STORAGE_DRIVER` | `local` | `local` (disco) o `gcs` (prod) |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | placeholders | Secretos JWT (cambiar) |
+| `STORAGE_DRIVER` | `local` | `local`, `supabase` o `gcs` |
 | `DEFAULT_RADIUS_KM` / `MAX_RADIUS_KM` | `3` / `50` | Radio por defecto y tope |
-| `GOOGLE_MAPS_API_KEY` | _(vacío)_ | Sin key → geocoding responde **mock** |
+| `GOOGLE_MAPS_SERVER_API_KEY` | _(vacío)_ | Geocoding/Places desde backend |
 
 > Nunca commitear el `.env`. En producción los secretos van en **Secret Manager**.
 
@@ -143,6 +185,7 @@ las de escritura requieren `Authorization: Bearer <accessToken>`.
 ## Storage de archivos
 
 - `STORAGE_DRIVER=local` → guarda en `./uploads` y sirve en `/static` (desarrollo).
+- `STORAGE_DRIVER=supabase` → Supabase Storage, bucket `SUPABASE_STORAGE_BUCKET`.
 - `STORAGE_DRIVER=gcs` → Google Cloud Storage (producción), bucket `GCS_BUCKET_NAME`.
 
 El driver se elige por variable de entorno; el código de los módulos no cambia.

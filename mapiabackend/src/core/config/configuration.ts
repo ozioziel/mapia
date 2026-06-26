@@ -82,7 +82,7 @@ export default () => ({
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET ?? 'change_me_access',
     refreshSecret: process.env.JWT_REFRESH_SECRET ?? 'change_me_refresh',
-    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '1d',
+    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   } as JwtConfig,
 
@@ -98,7 +98,7 @@ export default () => ({
   } as StorageConfig,
 
   maps: {
-    apiKey: process.env.GOOGLE_MAPS_API_KEY ?? '',
+    apiKey: process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.GOOGLE_MAPS_API_KEY || '',
     geocodingEnabled: toBool(process.env.GOOGLE_MAPS_GEOCODING_ENABLED, true),
     placesEnabled: toBool(process.env.GOOGLE_MAPS_PLACES_ENABLED, true),
   } as MapsConfig,

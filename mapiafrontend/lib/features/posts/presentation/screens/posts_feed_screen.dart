@@ -76,9 +76,21 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
         title: Text(context.l10n.publications),
         actions: [
           IconButton(
-            icon: const Icon(Icons.auto_awesome_rounded, color: AppTheme.boliviaGreen),
+            icon: const Icon(
+              Icons.auto_awesome_rounded,
+              color: AppTheme.boliviaGreen,
+            ),
             tooltip: 'Novedades MAPIA',
             onPressed: () => Navigator.of(context).pushNamed('/news-posts'),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.fact_check_rounded,
+              color: AppTheme.primaryBlue,
+            ),
+            tooltip: 'Candidatos para Alcaldia',
+            onPressed: () =>
+                Navigator.of(context).pushNamed('/report-candidates'),
           ),
         ],
       ),

@@ -12,18 +12,24 @@ import 'package:mapiafrontend/features/chatbot/widgets/floating_chatbot_button.d
 import 'package:mapiafrontend/core/network/authenticated_api_client.dart';
 import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
 import 'package:mapiafrontend/features/map/presentation/widgets/map_post_preview_card.dart';
+import 'package:mapiafrontend/features/map/presentation/widgets/news_map_card.dart';
 import 'package:mapiafrontend/features/map/services/map_api.dart';
+import 'package:mapiafrontend/features/map/services/news_map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
 import 'package:mapiafrontend/features/map/styles/mapia_map_style.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
 import 'package:mapiafrontend/features/map/types/post_map_marker_types.dart';
 import 'package:mapiafrontend/features/map/utils/bolivia_bounds.dart';
 import 'package:mapiafrontend/features/map/utils/severity.dart';
+import 'package:mapiafrontend/features/news/domain/entities/map_news_item.dart';
 import 'package:mapiafrontend/features/posts/data/datasources/mock_posts_datasource.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
+import 'package:mapiafrontend/features/report_candidates/data/mock_report_candidates.dart';
+import 'package:mapiafrontend/features/report_candidates/domain/report_candidate.dart';
 import 'package:mapiafrontend/shared/widgets/app_surface.dart';
 import 'package:mapiafrontend/shared/widgets/mapia_bottom_navigation.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -35,14 +41,21 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   MapApi? _mapApi;
   ReportsApi? _reportsApi;
+  NewsMapApi? _newsMapApi;
   final List<PostEntity> _explorePosts = const MockPostsDatasource().getPosts();
+  final List<ReportCandidate> _approvedCandidates = MockReportCandidates.items
+      .where((item) => item.status == ReportCandidateStatus.aprobadoParaInforme)
+      .toList();
 
   GoogleMapController? _mapController;
   AlertFilters _filters = const AlertFilters();
   AlertFilterOptions _filterOptions = const AlertFilterOptions();
   List<AlertMapItem> _alerts = [];
+  List<MapNewsItem> _mapNews = [];
   AlertMapItem? _selected;
+  MapNewsItem? _selectedNews;
   PostEntity? _selectedExplorePost;
+  ReportCandidate? _selectedCandidate;
   PostMapMarkerIcons? _postMarkerIcons;
   Set<PostType> _enabledPostTypes = PostType.values.toSet();
   bool _isLoading = true;
@@ -54,7 +67,9 @@ class _MapScreenState extends State<MapScreen> {
   LatLng? _currentLocation;
   static const double _nearbyRadiusKm = 3;
   Timer? _refreshTimer;
+  Timer? _newsRefreshTimer;
   String? _activeUserId;
+  String? _pendingNewsId;
 
   void _bindToUser() {
     final auth = AuthScope.of(context);
@@ -62,14 +77,21 @@ class _MapScreenState extends State<MapScreen> {
     if (userId == null || userId == _activeUserId) return;
 
     _refreshTimer?.cancel();
+    _newsRefreshTimer?.cancel();
     _activeUserId = userId;
     final client = createAuthenticatedApiClient(auth);
     _mapApi = MapApi(client: client);
     _reportsApi = ReportsApi(client: client);
+    _newsMapApi = NewsMapApi();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    _pendingNewsId = args is Map ? args['newsId'] as String? : null;
     setState(() {
       _selected = null;
+      _selectedNews = null;
       _selectedExplorePost = null;
+      _selectedCandidate = null;
       _alerts = [];
+      _mapNews = [];
       _isLoading = true;
     });
     _initializeMap();
@@ -77,6 +99,9 @@ class _MapScreenState extends State<MapScreen> {
       if (!_isLoading && _error == null) {
         _loadAlertsQuietly();
       }
+    });
+    _newsRefreshTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      _loadMapNewsQuietly();
     });
   }
 
@@ -95,13 +120,14 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _newsRefreshTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _initializeMap() async {
     await _loadGoogleMapsSdk();
     await _requestCurrentLocation();
-    await _loadAlerts();
+    await Future.wait([_loadAlerts(), _loadMapNews()]);
   }
 
   Future<void> _loadPostMarkerIcons() async {
@@ -199,6 +225,17 @@ class _MapScreenState extends State<MapScreen> {
     } catch (_) {}
   }
 
+  Future<void> _loadMapNewsQuietly() async {
+    try {
+      final items = await _newsMapApi!.fetchTodayMapNews();
+      if (!mounted) return;
+      setState(() {
+        _mapNews = items;
+        _selectedNews = _findNews(items, _selectedNews?.id);
+      });
+    } catch (_) {}
+  }
+
   Future<void> _loadAlerts({String? selectId}) async {
     setState(() {
       _isLoading = true;
@@ -239,11 +276,36 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  Future<void> _loadMapNews() async {
+    try {
+      final items = await _newsMapApi!.fetchTodayMapNews();
+      final selected = _findNews(items, _pendingNewsId);
+      if (!mounted) return;
+      setState(() {
+        _mapNews = items;
+        if (selected != null) {
+          _selectedNews = selected;
+          _selected = null;
+          _selectedExplorePost = null;
+          _selectedCandidate = null;
+        }
+      });
+      if (selected != null) {
+        _pendingNewsId = null;
+        await _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(selected.position, 13),
+        );
+      }
+    } catch (_) {}
+  }
+
   void _applyFilters(AlertFilters filters) {
     setState(() {
       _filters = filters;
       _selected = null;
+      _selectedNews = null;
       _selectedExplorePost = null;
+      _selectedCandidate = null;
     });
     _loadAlerts();
   }
@@ -253,6 +315,32 @@ class _MapScreenState extends State<MapScreen> {
       if (!mounted) return;
       setState(() {
         _selected = alert;
+        _selectedNews = null;
+        _selectedExplorePost = null;
+        _selectedCandidate = null;
+      });
+    });
+  }
+
+  void _selectNewsFromMap(MapNewsItem item) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _selectedNews = item;
+        _selected = null;
+        _selectedExplorePost = null;
+        _selectedCandidate = null;
+      });
+    });
+  }
+
+  void _selectCandidateFromMap(ReportCandidate candidate) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _selectedCandidate = candidate;
+        _selected = null;
+        _selectedNews = null;
         _selectedExplorePost = null;
       });
     });
@@ -264,6 +352,8 @@ class _MapScreenState extends State<MapScreen> {
       setState(() {
         _selectedExplorePost = post;
         _selected = null;
+        _selectedNews = null;
+        _selectedCandidate = null;
       });
     });
   }
@@ -286,6 +376,18 @@ class _MapScreenState extends State<MapScreen> {
 
   void _openExplorePost(PostEntity post) {
     Navigator.of(context).pushNamed('/posts/${Uri.encodeComponent(post.id)}');
+  }
+
+  Future<void> _openNewsUrl(MapNewsItem item) async {
+    final url = item.url;
+    if (url == null || url.isEmpty) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _refreshMapData() async {
+    await Future.wait([_loadAlerts(), _loadMapNews()]);
   }
 
   Future<void> _openPublishReport() async {
@@ -332,7 +434,11 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isCardOpen = _selected != null || _selectedExplorePost != null;
+    final bool isCardOpen =
+        _selected != null ||
+        _selectedExplorePost != null ||
+        _selectedNews != null ||
+        _selectedCandidate != null;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (FloatingChatbotButton.isVisible.value != !isCardOpen) {
@@ -361,7 +467,10 @@ class _MapScreenState extends State<MapScreen> {
           Positioned.fill(
             child: _MapCard(
               alerts: _alerts,
+              news: _mapNews,
+              approvedCandidates: _approvedCandidates,
               selected: _selected,
+              selectedNews: _selectedNews,
               myReportIds: {
                 for (final alert in _alerts)
                   if (alert.isMine) alert.id,
@@ -376,8 +485,10 @@ class _MapScreenState extends State<MapScreen> {
               hasLocationPermission: _hasLocationPermission,
               onMapCreated: _handleMapCreated,
               onAlertSelected: _selectAlertFromMap,
+              onNewsSelected: _selectNewsFromMap,
+              onCandidateSelected: _selectCandidateFromMap,
               onExplorePostSelected: _selectExplorePost,
-              onRetry: _loadAlerts,
+              onRetry: ({selectId}) => _refreshMapData(),
             ),
           ),
           Positioned(
@@ -395,7 +506,7 @@ class _MapScreenState extends State<MapScreen> {
                 isLocating: _isLocating,
                 hasLocation: _currentLocation != null,
                 onToggle: () => setState(() => _filtersOpen = !_filtersOpen),
-                onRefresh: _loadAlerts,
+                onRefresh: ({selectId}) => _refreshMapData(),
                 onLocatePressed: _handleLocatePressed,
                 onPostTypeToggled: _togglePostType,
                 onFiltersChanged: _applyFilters,
@@ -410,6 +521,31 @@ class _MapScreenState extends State<MapScreen> {
               child: MapPostPreviewCard(
                 post: _selectedExplorePost!,
                 onGoTap: () => _openExplorePost(_selectedExplorePost!),
+              ),
+            )
+          else if (_selectedNews != null)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 125,
+              child: NewsMapCard(
+                item: _selectedNews!,
+                onOpen: (_selectedNews!.url?.isNotEmpty ?? false)
+                    ? () => _openNewsUrl(_selectedNews!)
+                    : null,
+                onClose: () => setState(() => _selectedNews = null),
+              ),
+            )
+          else if (_selectedCandidate != null)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 125,
+              child: _CandidateMapCard(
+                candidate: _selectedCandidate!,
+                onOpen: () =>
+                    Navigator.of(context).pushNamed('/report-candidates'),
+                onClose: () => setState(() => _selectedCandidate = null),
               ),
             )
           else if (_selected != null)
@@ -431,11 +567,17 @@ class _MapScreenState extends State<MapScreen> {
 
   void _handleMapCreated(GoogleMapController controller) {
     _mapController = controller;
+    final selected = _selectedNews;
+    if (selected != null) {
+      controller.animateCamera(
+        CameraUpdate.newLatLngZoom(selected.position, 13),
+      );
+    }
   }
 
   Future<void> _handleLocatePressed() async {
     await _requestCurrentLocation(moveCamera: true);
-    await _loadAlerts();
+    await _refreshMapData();
   }
 
   AlertMapItem? _findAlert(List<AlertMapItem> alerts, String? id) {
@@ -445,12 +587,134 @@ class _MapScreenState extends State<MapScreen> {
     }
     return null;
   }
+
+  MapNewsItem? _findNews(List<MapNewsItem> items, String? id) {
+    if (id == null) return null;
+    for (final item in items) {
+      if (item.id == id) return item;
+    }
+    return null;
+  }
+}
+
+class _CandidateMapCard extends StatelessWidget {
+  const _CandidateMapCard({
+    required this.candidate,
+    required this.onOpen,
+    required this.onClose,
+  });
+
+  final ReportCandidate candidate;
+  final VoidCallback onOpen;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      elevation: 10,
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFF7B1FA2).withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.assignment_turned_in_rounded,
+                color: Color(0xFF7B1FA2),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    candidate.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.textNavy,
+                      fontSize: 15.5,
+                      height: 1.12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    '${candidate.category.label} - ${candidate.priority.label}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF7B1FA2),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    candidate.summary,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.mutedText,
+                      fontSize: 12.5,
+                      height: 1.25,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Cerrar',
+                  onPressed: onClose,
+                  icon: const Icon(Icons.close_rounded),
+                ),
+                FilledButton(
+                  onPressed: onOpen,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF7B1FA2),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(54, 34),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Detalle',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _MapCard extends StatelessWidget {
   const _MapCard({
     required this.alerts,
+    required this.news,
+    required this.approvedCandidates,
     required this.selected,
+    required this.selectedNews,
     required this.myReportIds,
     required this.isLoading,
     required this.error,
@@ -462,12 +726,17 @@ class _MapCard extends StatelessWidget {
     required this.hasLocationPermission,
     required this.onMapCreated,
     required this.onAlertSelected,
+    required this.onNewsSelected,
+    required this.onCandidateSelected,
     required this.onExplorePostSelected,
     required this.onRetry,
   });
 
   final List<AlertMapItem> alerts;
+  final List<MapNewsItem> news;
+  final List<ReportCandidate> approvedCandidates;
   final AlertMapItem? selected;
+  final MapNewsItem? selectedNews;
   final Set<String> myReportIds;
   final bool isLoading;
   final String? error;
@@ -479,6 +748,8 @@ class _MapCard extends StatelessWidget {
   final bool hasLocationPermission;
   final ValueChanged<GoogleMapController> onMapCreated;
   final ValueChanged<AlertMapItem> onAlertSelected;
+  final ValueChanged<MapNewsItem> onNewsSelected;
+  final ValueChanged<ReportCandidate> onCandidateSelected;
   final ValueChanged<PostEntity> onExplorePostSelected;
   final Future<void> Function({String? selectId}) onRetry;
 
@@ -542,15 +813,16 @@ class _MapCard extends StatelessWidget {
               onAction: () => onRetry(),
             ),
           ),
-        if (!isLoading && error == null && alerts.isEmpty)
+        if (!isLoading && error == null && alerts.isEmpty && news.isEmpty)
           const Positioned(
             left: 14,
             right: 14,
             top: 88,
             child: _MapNotice(
               icon: Icons.map_outlined,
-              title: 'Sin alertas por ahora',
-              message: 'El mapa esta listo para mostrar nuevos reportes.',
+              title: 'No hay novedades geolocalizadas por hoy',
+              message:
+                  'El mapa esta listo para mostrar reportes y novedades nuevas.',
             ),
           ),
       ],
@@ -576,6 +848,32 @@ class _MapCard extends StatelessWidget {
           ),
           onTap: () => onAlertSelected(alert),
         ),
+      for (final item in news)
+        Marker(
+          markerId: MarkerId('news_${item.id}'),
+          position: item.position,
+          infoWindow: InfoWindow(
+            title: item.title,
+            snippet: item.category.label,
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(item.category.markerHue),
+          onTap: () => onNewsSelected(item),
+        ),
+      for (final candidate in approvedCandidates)
+        if (candidate.lat != null && candidate.lng != null)
+          Marker(
+            markerId: MarkerId('candidate_${candidate.id}'),
+            position: LatLng(candidate.lat!, candidate.lng!),
+            infoWindow: InfoWindow(
+              title: candidate.title,
+              snippet:
+                  '${candidate.category.label} - Prioridad ${candidate.priority.label}',
+            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueViolet,
+            ),
+            onTap: () => onCandidateSelected(candidate),
+          ),
       ...renderExplorePostMarkers(
         posts: explorePosts,
         enabledTypes: enabledPostTypes,
@@ -599,6 +897,19 @@ class _MapCard extends StatelessWidget {
           strokeWidth: selected?.id == alert.id ? 4 : 3,
           consumeTapEvents: true,
           onTap: () => onAlertSelected(alert),
+        ),
+      for (final item in news)
+        Circle(
+          circleId: CircleId('news_circle_${item.id}'),
+          center: item.position,
+          radius: selectedNews?.id == item.id ? 620 : 420,
+          fillColor: const Color(
+            0xFF2563EB,
+          ).withValues(alpha: selectedNews?.id == item.id ? 0.2 : 0.1),
+          strokeColor: Colors.white,
+          strokeWidth: selectedNews?.id == item.id ? 4 : 2,
+          consumeTapEvents: true,
+          onTap: () => onNewsSelected(item),
         ),
     };
   }

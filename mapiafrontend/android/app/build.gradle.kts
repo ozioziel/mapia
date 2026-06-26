@@ -17,20 +17,8 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-fun readEnvValue(file: java.io.File, key: String): String? {
-    if (!file.exists()) return null
-    return file.readLines()
-        .map { it.trim() }
-        .firstOrNull { it.startsWith("$key=") }
-        ?.substringAfter("=")
-        ?.substringBefore("#")
-        ?.trim()
-        ?.takeIf { it.isNotEmpty() }
-}
-
 val googleMapsApiKey = System.getenv("GOOGLE_MAPS_API_KEY")
     ?: localProperties.getProperty("GOOGLE_MAPS_API_KEY")
-    ?: readEnvValue(rootProject.file("../../mapiabackend/.env"), "GOOGLE_MAPS_API_KEY")
     ?: (project.findProperty("dart-defines") as? String)
         ?.split(",")
         ?.mapNotNull { encoded ->

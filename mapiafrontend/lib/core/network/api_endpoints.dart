@@ -13,7 +13,16 @@ class ApiEndpoints {
   static const mapAlerts = '/map/alerts';
   static const mapSummary = '/map/summary';
   static const mapFilters = '/map/filters';
+  static const newsTodayMap = '/news/today/map';
   static const parseReport = '/reports/parse';
   static const publishReport = '/reports';
   static const myReports = '/reports/mine';
+  static const reportCandidates = '/report-candidates';
+  static const generateCitizenReport = '/reports/generate';
+
+  static String reportCandidateFromPost(String postId) =>
+      '/report-candidates/from-post/$postId';
+
+  static String reportCandidateStatus(String id) =>
+      '/report-candidates/$id/status';
 }

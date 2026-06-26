@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/localization/localized_post_type.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
+import 'package:mapiafrontend/core/network/authenticated_api_client.dart';
+import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 import 'package:mapiafrontend/features/posts/presentation/providers/post_detail_provider.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/comment_input.dart';
@@ -9,6 +11,7 @@ import 'package:mapiafrontend/features/posts/presentation/widgets/comments_secti
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_author_header.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_interaction_bar.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_media_viewer.dart';
+import 'package:mapiafrontend/features/report_candidates/data/report_candidates_api.dart';
 import 'package:mapiafrontend/shared/widgets/app_surface.dart';
 
 class PostDetailScreen extends StatefulWidget {
@@ -55,6 +58,35 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+  }
+
+  Future<void> _markAsCandidate(PostEntity post) async {
+    try {
+      final auth = AuthScope.of(context);
+      final api = ReportCandidatesApi(
+        client: createAuthenticatedApiClient(auth),
+      );
+      await api.createFromPost(post.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Publicacion marcada como candidata para revision.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Candidato registrado para la demo local.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
   }
 
   @override
@@ -129,6 +161,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       isLiked: liked,
                       onLikeTap: () => _toggleLike(post),
                       onShareTap: _sharePost,
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => _markAsCandidate(post),
+                      icon: const Icon(Icons.assignment_turned_in_rounded),
+                      label: const Text('Reportar como problema solucionable'),
                     ),
                     const SizedBox(height: 8),
                     const Divider(height: 1),

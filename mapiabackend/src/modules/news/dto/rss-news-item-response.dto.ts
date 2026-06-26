@@ -30,4 +30,22 @@ export class RssNewsItemResponseDto {
 
   @ApiProperty()
   updatedAt: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  locationText?: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  lat?: number | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  lng?: number | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  category?: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  createdBy?: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  locationStatus?: string | null;
 }

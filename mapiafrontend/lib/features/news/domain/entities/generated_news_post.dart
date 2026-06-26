@@ -10,6 +10,11 @@ class GeneratedNewsPost {
     required this.generatedBy,
     required this.isAiGenerated,
     required this.createdAt,
+    this.mapItemId,
+    this.locationText,
+    this.latitude,
+    this.longitude,
+    this.publishedAt,
   });
 
   final String id;
@@ -22,4 +27,11 @@ class GeneratedNewsPost {
   final String generatedBy;
   final bool isAiGenerated;
   final DateTime createdAt;
+  final String? mapItemId;
+  final String? locationText;
+  final double? latitude;
+  final double? longitude;
+  final DateTime? publishedAt;
+
+  bool get hasLocation => latitude != null && longitude != null;
 }

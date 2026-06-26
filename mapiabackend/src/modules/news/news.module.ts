@@ -7,11 +7,18 @@ import { NewsPostsService } from './news-posts.service';
 import { RssNewsItem } from './entities/rss-news-item.entity';
 import { GeneratedNewsPost } from './entities/generated-news-post.entity';
 import { NewsClassifierService } from './news-classifier.service';
+import { GeocodingService } from './geocoding.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([RssNewsItem, GeneratedNewsPost])],
   controllers: [NewsController],
-  providers: [NewsService, RssPollingService, NewsPostsService, NewsClassifierService],
+  providers: [
+    NewsService,
+    RssPollingService,
+    NewsPostsService,
+    NewsClassifierService,
+    GeocodingService,
+  ],
   exports: [NewsService],
 })
 export class NewsModule {}

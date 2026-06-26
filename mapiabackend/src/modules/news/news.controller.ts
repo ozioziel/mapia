@@ -4,6 +4,7 @@ import { Public } from '@common/decorators/public.decorator';
 import { NewsService } from './news.service';
 import { GeneratedNewsPostResponseDto } from './dto/generated-news-post-response.dto';
 import { RssNewsItemResponseDto } from './dto/rss-news-item-response.dto';
+import { NewsTodayResponseDto } from './dto/news-today-response.dto';
 
 @ApiTags('news')
 @Controller('news')
@@ -27,7 +28,28 @@ export class NewsController {
       generatedBy: post.generatedBy,
       isAiGenerated: post.isAiGenerated,
       createdAt: post.createdAt.toISOString(),
+      mapItemId: post.newsItemId ?? post.id,
+      locationText: post.newsItem?.locationText ?? null,
+      lat: post.newsItem?.lat ?? null,
+      lng: post.newsItem?.lng ?? null,
+      publishedAt: (post.newsItem?.publishedAt ?? post.createdAt).toISOString(),
     }));
+  }
+
+  @Public()
+  @Get('today')
+  @ApiOperation({ summary: 'Obtener novedades del dia actual en zona horaria de Bolivia' })
+  @ApiResponse({ type: [NewsTodayResponseDto] })
+  async getTodayNews(): Promise<NewsTodayResponseDto[]> {
+    return this.newsService.getTodayNews();
+  }
+
+  @Public()
+  @Get('today/map')
+  @ApiOperation({ summary: 'Obtener novedades del dia actual con ubicacion valida para el mapa' })
+  @ApiResponse({ type: [NewsTodayResponseDto] })
+  async getTodayMapNews(): Promise<NewsTodayResponseDto[]> {
+    return this.newsService.getTodayMapNews();
   }
 
   @Public()
@@ -40,6 +62,15 @@ export class NewsController {
       success: true,
       ...result,
     };
+  }
+
+  @Public()
+  @Post('geocode-missing')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Intentar geocodificar novedades del dia sin coordenadas' })
+  async geocodeMissing(): Promise<{ success: boolean; processed: number; geocoded: number; skipped: number }> {
+    const result = await this.newsService.geocodeMissingTodayNews();
+    return { success: true, ...result };
   }
 
   @Public()
@@ -59,6 +90,12 @@ export class NewsController {
       hash: item.hash,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),
+      locationText: item.locationText,
+      lat: item.lat,
+      lng: item.lng,
+      category: item.category,
+      createdBy: item.createdBy,
+      locationStatus: item.locationStatus,
     }));
   }
 

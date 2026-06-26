@@ -29,6 +29,8 @@ import { LocationsModule } from '@modules/locations/locations.module';
 import { SettingsModule } from '@modules/settings/settings.module';
 import { LanguagesModule } from '@modules/languages/languages.module';
 import { ReportsModule } from '@modules/reports/reports.module';
+import { ReportCandidatesModule } from '@modules/report-candidates/report-candidates.module';
+import { CitizenReportsModule } from '@modules/citizen-reports/citizen-reports.module';
 import { FollowsModule } from '@modules/follows/follows.module';
 import { HealthModule } from '@modules/health/health.module';
 import { NewsModule } from '@modules/news/news.module';
@@ -71,6 +73,8 @@ import { NewsModule } from '@modules/news/news.module';
     SettingsModule,
     LanguagesModule,
     ReportsModule,
+    ReportCandidatesModule,
+    CitizenReportsModule,
     FollowsModule,
     HealthModule,
     NewsModule,

@@ -19,6 +19,7 @@ import 'package:mapiafrontend/features/profile/presentation/screens/edit_profile
 import 'package:mapiafrontend/features/profile/presentation/screens/profile_screen.dart';
 import 'package:mapiafrontend/features/profile/presentation/screens/verify_phone_screen.dart';
 import 'package:mapiafrontend/features/news/presentation/screens/news_posts_page.dart';
+import 'package:mapiafrontend/features/report_candidates/presentation/report_candidates_screen.dart';
 import 'package:mapiafrontend/l10n/app_localizations.dart';
 
 void main() {
@@ -95,6 +96,9 @@ class _MainAppState extends State<MainApp> {
               ),
               '/alerts': (context) => ProtectedRoute(
                 child: _withExperimentalChatbot(const AlertsScreen()),
+              ),
+              '/report-candidates': (context) => ProtectedRoute(
+                child: _withExperimentalChatbot(const ReportCandidatesScreen()),
               ),
               '/profile': (context) => ProtectedRoute(
                 child: _withExperimentalChatbot(const ProfileScreen()),

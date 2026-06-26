@@ -7,10 +7,7 @@ import 'package:mapiafrontend/features/news/data/models/news_status_model.dart';
 class NewsRemoteDataSource {
   const NewsRemoteDataSource({this.client});
 
-  static final String apiBaseUrl = (() {
-    const env = String.fromEnvironment('MAPIA_API_BASE_URL', defaultValue: '');
-    return env.isNotEmpty ? env : AppConfig.apiBaseUrl;
-  })();
+  static final String apiBaseUrl = AppConfig.apiBaseUrl;
 
   final http.Client? client;
 
@@ -19,13 +16,17 @@ class NewsRemoteDataSource {
     final shouldCloseClient = client == null;
 
     try {
-      final response = await httpClient.get(
-        Uri.parse('$apiBaseUrl/news/generated-posts'),
-        headers: const {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 12));
+      final response = await httpClient
+          .get(
+            Uri.parse('$apiBaseUrl/news/generated-posts'),
+            headers: const {'Accept': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 12));
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception('El backend respondió con estado ${response.statusCode}.');
+        throw Exception(
+          'El backend respondió con estado ${response.statusCode}.',
+        );
       }
 
       final decoded = jsonDecode(response.body);
@@ -49,13 +50,17 @@ class NewsRemoteDataSource {
     final shouldCloseClient = client == null;
 
     try {
-      final response = await httpClient.get(
-        Uri.parse('$apiBaseUrl/news/status'),
-        headers: const {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 12));
+      final response = await httpClient
+          .get(
+            Uri.parse('$apiBaseUrl/news/status'),
+            headers: const {'Accept': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 12));
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception('El backend respondió con estado ${response.statusCode}.');
+        throw Exception(
+          'El backend respondió con estado ${response.statusCode}.',
+        );
       }
 
       final decoded = jsonDecode(response.body);
@@ -76,13 +81,17 @@ class NewsRemoteDataSource {
     final shouldCloseClient = client == null;
 
     try {
-      final response = await httpClient.post(
-        Uri.parse('$apiBaseUrl/news/refresh'),
-        headers: const {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 15));
+      final response = await httpClient
+          .post(
+            Uri.parse('$apiBaseUrl/news/refresh'),
+            headers: const {'Accept': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception('El backend respondió con estado ${response.statusCode}.');
+        throw Exception(
+          'El backend respondió con estado ${response.statusCode}.',
+        );
       }
     } finally {
       if (shouldCloseClient) {

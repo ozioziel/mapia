@@ -43,6 +43,13 @@ class _NewsPostsPageState extends State<NewsPostsPage> {
     }
   }
 
+  void _openInMap(GeneratedNewsPost post) {
+    Navigator.of(context).pushReplacementNamed(
+      '/map',
+      arguments: {'newsId': post.mapItemId ?? post.id},
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppGradientScaffold(
@@ -101,6 +108,7 @@ class _NewsPostsPageState extends State<NewsPostsPage> {
                   return _NewsPostCard(
                     post: post,
                     onOpenOriginal: () => _openOriginalUrl(post.originalUrl),
+                    onOpenMap: post.hasLocation ? () => _openInMap(post) : null,
                   );
                 },
               ),
@@ -301,10 +309,12 @@ class _NewsPostCard extends StatelessWidget {
   const _NewsPostCard({
     required this.post,
     required this.onOpenOriginal,
+    required this.onOpenMap,
   });
 
   final GeneratedNewsPost post;
   final VoidCallback onOpenOriginal;
+  final VoidCallback? onOpenMap;
 
   @override
   Widget build(BuildContext context) {
@@ -369,6 +379,17 @@ class _NewsPostCard extends StatelessWidget {
                 color: AppTheme.boliviaGreen,
               ),
               const Spacer(),
+              if (onOpenMap != null) ...[
+                TextButton.icon(
+                  onPressed: onOpenMap,
+                  icon: const Icon(Icons.map_rounded, size: 16),
+                  label: const Text(
+                    'Ver en mapa',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
               TextButton.icon(
                 onPressed: onOpenOriginal,
                 icon: const Icon(Icons.open_in_new_rounded, size: 16),

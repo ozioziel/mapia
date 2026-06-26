@@ -12,6 +12,11 @@ class GeneratedNewsPostModel extends GeneratedNewsPost {
     required super.generatedBy,
     required super.isAiGenerated,
     required super.createdAt,
+    super.mapItemId,
+    super.locationText,
+    super.latitude,
+    super.longitude,
+    super.publishedAt,
   });
 
   factory GeneratedNewsPostModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +33,13 @@ class GeneratedNewsPostModel extends GeneratedNewsPost {
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),
+      mapItemId: json['mapItemId'] as String?,
+      locationText: json['locationText'] as String?,
+      latitude: (json['lat'] as num?)?.toDouble(),
+      longitude: (json['lng'] as num?)?.toDouble(),
+      publishedAt: json['publishedAt'] != null
+          ? DateTime.tryParse(json['publishedAt'] as String)
+          : null,
     );
   }
 }
