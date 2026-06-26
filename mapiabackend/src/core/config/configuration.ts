@@ -28,11 +28,14 @@ export interface JwtConfig {
 }
 
 export interface StorageConfig {
-  driver: 'local' | 'gcs';
+  driver: 'local' | 'gcs' | 'supabase';
   localDir: string;
   publicUrl: string;
   gcsBucket: string;
   gcpProjectId: string;
+  supabaseUrl: string;
+  supabaseServiceRoleKey: string;
+  supabaseBucket: string;
 }
 
 export interface MapsConfig {
@@ -84,11 +87,14 @@ export default () => ({
   } as JwtConfig,
 
   storage: {
-    driver: (process.env.STORAGE_DRIVER ?? 'local') as 'local' | 'gcs',
+    driver: (process.env.STORAGE_DRIVER ?? 'local') as 'local' | 'gcs' | 'supabase',
     localDir: process.env.STORAGE_LOCAL_DIR ?? 'uploads',
     publicUrl: process.env.STORAGE_PUBLIC_URL ?? 'http://localhost:3000/static',
     gcsBucket: process.env.GCS_BUCKET_NAME ?? 'mapia-media',
     gcpProjectId: process.env.GCP_PROJECT_ID ?? '',
+    supabaseUrl: process.env.SUPABASE_URL ?? '',
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+    supabaseBucket: process.env.SUPABASE_STORAGE_BUCKET ?? 'alert-images',
   } as StorageConfig,
 
   maps: {
