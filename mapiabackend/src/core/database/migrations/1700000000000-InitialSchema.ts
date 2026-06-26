@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Migración inicial de Mapia (MVP).
@@ -118,7 +118,9 @@ export class InitialSchema1700000000000 implements MigrationInterface {
 
     // Columna geográfica + índice GIST + trigger de sincronización.
     await queryRunner.query(`ALTER TABLE "posts" ADD COLUMN "location" geography(Point,4326);`);
-    await queryRunner.query(`CREATE INDEX "idx_posts_location" ON "posts" USING GIST ("location");`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_posts_location" ON "posts" USING GIST ("location");`,
+    );
     await queryRunner.query(`CREATE INDEX "idx_posts_type" ON "posts" ("type");`);
     await queryRunner.query(`CREATE INDEX "idx_posts_status" ON "posts" ("status");`);
     await queryRunner.query(`CREATE INDEX "idx_posts_visibility" ON "posts" ("visibility");`);
