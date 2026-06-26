@@ -61,7 +61,7 @@ class _MainAppState extends State<MainApp> {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [Locale('es')],
-          initialRoute: '/login',
+          initialRoute: '/map',
           routes: {
             '/login': (context) => const LoginScreen(),
             '/register': (context) => const RegisterScreen(),

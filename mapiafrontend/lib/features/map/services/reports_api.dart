@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -86,6 +87,8 @@ class ReportsApi {
     : _client = client ?? ApiClient(),
       _http = httpClient ?? http.Client();
 
+  static const _uploadTimeout = Duration(seconds: 30);
+
   final ApiClient _client;
   final http.Client _http;
 
@@ -103,10 +106,8 @@ class ReportsApi {
   }
 
   Future<String> publishReport(PublishReportInput input) async {
-    final request = http.MultipartRequest(
-      'POST',
-      _client.uri(ApiEndpoints.publishReport),
-    );
+    final requestUri = _client.uri(ApiEndpoints.publishReport);
+    final request = http.MultipartRequest('POST', requestUri);
 
     request.fields.addAll({
       'title': input.title,
@@ -134,8 +135,18 @@ class ReportsApi {
       );
     }
 
-    final streamed = await _http.send(request);
-    final response = await http.Response.fromStream(streamed);
+    late final http.Response response;
+    try {
+      final streamed = await _http.send(request).timeout(_uploadTimeout);
+      response = await http.Response.fromStream(
+        streamed,
+      ).timeout(_uploadTimeout);
+    } on TimeoutException {
+      throw ApiException('Tiempo de espera agotado: $requestUri', 0);
+    } catch (_) {
+      throw ApiException('No se pudo conectar con $requestUri', 0);
+    }
+
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         response.body.isEmpty ? 'No se pudo publicar' : response.body,

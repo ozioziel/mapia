@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mapiafrontend/core/config/app_config.dart';
 import 'package:mapiafrontend/core/platform/google_maps_web_loader.dart';
+import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/map/presentation/widgets/map_post_preview_card.dart';
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
@@ -714,13 +715,27 @@ class _MapCard extends StatelessWidget {
               ),
             ),
           if (!isLoading && error != null)
-            Positioned.fill(
-              child: _MapStateMessage(
+            Positioned(
+              left: 14,
+              right: 14,
+              top: 14,
+              child: _MapNotice(
                 icon: Icons.cloud_off_rounded,
-                title: 'No se pudo cargar el mapa',
+                title: 'Sin conexion al backend',
                 message: error!,
                 action: 'Reintentar',
                 onAction: () => onRetry(),
+              ),
+            ),
+          if (!isLoading && error == null && alerts.isEmpty)
+            const Positioned(
+              left: 14,
+              right: 14,
+              top: 14,
+              child: _MapNotice(
+                icon: Icons.map_outlined,
+                title: 'Sin alertas por ahora',
+                message: 'El mapa esta listo para mostrar nuevos reportes.',
               ),
             ),
         ],
@@ -856,8 +871,8 @@ class _MapCategoryFilters extends StatelessWidget {
   }
 }
 
-class _MapStateMessage extends StatelessWidget {
-  const _MapStateMessage({
+class _MapNotice extends StatelessWidget {
+  const _MapNotice({
     required this.icon,
     required this.title,
     required this.message,
@@ -870,6 +885,69 @@ class _MapStateMessage extends StatelessWidget {
   final String message;
   final String? action;
   final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF64748B), size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  message,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (action != null && onAction != null) ...[
+            const SizedBox(width: 8),
+            TextButton(onPressed: onAction, child: Text(action!)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MapStateMessage extends StatelessWidget {
+  const _MapStateMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -901,10 +979,6 @@ class _MapStateMessage extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              if (action != null && onAction != null) ...[
-                const SizedBox(height: 14),
-                FilledButton(onPressed: onAction, child: Text(action!)),
-              ],
             ],
           ),
         ),

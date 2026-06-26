@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AlertReports1710000000000 implements MigrationInterface {
   name = 'AlertReports1710000000000';
@@ -46,13 +46,27 @@ export class AlertReports1710000000000 implements MigrationInterface {
       );
     `);
 
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_reports_location" ON "reports" ("latitude", "longitude");`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_reports_department" ON "reports" ("department");`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_reports_product" ON "reports" ("product");`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_reports_alert_type" ON "reports" ("alert_type");`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_reports_severity" ON "reports" ("severity");`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_reports_created_at" ON "reports" ("created_at");`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_report_images_report" ON "report_images" ("report_id");`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_reports_location" ON "reports" ("latitude", "longitude");`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_reports_department" ON "reports" ("department");`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_reports_product" ON "reports" ("product");`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_reports_alert_type" ON "reports" ("alert_type");`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_reports_severity" ON "reports" ("severity");`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_reports_created_at" ON "reports" ("created_at");`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_report_images_report" ON "report_images" ("report_id");`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
