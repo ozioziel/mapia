@@ -5,7 +5,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mapiafrontend/core/config/app_config.dart';
-import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
@@ -57,7 +56,8 @@ class _MapScreenState extends State<MapScreen> {
       final summary = results[1] as AlertMapSummary;
       final options = results[2] as AlertFilterOptions;
       final selected = selectId == null
-          ? _findAlert(alerts, _selected?.id) ?? (alerts.isEmpty ? null : alerts.first)
+          ? _findAlert(alerts, _selected?.id) ??
+                (alerts.isEmpty ? null : alerts.first)
           : _findAlert(alerts, selectId);
 
       if (!mounted) return;
@@ -86,6 +86,13 @@ class _MapScreenState extends State<MapScreen> {
   void _applyFilters(AlertFilters filters) {
     setState(() => _filters = filters);
     _loadAlerts();
+  }
+
+  void _selectAlertFromMap(AlertMapItem alert) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _selected = alert);
+    });
   }
 
   Future<void> _openPublishReport() async {
@@ -160,8 +167,7 @@ class _MapScreenState extends State<MapScreen> {
                               error: _error,
                               onMapCreated: (controller) =>
                                   _mapController = controller,
-                              onAlertSelected: (alert) =>
-                                  setState(() => _selected = alert),
+                              onAlertSelected: _selectAlertFromMap,
                               onRetry: _loadAlerts,
                             ),
                             const SizedBox(height: 12),
@@ -185,8 +191,7 @@ class _MapScreenState extends State<MapScreen> {
                                 error: _error,
                                 onMapCreated: (controller) =>
                                     _mapController = controller,
-                                onAlertSelected: (alert) =>
-                                    setState(() => _selected = alert),
+                                onAlertSelected: _selectAlertFromMap,
                                 onRetry: _loadAlerts,
                               ),
                             ),
@@ -295,10 +300,26 @@ class _SummaryCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cards = [
-      _SummaryCardData('Total de alertas', '${summary.totalAlerts}', Icons.radar_rounded),
-      _SummaryCardData('Alertas criticas', '${summary.highRiskAlerts}', Icons.warning_rounded),
-      _SummaryCardData('Producto afectado', summary.mostAffectedProduct ?? 'Sin datos', Icons.inventory_2_rounded),
-      _SummaryCardData('Departamento afectado', summary.mostAffectedDepartment ?? 'Sin datos', Icons.location_city_rounded),
+      _SummaryCardData(
+        'Total de alertas',
+        '${summary.totalAlerts}',
+        Icons.radar_rounded,
+      ),
+      _SummaryCardData(
+        'Alertas criticas',
+        '${summary.highRiskAlerts}',
+        Icons.warning_rounded,
+      ),
+      _SummaryCardData(
+        'Producto afectado',
+        summary.mostAffectedProduct ?? 'Sin datos',
+        Icons.inventory_2_rounded,
+      ),
+      _SummaryCardData(
+        'Departamento afectado',
+        summary.mostAffectedDepartment ?? 'Sin datos',
+        Icons.location_city_rounded,
+      ),
     ];
 
     return LayoutBuilder(
@@ -416,7 +437,8 @@ class _MapCard extends StatelessWidget {
                 ? const _MapStateMessage(
                     icon: Icons.key_off_rounded,
                     title: 'Falta la API key de Google Maps',
-                    message: 'Ejecuta Flutter con GOOGLE_MAPS_API_KEY configurado.',
+                    message:
+                        'Ejecuta Flutter con GOOGLE_MAPS_API_KEY configurado.',
                   )
                 : GoogleMap(
                     onMapCreated: onMapCreated,
@@ -476,7 +498,9 @@ class _MapCard extends StatelessWidget {
           markerId: MarkerId(alert.id),
           position: alert.position,
           infoWindow: InfoWindow(title: alert.title, snippet: alert.product),
-          icon: BitmapDescriptor.defaultMarkerWithHue(markerHue(alert.severity)),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            markerHue(alert.severity),
+          ),
           onTap: () => onAlertSelected(alert),
         ),
     };
@@ -489,7 +513,9 @@ class _MapCard extends StatelessWidget {
           circleId: CircleId('circle_${alert.id}'),
           center: alert.position,
           radius: selected?.id == alert.id ? 760 : 520,
-          fillColor: severityColor(alert.severity).withValues(alpha: selected?.id == alert.id ? 0.32 : 0.22),
+          fillColor: severityColor(
+            alert.severity,
+          ).withValues(alpha: selected?.id == alert.id ? 0.32 : 0.22),
           strokeColor: Colors.white,
           strokeWidth: selected?.id == alert.id ? 4 : 3,
           consumeTapEvents: true,
@@ -640,7 +666,10 @@ class _SidePanel extends StatelessWidget {
               value: filters.department,
               values: options.departments,
               onChanged: (value) => onFiltersChanged(
-                filters.copyWith(department: value, clearDepartment: value == null),
+                filters.copyWith(
+                  department: value,
+                  clearDepartment: value == null,
+                ),
               ),
             ),
             _StringFilter(
@@ -648,7 +677,10 @@ class _SidePanel extends StatelessWidget {
               value: filters.municipality,
               values: options.municipalities,
               onChanged: (value) => onFiltersChanged(
-                filters.copyWith(municipality: value, clearMunicipality: value == null),
+                filters.copyWith(
+                  municipality: value,
+                  clearMunicipality: value == null,
+                ),
               ),
             ),
             _StringFilter(
@@ -662,16 +694,23 @@ class _SidePanel extends StatelessWidget {
             _EnumFilter<AlertType>(
               label: 'Tipo de problema',
               value: filters.alertType,
-              values: options.alertTypes.isEmpty ? AlertType.values : options.alertTypes,
+              values: options.alertTypes.isEmpty
+                  ? AlertType.values
+                  : options.alertTypes,
               labelOf: (value) => value.label,
               onChanged: (value) => onFiltersChanged(
-                filters.copyWith(alertType: value, clearAlertType: value == null),
+                filters.copyWith(
+                  alertType: value,
+                  clearAlertType: value == null,
+                ),
               ),
             ),
             _EnumFilter<AlertSeverity>(
               label: 'Severidad',
               value: filters.severity,
-              values: options.severities.isEmpty ? AlertSeverity.values : options.severities,
+              values: options.severities.isEmpty
+                  ? AlertSeverity.values
+                  : options.severities,
               labelOf: (value) => value.label,
               onChanged: (value) => onFiltersChanged(
                 filters.copyWith(severity: value, clearSeverity: value == null),
@@ -738,7 +777,9 @@ class _StringFilter extends StatelessWidget {
         decoration: InputDecoration(labelText: label),
         items: [
           const DropdownMenuItem(value: null, child: Text('Todos')),
-          ...values.map((value) => DropdownMenuItem(value: value, child: Text(value))),
+          ...values.map(
+            (value) => DropdownMenuItem(value: value, child: Text(value)),
+          ),
         ],
         onChanged: onChanged,
       ),
@@ -770,7 +811,10 @@ class _EnumFilter<T> extends StatelessWidget {
         decoration: InputDecoration(labelText: label),
         items: [
           DropdownMenuItem<T>(value: null, child: const Text('Todos')),
-          ...values.map((value) => DropdownMenuItem(value: value, child: Text(labelOf(value)))),
+          ...values.map(
+            (value) =>
+                DropdownMenuItem(value: value, child: Text(labelOf(value))),
+          ),
         ],
         onChanged: onChanged,
       ),
@@ -843,7 +887,10 @@ class _AlertDetail extends StatelessWidget {
         _DetailRow('Zona', alert.zone ?? 'Sin dato'),
         _DetailRow('Reportes', '${alert.reportsCount}'),
         _DetailRow('Confianza', '${(alert.confidence * 100).round()}%'),
-        _DetailRow('Precio promedio', alert.avgPrice == null ? 'Sin dato' : '${alert.avgPrice} Bs'),
+        _DetailRow(
+          'Precio promedio',
+          alert.avgPrice == null ? 'Sin dato' : '${alert.avgPrice} Bs',
+        ),
         if (alert.images.isNotEmpty) ...[
           const SizedBox(height: 10),
           SizedBox(
@@ -969,10 +1016,17 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
       }
       final position = await Geolocator.getCurrentPosition();
       if (!isInsideBolivia(position.latitude, position.longitude)) return;
-      setState(() => _location = LatLng(position.latitude, position.longitude));
+      _setLocation(LatLng(position.latitude, position.longitude));
     } catch (_) {
       return;
     }
+  }
+
+  void _setLocation(LatLng location) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _location = location);
+    });
   }
 
   Future<void> _toggleVoice() async {
@@ -1161,8 +1215,12 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _toggleVoice,
-                    icon: Icon(_isListening ? Icons.stop_rounded : Icons.mic_rounded),
-                    label: Text(_isListening ? 'Detener dictado' : 'Dictar con voz'),
+                    icon: Icon(
+                      _isListening ? Icons.stop_rounded : Icons.mic_rounded,
+                    ),
+                    label: Text(
+                      _isListening ? 'Detener dictado' : 'Dictar con voz',
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1186,7 +1244,10 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
               title: 'Datos detectados',
               child: Column(
                 children: [
-                  TextField(controller: _titleController, decoration: const InputDecoration(labelText: 'Titulo')),
+                  TextField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(labelText: 'Titulo'),
+                  ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: _descriptionController,
@@ -1197,31 +1258,75 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      Expanded(child: TextField(controller: _productController, decoration: const InputDecoration(labelText: 'Producto'))),
+                      Expanded(
+                        child: TextField(
+                          controller: _productController,
+                          decoration: const InputDecoration(
+                            labelText: 'Producto',
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 10),
-                      Expanded(child: TextField(controller: _priceController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Precio Bs'))),
+                      Expanded(
+                        child: TextField(
+                          controller: _priceController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Precio Bs',
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<AlertType>(
                     value: _alertType,
-                    decoration: const InputDecoration(labelText: 'Tipo de alerta'),
-                    items: AlertType.values.map((type) => DropdownMenuItem(value: type, child: Text(type.label))).toList(),
-                    onChanged: (value) => setState(() => _alertType = value ?? _alertType),
+                    decoration: const InputDecoration(
+                      labelText: 'Tipo de alerta',
+                    ),
+                    items: AlertType.values
+                        .map(
+                          (type) => DropdownMenuItem(
+                            value: type,
+                            child: Text(type.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => _alertType = value ?? _alertType),
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<AlertSeverity>(
                     value: _severity,
                     decoration: const InputDecoration(labelText: 'Severidad'),
-                    items: AlertSeverity.values.map((severity) => DropdownMenuItem(value: severity, child: Text(severity.label))).toList(),
-                    onChanged: (value) => setState(() => _severity = value ?? _severity),
+                    items: AlertSeverity.values
+                        .map(
+                          (severity) => DropdownMenuItem(
+                            value: severity,
+                            child: Text(severity.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => _severity = value ?? _severity),
                   ),
                   const SizedBox(height: 10),
-                  TextField(controller: _departmentController, decoration: const InputDecoration(labelText: 'Departamento')),
+                  TextField(
+                    controller: _departmentController,
+                    decoration: const InputDecoration(
+                      labelText: 'Departamento',
+                    ),
+                  ),
                   const SizedBox(height: 10),
-                  TextField(controller: _municipalityController, decoration: const InputDecoration(labelText: 'Municipio')),
+                  TextField(
+                    controller: _municipalityController,
+                    decoration: const InputDecoration(labelText: 'Municipio'),
+                  ),
                   const SizedBox(height: 10),
-                  TextField(controller: _zoneController, decoration: const InputDecoration(labelText: 'Zona')),
+                  TextField(
+                    controller: _zoneController,
+                    decoration: const InputDecoration(labelText: 'Zona'),
+                  ),
                 ],
               ),
             ),
@@ -1239,21 +1344,30 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                           ? const _MapStateMessage(
                               icon: Icons.key_off_rounded,
                               title: 'Configura Google Maps',
-                              message: 'No se puede seleccionar el punto sin API key.',
+                              message:
+                                  'No se puede seleccionar el punto sin API key.',
                             )
                           : GoogleMap(
-                              initialCameraPosition: CameraPosition(target: _location, zoom: 13),
-                              cameraTargetBounds: CameraTargetBounds(boliviaBounds),
-                              minMaxZoomPreference: const MinMaxZoomPreference(5.2, 18),
+                              initialCameraPosition: CameraPosition(
+                                target: _location,
+                                zoom: 13,
+                              ),
+                              cameraTargetBounds: CameraTargetBounds(
+                                boliviaBounds,
+                              ),
+                              minMaxZoomPreference: const MinMaxZoomPreference(
+                                5.2,
+                                18,
+                              ),
                               markers: {
                                 Marker(
                                   markerId: const MarkerId('report_location'),
                                   position: _location,
                                   draggable: true,
-                                  onDragEnd: (value) => setState(() => _location = value),
+                                  onDragEnd: _setLocation,
                                 ),
                               },
-                              onTap: (value) => setState(() => _location = value),
+                              onTap: _setLocation,
                               myLocationButtonEnabled: false,
                               zoomControlsEnabled: false,
                             ),
@@ -1263,7 +1377,11 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                   Text(
                     'Lat ${_location.latitude.toStringAsFixed(5)}, Lng ${_location.longitude.toStringAsFixed(5)}',
                     style: TextStyle(
-                      color: isInsideBolivia(_location.latitude, _location.longitude)
+                      color:
+                          isInsideBolivia(
+                            _location.latitude,
+                            _location.longitude,
+                          )
                           ? const Color(0xFF64748B)
                           : const Color(0xFFEF4444),
                       fontWeight: FontWeight.w800,
@@ -1297,7 +1415,11 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                       for (final image in _images)
                         _ImagePreview(
                           image: image,
-                          onRemove: () => setState(() => _images = _images.where((item) => item != image).toList()),
+                          onRemove: () => setState(
+                            () => _images = _images
+                                .where((item) => item != image)
+                                .toList(),
+                          ),
                         ),
                     ],
                   ),
@@ -1377,12 +1499,19 @@ class _ImagePreview extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: snapshot.hasData
-                  ? Image.memory(snapshot.data!, width: 86, height: 86, fit: BoxFit.cover)
+                  ? Image.memory(
+                      snapshot.data!,
+                      width: 86,
+                      height: 86,
+                      fit: BoxFit.cover,
+                    )
                   : Container(
                       width: 86,
                       height: 86,
                       color: const Color(0xFFE2E8F0),
-                      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
                     ),
             ),
             Positioned(
@@ -1391,7 +1520,10 @@ class _ImagePreview extends StatelessWidget {
               child: IconButton.filledTonal(
                 onPressed: onRemove,
                 icon: const Icon(Icons.close_rounded, size: 16),
-                constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                constraints: const BoxConstraints.tightFor(
+                  width: 30,
+                  height: 30,
+                ),
                 padding: EdgeInsets.zero,
               ),
             ),
