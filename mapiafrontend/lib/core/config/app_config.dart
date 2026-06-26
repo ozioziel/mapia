@@ -8,8 +8,13 @@ class AppConfig {
       return env;
     }
 
-    // IP de tu computadora en la red Wi-Fi
-    // Esto asegura que funcione perfectamente en Emulador, Web y Dispositivo físico sin fallos.
+    // En Flutter Web (Chrome/Edge) la app corre en el mismo host → usar localhost.
+    // En emulador Android o dispositivo físico usar la IP de la red local.
+    if (kIsWeb) {
+      return 'http://localhost:3000/api/v1';
+    }
+
+    // IP de tu computadora en la red Wi-Fi (para emulador/dispositivo físico)
     return 'http://192.168.1.204:3000/api/v1';
   }
 

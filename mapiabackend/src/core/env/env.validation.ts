@@ -30,6 +30,9 @@ export const envValidationSchema = Joi.object({
   GOOGLE_MAPS_GEOCODING_ENABLED: Joi.boolean().truthy('true').truthy('1').falsy('false').falsy('0').default(true),
   GOOGLE_MAPS_PLACES_ENABLED: Joi.boolean().truthy('true').truthy('1').falsy('false').falsy('0').default(true),
 
+  GROQ_API: Joi.string().allow('').default(''),
+  GEMINI_API: Joi.string().allow('').default(''),
+
   SUPABASE_URL: Joi.string().allow('').default(''),
   SUPABASE_SERVICE_ROLE_KEY: Joi.string().allow('').default(''),
   SUPABASE_ANON_KEY: Joi.string().allow('').default(''),

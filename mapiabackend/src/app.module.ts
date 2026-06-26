@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ValidationPipe } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import configuration from '@core/config/configuration';
 import { envValidationSchema } from '@core/env/env.validation';
@@ -30,6 +31,7 @@ import { LanguagesModule } from '@modules/languages/languages.module';
 import { ReportsModule } from '@modules/reports/reports.module';
 import { FollowsModule } from '@modules/follows/follows.module';
 import { HealthModule } from '@modules/health/health.module';
+import { NewsModule } from '@modules/news/news.module';
 
 @Module({
   imports: [
@@ -39,6 +41,7 @@ import { HealthModule } from '@modules/health/health.module';
       validationSchema: envValidationSchema,
       validationOptions: { abortEarly: false },
     }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => [
@@ -70,6 +73,7 @@ import { HealthModule } from '@modules/health/health.module';
     ReportsModule,
     FollowsModule,
     HealthModule,
+    NewsModule,
   ],
   providers: [
     // Validación global de DTOs.

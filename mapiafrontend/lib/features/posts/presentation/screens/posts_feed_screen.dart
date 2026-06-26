@@ -72,7 +72,16 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
   @override
   Widget build(BuildContext context) {
     return AppGradientScaffold(
-      appBar: AppBar(title: Text(context.l10n.publications)),
+      appBar: AppBar(
+        title: Text(context.l10n.publications),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome_rounded, color: AppTheme.boliviaGreen),
+            tooltip: 'Novedades MAPIA',
+            onPressed: () => Navigator.of(context).pushNamed('/news-posts'),
+          ),
+        ],
+      ),
       body: ListView.separated(
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 108),

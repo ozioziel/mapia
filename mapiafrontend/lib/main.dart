@@ -16,6 +16,7 @@ import 'package:mapiafrontend/features/posts/presentation/screens/posts_feed_scr
 import 'package:mapiafrontend/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:mapiafrontend/features/profile/presentation/screens/profile_screen.dart';
 import 'package:mapiafrontend/features/profile/presentation/screens/verify_phone_screen.dart';
+import 'package:mapiafrontend/features/news/presentation/screens/news_posts_page.dart';
 import 'package:mapiafrontend/l10n/app_localizations.dart';
 
 void main() {
@@ -68,6 +69,8 @@ class _MainAppState extends State<MainApp> {
             '/map': (context) => _withExperimentalChatbot(const MapScreen()),
             '/publications': (context) =>
                 _withExperimentalChatbot(const PostsFeedScreen()),
+            '/news-posts': (context) =>
+                _withExperimentalChatbot(const NewsPostsPage()),
             '/create-post': (context) =>
                 _withExperimentalChatbot(const CreatePostScreen()),
             '/alerts': (context) =>
