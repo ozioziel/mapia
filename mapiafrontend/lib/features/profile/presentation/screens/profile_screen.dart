@@ -107,41 +107,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
     if (index == 2) {
-      if (_provider.profile?.phoneVerified != true) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Debes verificar tu numero de celular antes de publicar.',
-              ),
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: 'Verificar',
-                onPressed: _openVerifyPhone,
-              ),
-            ),
-          );
-        return;
-      }
-      Navigator.of(context).pushNamed('/create-post');
-      return;
-    }
-    if (index == 3) {
       Navigator.of(context).pushReplacementNamed('/alerts');
       return;
     }
-    if (index == 4) return;
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.sectionReady),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(milliseconds: 1200),
-        ),
-      );
+    if (index == 3) return;
   }
 
   @override
@@ -149,7 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return AppGradientScaffold(
       appBar: AppBar(title: Text(context.l10n.profile)),
       bottomNavigationBar: MapiaBottomNavigation(
-        currentIndex: 4,
+        currentIndex: 3,
         onIndexChanged: _onBottomNavTap,
       ),
       body: SafeArea(

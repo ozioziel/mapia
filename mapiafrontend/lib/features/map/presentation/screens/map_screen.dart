@@ -250,9 +250,8 @@ class _MapScreenState extends State<MapScreen> {
   void _onBottomNavTap(int index) {
     if (index == 0) return;
     if (index == 1) Navigator.of(context).pushReplacementNamed('/publications');
-    if (index == 2) _openPublishReport();
-    if (index == 3) Navigator.of(context).pushReplacementNamed('/alerts');
-    if (index == 4) Navigator.of(context).pushReplacementNamed('/profile');
+    if (index == 2) Navigator.of(context).pushReplacementNamed('/alerts');
+    if (index == 3) Navigator.of(context).pushReplacementNamed('/profile');
   }
 
   @override

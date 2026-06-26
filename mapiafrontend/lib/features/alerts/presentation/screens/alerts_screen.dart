@@ -45,12 +45,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
       Navigator.of(context).pushReplacementNamed('/publications');
       return;
     }
-    if (index == 2) {
-      Navigator.of(context).pushNamed('/create-post');
-      return;
-    }
-    if (index == 3) return;
-    if (index == 4) {
+    if (index == 2) return;
+    if (index == 3) {
       Navigator.of(context).pushReplacementNamed('/profile');
     }
   }
@@ -60,7 +56,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     return AppGradientScaffold(
       appBar: AppBar(title: Text(context.l10n.alertsNearYou)),
       bottomNavigationBar: MapiaBottomNavigation(
-        currentIndex: 3,
+        currentIndex: 2,
         onIndexChanged: _onBottomNavTap,
       ),
       body: SafeArea(

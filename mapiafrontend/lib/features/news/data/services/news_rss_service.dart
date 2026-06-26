@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:mapiafrontend/core/config/app_config.dart';
 import 'package:mapiafrontend/features/news/domain/entities/news_item.dart';
 
 // Experimental: isolated client for the backend El Deber RSS proxy.
@@ -8,11 +9,11 @@ import 'package:mapiafrontend/features/news/domain/entities/news_item.dart';
 class NewsRssService {
   const NewsRssService({this.client});
 
-  static const String apiBaseUrl = String.fromEnvironment(
-    'MAPIA_API_BASE_URL',
-    defaultValue: 'http://localhost:3000/api/v1',
-  );
-  static const String endpoint = '$apiBaseUrl/experimental/news/el-deber';
+  static final String apiBaseUrl = (() {
+    const env = String.fromEnvironment('MAPIA_API_BASE_URL', defaultValue: '');
+    return env.isNotEmpty ? env : AppConfig.apiBaseUrl;
+  })();
+  static final String endpoint = '$apiBaseUrl/experimental/news/el-deber';
 
   final http.Client? client;
 

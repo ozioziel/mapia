@@ -60,26 +60,13 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
     }
     if (index == 1) return;
     if (index == 2) {
-      Navigator.of(context).pushNamed('/create-post');
-      return;
-    }
-    if (index == 3) {
       Navigator.of(context).pushReplacementNamed('/alerts');
       return;
     }
-    if (index == 4) {
+    if (index == 3) {
       Navigator.of(context).pushNamed('/profile');
       return;
     }
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.sectionReady),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
   }
 
   @override
