@@ -41,6 +41,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await Navigator.of(context).pushNamed('/language');
   }
 
+  Future<void> _openVerifyPhone() async {
+    await Navigator.of(context).pushNamed('/profile/verify-phone');
+    if (mounted) {
+      _provider.loadProfile();
+    }
+  }
+
   void _openPost(ProfilePostEntity post) {
     Navigator.of(context).pushNamed('/posts/${Uri.encodeComponent(post.id)}');
   }
@@ -96,6 +103,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
     if (index == 2) {
+      if (_provider.profile?.phoneVerified != true) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Debes verificar tu numero de celular antes de publicar.',
+              ),
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'Verificar',
+                onPressed: _openVerifyPhone,
+              ),
+            ),
+          );
+        return;
+      }
       Navigator.of(context).pushNamed('/create-post');
       return;
     }
@@ -169,7 +193,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 14),
                     ProfileActionButtons(
                       isBusy: _provider.isSaving,
+                      phoneVerified: profile.phoneVerified,
                       onEdit: _openEditProfile,
+                      onVerifyPhone: _openVerifyPhone,
                       onLanguage: _openLanguageSettings,
                       onLogout: _confirmLogout,
                     ),

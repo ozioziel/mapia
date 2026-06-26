@@ -19,6 +19,17 @@ class LanguageProvider extends ChangeNotifier {
   Locale _locale = const Locale('es');
   Locale get locale => _locale;
 
+  // Flutter's Material/Cupertino localization delegates do not support every
+  // language Mapia wants to prepare. Keep the user's Mapia language selection,
+  // but use Spanish for Flutter framework strings until those locales have
+  // supported framework delegates or validated translations.
+  Locale get frameworkLocale {
+    return switch (_locale.languageCode) {
+      'es' => _locale,
+      _ => const Locale('es'),
+    };
+  }
+
   Future<void> load() async {
     final saved = await _getSavedLanguage();
     if (saved == null) return;

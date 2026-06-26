@@ -12,175 +12,175 @@ class AppLocalizationsGn extends AppLocalizations {
   String get appName => 'Mapia';
 
   @override
-  String get login => 'Iniciar sesión';
+  String get login => 'Eike';
 
   @override
-  String get register => 'Registrarse';
+  String get register => 'Eñemboheraguapy';
 
   @override
   String get email => 'Correo electrónico';
 
   @override
-  String get password => 'Contraseña';
+  String get password => 'Ñe\'ẽñemi';
 
   @override
-  String get fullName => 'Nombre completo';
+  String get fullName => 'Téra completa';
 
   @override
-  String get confirmPassword => 'Confirmar contraseña';
+  String get confirmPassword => 'Emoneĩ ñe\'ẽñemi';
 
   @override
-  String get logout => 'Cerrar sesión';
+  String get logout => 'Esẽ';
 
   @override
-  String get logoutQuestion => '¿Cerrar sesión?';
+  String get logoutQuestion => '¿Esẽsepa?';
 
   @override
-  String get logoutMessage => 'Tendrás que iniciar sesión nuevamente.';
+  String get logoutMessage => 'Eike jey va\'erã.';
 
   @override
-  String get sessionClosed => 'Sesión cerrada';
+  String get sessionClosed => 'Sesión oñemboty';
 
   @override
-  String get cancel => 'Cancelar';
+  String get cancel => 'Eheja rei';
 
   @override
-  String get save => 'Guardar';
+  String get save => 'Eñongatu';
 
   @override
-  String get saveChanges => 'Guardar cambios';
+  String get saveChanges => 'Eñongatu ñemoambue';
 
   @override
-  String get edit => 'Editar';
+  String get edit => 'Emoambue';
 
   @override
-  String get delete => 'Eliminar';
+  String get delete => 'Embogue';
 
   @override
-  String get confirm => 'Confirmar';
+  String get confirm => 'Emoneĩ';
 
   @override
-  String get close => 'Cerrar';
+  String get close => 'Emboty';
 
   @override
-  String get back => 'Volver';
+  String get back => 'Ejevy';
 
   @override
-  String get continueText => 'Continuar';
+  String get continueText => 'Eho tenonde';
 
   @override
-  String get retry => 'Reintentar';
+  String get retry => 'Eha\'ã jey';
 
   @override
   String get map => 'Mapa';
 
   @override
-  String get explore => 'Explorar';
+  String get explore => 'Eheka';
 
   @override
-  String get publish => 'Publicar';
+  String get publish => 'Emyasãi';
 
   @override
-  String get publishing => 'Publicando...';
+  String get publishing => 'Oñemyasãi hína...';
 
   @override
-  String get alerts => 'Alertas';
+  String get alerts => 'Marandu ñangareko';
 
   @override
   String get profile => 'Perfil';
 
   @override
-  String get publications => 'Publicaciones';
+  String get publications => 'Publicaciónkuéra';
 
   @override
   String get publication => 'Publicación';
 
   @override
-  String get createPost => 'Crear publicación';
+  String get createPost => 'Ejapo publicación';
 
   @override
-  String get editProfile => 'Editar perfil';
+  String get editProfile => 'Emoambue perfil';
 
   @override
-  String get myPosts => 'Mis publicaciones';
+  String get myPosts => 'Che publicaciónkuéra';
 
   @override
-  String get followers => 'Seguidores';
+  String get followers => 'Che rapykuehohára';
 
   @override
-  String get following => 'Siguiendo';
+  String get following => 'Aha hapykuéri';
 
   @override
   String get likes => 'Likes';
 
   @override
-  String get comments => 'Comentarios';
+  String get comments => 'Comentariokuéra';
 
   @override
-  String get share => 'Compartir';
+  String get share => 'Ekomparti';
 
   @override
-  String get verified => 'Verificado';
+  String get verified => 'Oñemoneĩmbyre';
 
   @override
-  String get inReview => 'En revisión';
+  String get inReview => 'Ojehechajey hína';
 
   @override
-  String get nearYou => 'Cerca de ti';
+  String get nearYou => 'Nde ypýpe';
 
   @override
-  String get nearbyPosts => 'Publicaciones cercanas';
+  String get nearbyPosts => 'Publicaciónkuéra nde ypýpe';
 
   @override
-  String get useMyLocation => 'Usar mi ubicación';
+  String get useMyLocation => 'Eiporu che aimeha';
 
   @override
-  String get currentLocation => 'Ubicación actual';
+  String get currentLocation => 'Aimeha ko\'ágã';
 
   @override
-  String get location => 'Ubicación';
+  String get location => 'Tenda';
 
   @override
-  String get use => 'Usar';
+  String get use => 'Eiporu';
 
   @override
   String get postTitle => 'Título';
 
   @override
-  String get postDescription => 'Descripción';
+  String get postDescription => 'Ñemombe\'u';
 
   @override
-  String get postType => 'Tipo de publicación';
+  String get postType => 'Publicación rehegua';
 
   @override
-  String get optionalPhoto => 'Foto opcional';
+  String get optionalPhoto => 'Ta\'anga opcional';
 
   @override
-  String get takePhoto => 'Tomar foto';
+  String get takePhoto => 'Enohẽ ta\'anga';
 
   @override
   String get chooseFromGallery => 'Galería';
 
   @override
-  String get publishPost => 'Publicar';
+  String get publishPost => 'Emyasãi';
 
   @override
-  String get postCreatedSuccessfully => 'Publicación creada correctamente';
+  String get postCreatedSuccessfully => 'Publicación ojejapo porã';
 
   @override
-  String get postNotFound => 'Publicación no encontrada.';
+  String get postNotFound => 'Publicación ndojejuhúi.';
 
   @override
-  String get writeComment => 'Escribe un comentario...';
+  String get writeComment => 'Ehai peteĩ comentario...';
 
   @override
-  String get sendComment => 'Enviar comentario';
+  String get sendComment => 'Emondo comentario';
 
   @override
-  String get language => 'Idioma';
+  String get language => 'Ñe\'ẽ';
 
   @override
-  String get selectLanguage => 'Seleccionar idioma';
+  String get selectLanguage => 'Eiporavo ñe\'ẽ';
 
   @override
   String get spanish => 'Castellano';
@@ -195,124 +195,124 @@ class AppLocalizationsGn extends AppLocalizations {
   String get guarani => 'Guaraní';
 
   @override
-  String get available => 'Disponible';
+  String get available => 'Ojeguereko';
 
   @override
-  String get availablePartial => 'Disponible / Parcial';
+  String get availablePartial => 'Ojeguereko / Chikue';
 
   @override
-  String get translationInPreparation => 'Traducción en preparación';
+  String get translationInPreparation => 'Ñembohasa ñe\'ẽ oñembosako\'i hína';
 
   @override
-  String get otherOfficialLanguages => 'Otras lenguas oficiales de Bolivia';
+  String get otherOfficialLanguages => 'Bolivia ñe\'ẽnguéra oficial ambuéva';
 
   @override
   String languagePreparingMessage(String languageName) {
-    return 'La traducción a $languageName está en preparación. Mientras tanto, Mapia usará castellano.';
+    return '$languageName ñe\'ẽme ñembohasa oñembosako\'i hína. Upe aja, Mapia oiporúta castellano.';
   }
 
   @override
-  String get welcomeTitle => 'Bienvenido a Mapia';
+  String get welcomeTitle => 'Eg̃uahẽporã Mapia-pe';
 
   @override
   String get welcomeSubtitle =>
-      'Inicia sesión para ver alertas ciudadanas cerca de ti.';
+      'Eike ehecha hag̃ua marandu tavaygua nde ypýpe.';
 
   @override
-  String get createAccountTitle => 'Crea tu cuenta Mapia';
+  String get createAccountTitle => 'Ejapo nde cuenta Mapia';
 
   @override
   String get createAccountSubtitle =>
-      'Únete y reporta lo que está pasando cerca.';
+      'Eju ha emombe\'u mba\'épa oiko nde ypýpe.';
 
   @override
-  String get forgotPassword => '¿Olvidaste tu contraseña?';
+  String get forgotPassword => '¿Nderesaráipa ne ñe\'ẽñemígui?';
 
   @override
-  String get signIn => 'Ingresar';
+  String get signIn => 'Eike';
 
   @override
-  String get signUp => 'Crear cuenta';
+  String get signUp => 'Ejapo cuenta';
 
   @override
-  String get continueWithGoogle => 'Continuar con Google';
+  String get continueWithGoogle => 'Eho tenonde Google ndive';
 
   @override
-  String get dontHaveAccount => '¿No tienes cuenta?';
+  String get dontHaveAccount => '¿Ndereguerekói cuenta?';
 
   @override
-  String get alreadyHaveAccount => '¿Ya tienes cuenta?';
+  String get alreadyHaveAccount => '¿Reguerekómapa cuenta?';
 
   @override
-  String get or => 'o';
+  String get or => 'térã';
 
   @override
-  String get termsAgreementPrefix => 'Acepto los ';
+  String get termsAgreementPrefix => 'Amoneĩ ';
 
   @override
   String get terms => 'Términos';
 
   @override
-  String get termsAgreementMiddle => ' y la ';
+  String get termsAgreementMiddle => ' ha ';
 
   @override
   String get privacyPolicy => 'Política de privacidad';
 
   @override
-  String get demoLoginMessage => 'Usa demo@mapia.app y mapia123 para ingresar.';
+  String get demoLoginMessage =>
+      'Eiporu [demo@mapia.app](mailto:demo@mapia.app) ha mapia123 oike hag̃ua.';
 
   @override
-  String get searchMapia => 'Buscar en Mapia';
+  String get searchMapia => 'Eheka Mapia-pe';
 
   @override
-  String get voiceSearch => 'Búsqueda por voz';
+  String get voiceSearch => 'Ñe\'ẽ rupive jeheka';
 
   @override
-  String get searchHint => 'Buscar lugares, sucesos o novedades...';
+  String get searchHint => 'Eheka tenda, mba\'e oikóva térã marandu pyahu...';
 
   @override
-  String get sectionReady => 'Sección lista para conectar';
+  String get sectionReady => 'Sección oĩma oñembojoaju hag̃ua';
 
   @override
-  String get layersEnabled => 'Capas activadas';
+  String get layersEnabled => 'Capas oñemyendy';
 
   @override
-  String get layersHidden => 'Capas ocultas';
+  String get layersHidden => 'Capas okañy';
 
   @override
-  String get centeredOnLocation => 'Centrado en tu ubicación';
+  String get centeredOnLocation => 'Oñemombyte nde aimehápe';
 
   @override
   String postByAuthor(String authorName) {
-    return 'Publicación de $authorName';
+    return 'Publicación $authorName mba\'e';
   }
 
   @override
-  String get whatIsHappening => '¿Qué está pasando?';
+  String get whatIsHappening => '¿Mba\'épa oiko hína?';
 
   @override
-  String get tellUsMore => 'Cuéntanos más';
+  String get tellUsMore => 'Emombe\'u oréve hetave';
 
   @override
-  String get postTitleHint => 'Ej: Pollo barato cerca de la plaza';
+  String get postTitleHint => 'Techapyrã: Ryguasu hepý\'ỹva plaza ypýpe';
 
   @override
-  String get postDescriptionHint =>
-      'Describe la novedad de forma corta y útil.';
+  String get postDescriptionHint => 'Emombe\'u mbyky ha iporãva marandu pyahu.';
 
   @override
   String get completeTitleAndDescription =>
-      'Completa título y descripción para publicar.';
+      'Emyenyhẽ título ha ñemombe\'u emyasãi hag̃ua.';
 
   @override
-  String get defaultApproxLocation => 'La Paz, Bolivia - ubicación aproximada';
+  String get defaultApproxLocation => 'La Paz, Bolivia - tenda aproximado';
 
   @override
-  String get nearCurrentLocation => 'Sopocachi, La Paz - cerca de tu ubicación';
+  String get nearCurrentLocation => 'Sopocachi, La Paz - nde aimeha ypýpe';
 
   @override
   String photoSelectedFrom(String source) {
-    return 'Foto seleccionada desde $source';
+    return 'Ta\'anga ojeporavo $source guive';
   }
 
   @override
@@ -322,13 +322,13 @@ class AppLocalizationsGn extends AppLocalizations {
   String get gallery => 'Galería';
 
   @override
-  String get changePhoto => 'Cambiar foto';
+  String get changePhoto => 'Emoambue ta\'anga';
 
   @override
-  String get simulatedPhotoReady => 'Foto simulada lista para guardar.';
+  String get simulatedPhotoReady => 'Ta\'anga simulada oĩma oñeñongatu hag̃ua.';
 
   @override
-  String get name => 'Nombre';
+  String get name => 'Téra';
 
   @override
   String get username => 'Usuario';
@@ -337,19 +337,19 @@ class AppLocalizationsGn extends AppLocalizations {
   String get bio => 'Bio';
 
   @override
-  String get nameAndUsernameRequired => 'Nombre y usuario son obligatorios.';
+  String get nameAndUsernameRequired => 'Téra ha usuario tekotevẽ.';
 
   @override
-  String get couldNotSaveChanges => 'No pudimos guardar cambios.';
+  String get couldNotSaveChanges => 'Ndaikatúi roñongatu ñemoambue.';
 
   @override
-  String get couldNotLogout => 'No pudimos cerrar sesión.';
+  String get couldNotLogout => 'Ndaikatúi rosẽ sesión-gui.';
 
   @override
-  String get noPostsYet => 'Todavía no hay publicaciones.';
+  String get noPostsYet => 'Ne\'ĩra oĩ publicación.';
 
   @override
-  String get alertsNearYou => 'Alertas cerca de ti';
+  String get alertsNearYou => 'Marandu ñangareko nde ypýpe';
 
   @override
   String get radius => 'Radio';
@@ -361,14 +361,14 @@ class AppLocalizationsGn extends AppLocalizations {
 
   @override
   String locationWithAddress(String address) {
-    return 'Ubicación: $address';
+    return 'Tenda: $address';
   }
 
   @override
-  String get nearbySummary => 'Resumen cerca de ti';
+  String get nearbySummary => 'Ñemombyky nde ypýpe';
 
   @override
-  String get noNearbyPosts => 'No hay publicaciones cerca con este radio.';
+  String get noNearbyPosts => 'Ndaipóri publicación ko radio ryepýpe.';
 
   @override
   String get defaultCity => 'La Paz, Bolivia';
@@ -378,26 +378,26 @@ class AppLocalizationsGn extends AppLocalizations {
 
   @override
   String postsNearYou(String type) {
-    return '$type cerca de ti';
+    return '$type nde ypýpe';
   }
 
   @override
-  String get sharePostReady => 'Compartir publicación listo para conectar';
+  String get sharePostReady => 'Publicación oĩma oñekomparti hag̃ua';
 
   @override
-  String get news => 'Noticia';
+  String get news => 'Marandu';
 
   @override
-  String get novelty => 'Novedad';
+  String get novelty => 'Mba\'e pyahu';
 
   @override
-  String get party => 'Fiesta / evento';
+  String get party => 'Vy\'a / evento';
 
   @override
-  String get foodDeal => 'Comida barata';
+  String get foodDeal => 'Tembi\'u hepý\'ỹva';
 
   @override
-  String get sale => 'Venta';
+  String get sale => 'Ñemu';
 
   @override
   String get traffic => 'Tráfico';
@@ -409,94 +409,94 @@ class AppLocalizationsGn extends AppLocalizations {
   String get accident => 'Accidente';
 
   @override
-  String get serviceCut => 'Corte de servicio';
+  String get serviceCut => 'Servicio ñekytĩ';
 
   @override
   String get security => 'Seguridad';
 
   @override
-  String get lostFound => 'Perdido / encontrado';
+  String get lostFound => 'Okañýva / ojejuhúva';
 
   @override
-  String get other => 'Otro';
+  String get other => 'Ambue';
 
   @override
-  String get newsPlural => 'Noticias';
+  String get newsPlural => 'Marandukuéra';
 
   @override
-  String get noveltyPlural => 'Novedades';
+  String get noveltyPlural => 'Mba\'e pyahukuéra';
 
   @override
-  String get partyPlural => 'Fiestas / eventos';
+  String get partyPlural => 'Vy\'a / eventokuéra';
 
   @override
-  String get foodDealPlural => 'Comida barata';
+  String get foodDealPlural => 'Tembi\'u hepý\'ỹvakuéra';
 
   @override
-  String get salePlural => 'Ventas';
+  String get salePlural => 'Ñemukuéra';
 
   @override
   String get trafficPlural => 'Tráfico';
 
   @override
-  String get blockadePlural => 'Bloqueos';
+  String get blockadePlural => 'Bloqueokuéra';
 
   @override
-  String get accidentPlural => 'Accidentes';
+  String get accidentPlural => 'Accidentekuéra';
 
   @override
-  String get serviceCutPlural => 'Cortes de servicio';
+  String get serviceCutPlural => 'Servicio ñekytĩkuéra';
 
   @override
-  String get lostFoundPlural => 'Perdidos / encontrados';
+  String get lostFoundPlural => 'Okañýva / ojejuhúvakuéra';
 
   @override
-  String get otherPlural => 'Otros';
+  String get otherPlural => 'Ambuekuéra';
 
   @override
-  String get newsDescription => 'Algo importante para el barrio';
+  String get newsDescription => 'Mba\'e iñimportánteva barrio-pe g̃uarã';
 
   @override
-  String get noveltyDescription => 'Algo curioso o útil que pasa cerca';
+  String get noveltyDescription => 'Mba\'e pyahu térã útil oikóva nde ypýpe';
 
   @override
-  String get partyDescription => 'Actividades, ferias o encuentros';
+  String get partyDescription => 'Tembiapo, feria térã aty';
 
   @override
-  String get foodDealDescription => 'Promos, almuerzos y antojos';
+  String get foodDealDescription => 'Promo, almuerzo ha tembi\'u he\'ẽva';
 
   @override
-  String get saleDescription => 'Productos o ventas temporales';
+  String get saleDescription => 'Producto térã ñemu sapy\'agua';
 
   @override
-  String get trafficDescription => 'Rutas lentas o congestionadas';
+  String get trafficDescription => 'Tape mbegue térã henyhẽva';
 
   @override
-  String get blockadeDescription => 'Calles o rutas cerradas';
+  String get blockadeDescription => 'Tape térã calle oñembotýva';
 
   @override
-  String get accidentDescription => 'Choques o incidentes viales';
+  String get accidentDescription => 'Choque térã tape rehegua mba\'e vai';
 
   @override
-  String get serviceCutDescription => 'Agua, luz, internet u otros';
+  String get serviceCutDescription => 'Y, luz, internet térã ambue servicio';
 
   @override
-  String get securityDescription => 'Zonas de cuidado o apoyo';
+  String get securityDescription => 'Tenda oñeñangareko térã oñepytyvõ hag̃ua';
 
   @override
-  String get lostFoundDescription => 'Mascotas, documentos u objetos';
+  String get lostFoundDescription => 'Mymba, kuatia térã mba\'e okañýva';
 
   @override
-  String get otherDescription => 'Algo que no encaja arriba';
+  String get otherDescription => 'Mba\'e ndoikéiva umi ambuépe';
 
   @override
   String nearbyBlockadesCount(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Hay $count bloqueos cerca de ti',
-      one: 'Hay 1 bloqueo cerca de ti',
-      zero: 'No hay bloqueos cerca de ti',
+      other: 'Oĩ $count bloqueo nde ypýpe',
+      one: 'Oĩ 1 bloqueo nde ypýpe',
+      zero: 'Ndaipóri bloqueo nde ypýpe',
     );
     return '$_temp0';
   }
@@ -506,9 +506,9 @@ class AppLocalizationsGn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Hay $count comidas baratas cerca de ti',
-      one: 'Hay 1 comida barata cerca de ti',
-      zero: 'No hay comidas baratas cerca de ti',
+      other: 'Oĩ $count tembi\'u hepý\'ỹva nde ypýpe',
+      one: 'Oĩ 1 tembi\'u hepý\'ỹva nde ypýpe',
+      zero: 'Ndaipóri tembi\'u hepý\'ỹva nde ypýpe',
     );
     return '$_temp0';
   }
@@ -518,9 +518,9 @@ class AppLocalizationsGn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Hay $count fiestas cerca de ti',
-      one: 'Hay 1 fiesta cerca de ti',
-      zero: 'No hay fiestas cerca de ti',
+      other: 'Oĩ $count vy\'a nde ypýpe',
+      one: 'Oĩ 1 vy\'a nde ypýpe',
+      zero: 'Ndaipóri vy\'a nde ypýpe',
     );
     return '$_temp0';
   }
@@ -530,9 +530,9 @@ class AppLocalizationsGn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Hay $count ventas cerca de ti',
-      one: 'Hay 1 venta cerca de ti',
-      zero: 'No hay ventas cerca de ti',
+      other: 'Oĩ $count ñemu nde ypýpe',
+      one: 'Oĩ 1 ñemu nde ypýpe',
+      zero: 'Ndaipóri ñemu nde ypýpe',
     );
     return '$_temp0';
   }
@@ -542,9 +542,9 @@ class AppLocalizationsGn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count comentarios',
+      other: '$count comentario',
       one: '1 comentario',
-      zero: 'Sin comentarios',
+      zero: 'Comentario\'ỹre',
     );
     return '$_temp0';
   }
@@ -556,7 +556,7 @@ class AppLocalizationsGn extends AppLocalizations {
       locale: localeName,
       other: '$count likes',
       one: '1 like',
-      zero: 'Sin likes',
+      zero: 'Like\'ỹre',
     );
     return '$_temp0';
   }
@@ -566,9 +566,9 @@ class AppLocalizationsGn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count publicaciones',
+      other: '$count publicación',
       one: '1 publicación',
-      zero: 'Sin publicaciones',
+      zero: 'Publicación\'ỹre',
     );
     return '$_temp0';
   }
@@ -578,23 +578,23 @@ class AppLocalizationsGn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count seguidores',
+      other: '$count seguidor',
       one: '1 seguidor',
-      zero: 'Sin seguidores',
+      zero: 'Seguidor\'ỹre',
     );
     return '$_temp0';
   }
 
   @override
-  String get timeAgoNow => 'Ahora';
+  String get timeAgoNow => 'Ko\'ágã';
 
   @override
   String timeAgoMinutes(num minutes) {
     String _temp0 = intl.Intl.pluralLogic(
       minutes,
       locale: localeName,
-      other: 'Hace $minutes minutos',
-      one: 'Hace 1 minuto',
+      other: 'Ojapo $minutes aravo\'i',
+      one: 'Ojapo 1 aravo\'i',
     );
     return '$_temp0';
   }
@@ -604,8 +604,8 @@ class AppLocalizationsGn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       hours,
       locale: localeName,
-      other: 'Hace $hours horas',
-      one: 'Hace 1 hora',
+      other: 'Ojapo $hours aravo',
+      one: 'Ojapo 1 aravo',
     );
     return '$_temp0';
   }
@@ -615,8 +615,8 @@ class AppLocalizationsGn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: 'Hace $days días',
-      one: 'Hace 1 día',
+      other: 'Ojapo $days ára',
+      one: 'Ojapo 1 ára',
     );
     return '$_temp0';
   }

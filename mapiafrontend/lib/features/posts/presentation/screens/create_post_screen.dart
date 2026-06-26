@@ -39,6 +39,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     Navigator.of(context).pop();
   }
 
+  Future<void> _openVerifyPhone() async {
+    await Navigator.of(context).pushNamed('/profile/verify-phone');
+    if (mounted) {
+      _provider.loadPublishingEligibility();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,7 +63,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           builder: (context, _) {
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-              child: CreatePostForm(provider: _provider, onSubmit: _submit),
+              child: CreatePostForm(
+                provider: _provider,
+                onSubmit: _submit,
+                onVerifyPhone: _openVerifyPhone,
+              ),
             );
           },
         ),
