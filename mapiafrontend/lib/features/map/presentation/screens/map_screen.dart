@@ -1,15 +1,20 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mapiafrontend/core/config/app_config.dart';
+import 'package:mapiafrontend/core/platform/google_maps_web_loader.dart';
+import 'package:mapiafrontend/features/map/presentation/widgets/map_post_preview_card.dart';
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
+import 'package:mapiafrontend/features/map/styles/mapia_map_style.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
+import 'package:mapiafrontend/features/map/types/post_map_marker_types.dart';
 import 'package:mapiafrontend/features/map/utils/bolivia_bounds.dart';
 import 'package:mapiafrontend/features/map/utils/severity.dart';
+import 'package:mapiafrontend/features/posts/data/datasources/mock_posts_datasource.dart';
+import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 import 'package:mapiafrontend/shared/widgets/app_surface.dart';
 import 'package:mapiafrontend/shared/widgets/mapia_bottom_navigation.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -24,6 +29,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final _mapApi = MapApi();
   final _reportsApi = ReportsApi();
+  final List<PostEntity> _explorePosts = const MockPostsDatasource().getPosts();
 
   GoogleMapController? _mapController;
   AlertFilters _filters = const AlertFilters();
@@ -31,13 +37,108 @@ class _MapScreenState extends State<MapScreen> {
   AlertMapSummary _summary = AlertMapSummary.empty();
   List<AlertMapItem> _alerts = [];
   AlertMapItem? _selected;
+  PostEntity? _selectedExplorePost;
+  PostMapMarkerIcons? _postMarkerIcons;
+  Set<PostType> _enabledPostTypes = PostType.values.toSet();
   bool _isLoading = true;
+  bool _isLocating = true;
+  bool _isMapSdkLoading = kIsWeb && AppConfig.googleMapsApiKey.isNotEmpty;
+  bool _hasLocationPermission = false;
   String? _error;
+  LatLng? _currentLocation;
+  static const double _nearbyRadiusKm = 3;
 
   @override
   void initState() {
     super.initState();
-    _loadAlerts();
+    _initializeMap();
+  }
+
+  Future<void> _initializeMap() async {
+    _loadPostMarkerIcons();
+    await _loadGoogleMapsSdk();
+    await _requestCurrentLocation();
+    await _loadAlerts();
+  }
+
+  Future<void> _loadPostMarkerIcons() async {
+    final icons = await PostMapMarkerIcons.create();
+    if (!mounted) return;
+    setState(() => _postMarkerIcons = icons);
+  }
+
+  Future<void> _loadGoogleMapsSdk() async {
+    if (!kIsWeb || AppConfig.googleMapsApiKey.isEmpty) return;
+    try {
+      await ensureGoogleMapsWebLoaded();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isMapSdkLoading = false);
+      }
+    }
+  }
+
+  Future<void> _requestCurrentLocation({bool moveCamera = true}) async {
+    setState(() => _isLocating = true);
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        setState(() {
+          _isLocating = false;
+          _hasLocationPermission = false;
+        });
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      final allowed =
+          permission == LocationPermission.always ||
+          permission == LocationPermission.whileInUse;
+      if (!allowed) {
+        if (!mounted) return;
+        setState(() {
+          _isLocating = false;
+          _hasLocationPermission = false;
+        });
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      final location = LatLng(position.latitude, position.longitude);
+      if (!mounted) return;
+      setState(() {
+        _currentLocation = location;
+        _hasLocationPermission = true;
+        _isLocating = false;
+      });
+
+      if (moveCamera) {
+        await _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(location, 14),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLocating = false);
+    }
+  }
+
+  AlertFilters get _nearbyFilters {
+    final location = _currentLocation;
+    if (location == null) return _filters;
+    return _filters.nearby(
+      latitude: location.latitude,
+      longitude: location.longitude,
+      radiusKm: _nearbyRadiusKm,
+    );
   }
 
   Future<void> _loadAlerts({String? selectId}) async {
@@ -47,9 +148,10 @@ class _MapScreenState extends State<MapScreen> {
     });
 
     try {
+      final filters = _nearbyFilters;
       final results = await Future.wait([
-        _mapApi.fetchAlerts(_filters),
-        _mapApi.fetchSummary(_filters),
+        _mapApi.fetchAlerts(filters),
+        _mapApi.fetchSummary(filters),
         _mapApi.fetchFilters(),
       ]);
       final alerts = results[0] as List<AlertMapItem>;
@@ -69,7 +171,11 @@ class _MapScreenState extends State<MapScreen> {
         _isLoading = false;
       });
 
-      if (selected != null) {
+      if (_currentLocation != null && selectId == null) {
+        await _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(_currentLocation!, 14),
+        );
+      } else if (selected != null) {
         await _mapController?.animateCamera(
           CameraUpdate.newLatLngZoom(selected.position, 12.5),
         );
@@ -91,8 +197,41 @@ class _MapScreenState extends State<MapScreen> {
   void _selectAlertFromMap(AlertMapItem alert) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      setState(() => _selected = alert);
+      setState(() {
+        _selected = alert;
+        _selectedExplorePost = null;
+      });
     });
+  }
+
+  void _selectExplorePost(PostEntity post) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _selectedExplorePost = post;
+        _selected = null;
+      });
+    });
+  }
+
+  void _togglePostType(PostType type) {
+    setState(() {
+      final updated = Set<PostType>.from(_enabledPostTypes);
+      if (updated.contains(type)) {
+        updated.remove(type);
+      } else {
+        updated.add(type);
+      }
+      _enabledPostTypes = updated;
+      if (_selectedExplorePost != null &&
+          !updated.contains(_selectedExplorePost!.type)) {
+        _selectedExplorePost = null;
+      }
+    });
+  }
+
+  void _openExplorePost(PostEntity post) {
+    Navigator.of(context).pushNamed('/posts/${Uri.encodeComponent(post.id)}');
   }
 
   Future<void> _openPublishReport() async {
@@ -171,9 +310,20 @@ class _MapScreenState extends State<MapScreen> {
                                 selected: _selected,
                                 isLoading: _isLoading,
                                 error: _error,
-                                onMapCreated: (controller) =>
-                                    _mapController = controller,
+                                currentLocation: _currentLocation,
+                                explorePosts: _explorePosts,
+                                selectedExplorePost: _selectedExplorePost,
+                                enabledPostTypes: _enabledPostTypes,
+                                postMarkerIcons: _postMarkerIcons,
+                                isLocating: _isLocating,
+                                isMapSdkLoading: _isMapSdkLoading,
+                                hasLocationPermission: _hasLocationPermission,
+                                onMapCreated: _handleMapCreated,
                                 onAlertSelected: _selectAlertFromMap,
+                                onExplorePostSelected: _selectExplorePost,
+                                onExplorePostOpen: _openExplorePost,
+                                onPostTypeToggled: _togglePostType,
+                                onLocatePressed: _handleLocatePressed,
                                 onRetry: _loadAlerts,
                               ),
                             ),
@@ -182,6 +332,8 @@ class _MapScreenState extends State<MapScreen> {
                               filters: _filters,
                               options: _filterOptions,
                               selected: _selected,
+                              selectedExplorePost: _selectedExplorePost,
+                              onExplorePostOpen: _openExplorePost,
                               onFiltersChanged: _applyFilters,
                             ),
                           ],
@@ -196,9 +348,20 @@ class _MapScreenState extends State<MapScreen> {
                                 selected: _selected,
                                 isLoading: _isLoading,
                                 error: _error,
-                                onMapCreated: (controller) =>
-                                    _mapController = controller,
+                                currentLocation: _currentLocation,
+                                explorePosts: _explorePosts,
+                                selectedExplorePost: _selectedExplorePost,
+                                enabledPostTypes: _enabledPostTypes,
+                                postMarkerIcons: _postMarkerIcons,
+                                isLocating: _isLocating,
+                                isMapSdkLoading: _isMapSdkLoading,
+                                hasLocationPermission: _hasLocationPermission,
+                                onMapCreated: _handleMapCreated,
                                 onAlertSelected: _selectAlertFromMap,
+                                onExplorePostSelected: _selectExplorePost,
+                                onExplorePostOpen: _openExplorePost,
+                                onPostTypeToggled: _togglePostType,
+                                onLocatePressed: _handleLocatePressed,
                                 onRetry: _loadAlerts,
                               ),
                             ),
@@ -209,6 +372,8 @@ class _MapScreenState extends State<MapScreen> {
                                 filters: _filters,
                                 options: _filterOptions,
                                 selected: _selected,
+                                selectedExplorePost: _selectedExplorePost,
+                                onExplorePostOpen: _openExplorePost,
                                 onFiltersChanged: _applyFilters,
                               ),
                             ),
@@ -221,6 +386,18 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ),
     );
+  }
+
+  void _handleMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+    final location = _currentLocation;
+    if (location == null) return;
+    controller.animateCamera(CameraUpdate.newLatLngZoom(location, 14));
+  }
+
+  Future<void> _handleLocatePressed() async {
+    await _requestCurrentLocation();
+    await _loadAlerts();
   }
 
   AlertMapItem? _findAlert(List<AlertMapItem> alerts, String? id) {
@@ -419,8 +596,20 @@ class _MapCard extends StatelessWidget {
     required this.selected,
     required this.isLoading,
     required this.error,
+    required this.currentLocation,
+    required this.explorePosts,
+    required this.selectedExplorePost,
+    required this.enabledPostTypes,
+    required this.postMarkerIcons,
+    required this.isLocating,
+    required this.isMapSdkLoading,
+    required this.hasLocationPermission,
     required this.onMapCreated,
     required this.onAlertSelected,
+    required this.onExplorePostSelected,
+    required this.onExplorePostOpen,
+    required this.onPostTypeToggled,
+    required this.onLocatePressed,
     required this.onRetry,
   });
 
@@ -428,13 +617,25 @@ class _MapCard extends StatelessWidget {
   final AlertMapItem? selected;
   final bool isLoading;
   final String? error;
+  final LatLng? currentLocation;
+  final List<PostEntity> explorePosts;
+  final PostEntity? selectedExplorePost;
+  final Set<PostType> enabledPostTypes;
+  final PostMapMarkerIcons? postMarkerIcons;
+  final bool isLocating;
+  final bool isMapSdkLoading;
+  final bool hasLocationPermission;
   final ValueChanged<GoogleMapController> onMapCreated;
   final ValueChanged<AlertMapItem> onAlertSelected;
+  final ValueChanged<PostEntity> onExplorePostSelected;
+  final ValueChanged<PostEntity> onExplorePostOpen;
+  final ValueChanged<PostType> onPostTypeToggled;
+  final Future<void> Function() onLocatePressed;
   final Future<void> Function({String? selectId}) onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final missingKey = AppConfig.googleMapsApiKey.isEmpty;
+    final missingKey = kIsWeb && AppConfig.googleMapsApiKey.isEmpty;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
@@ -448,18 +649,25 @@ class _MapCard extends StatelessWidget {
                     message:
                         'Ejecuta Flutter con GOOGLE_MAPS_API_KEY configurado.',
                   )
+                : isMapSdkLoading
+                ? const _MapStateMessage(
+                    icon: Icons.map_rounded,
+                    title: 'Cargando Google Maps',
+                    message: 'Preparando el mapa en esta pantalla.',
+                  )
                 : GoogleMap(
                     onMapCreated: onMapCreated,
-                    initialCameraPosition: const CameraPosition(
-                      target: boliviaCenter,
-                      zoom: 5.4,
+                    initialCameraPosition: CameraPosition(
+                      target: currentLocation ?? boliviaCenter,
+                      zoom: currentLocation == null ? 5.4 : 14,
                     ),
                     cameraTargetBounds: CameraTargetBounds(boliviaBounds),
                     minMaxZoomPreference: const MinMaxZoomPreference(5.2, 18),
                     mapType: MapType.normal,
+                    style: mapiaCleanMapStyle,
                     mapToolbarEnabled: false,
-                    myLocationButtonEnabled: true,
-                    myLocationEnabled: false,
+                    myLocationButtonEnabled: hasLocationPermission,
+                    myLocationEnabled: hasLocationPermission,
                     zoomControlsEnabled: false,
                     compassEnabled: false,
                     rotateGesturesEnabled: false,
@@ -468,6 +676,36 @@ class _MapCard extends StatelessWidget {
                     onTap: (_) {},
                   ),
           ),
+          Positioned(
+            top: 14,
+            right: 14,
+            child: _LocateButton(
+              isLocating: isLocating,
+              hasLocation: currentLocation != null,
+              onPressed: onLocatePressed,
+            ),
+          ),
+          Positioned(
+            top: 14,
+            left: 14,
+            right: 76,
+            child: _MapCategoryFilters(
+              enabledTypes: enabledPostTypes,
+              onTypeToggled: onPostTypeToggled,
+            ),
+          ),
+          if (selectedExplorePost != null && !isLoading && error == null)
+            Positioned(
+              left: 14,
+              right: 14,
+              bottom: 14,
+              child: MapPostPreviewCard(
+                post: selectedExplorePost!,
+                onGoTap: () => onExplorePostOpen(selectedExplorePost!),
+              ),
+            )
+          else
+            const Positioned(left: 14, bottom: 14, child: _Legend()),
           if (isLoading)
             const Positioned.fill(
               child: ColoredBox(
@@ -485,15 +723,6 @@ class _MapCard extends StatelessWidget {
                 onAction: () => onRetry(),
               ),
             ),
-          if (!isLoading && error == null && alerts.isEmpty)
-            const Positioned.fill(
-              child: _MapStateMessage(
-                icon: Icons.map_outlined,
-                title: 'Sin alertas por ahora',
-                message: 'Publica el primer reporte ciudadano para verlo aqui.',
-              ),
-            ),
-          const Positioned(left: 14, bottom: 14, child: _Legend()),
         ],
       ),
     );
@@ -511,6 +740,12 @@ class _MapCard extends StatelessWidget {
           ),
           onTap: () => onAlertSelected(alert),
         ),
+      ...renderExplorePostMarkers(
+        posts: explorePosts,
+        enabledTypes: enabledPostTypes,
+        markerIcons: postMarkerIcons,
+        onTap: onExplorePostSelected,
+      ),
     };
   }
 
@@ -530,6 +765,94 @@ class _MapCard extends StatelessWidget {
           onTap: () => onAlertSelected(alert),
         ),
     };
+  }
+}
+
+class _LocateButton extends StatelessWidget {
+  const _LocateButton({
+    required this.isLocating,
+    required this.hasLocation,
+    required this.onPressed,
+  });
+
+  final bool isLocating;
+  final bool hasLocation;
+  final Future<void> Function() onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: hasLocation ? 'Actualizar ubicacion' : 'Usar mi ubicacion',
+      child: Material(
+        color: Colors.white,
+        elevation: 3,
+        borderRadius: BorderRadius.circular(8),
+        child: IconButton(
+          onPressed: isLocating ? null : onPressed,
+          color: hasLocation
+              ? const Color(0xFF2563EB)
+              : const Color(0xFF64748B),
+          icon: isLocating
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.my_location_rounded),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapCategoryFilters extends StatelessWidget {
+  const _MapCategoryFilters({
+    required this.enabledTypes,
+    required this.onTypeToggled,
+  });
+
+  final Set<PostType> enabledTypes;
+  final ValueChanged<PostType> onTypeToggled;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final type in PostType.values)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                selected: enabledTypes.contains(type),
+                onSelected: (_) => onTypeToggled(type),
+                avatar: Icon(
+                  type.option.icon,
+                  size: 17,
+                  color: type.option.color,
+                ),
+                label: Text(type.option.label),
+                showCheckmark: false,
+                backgroundColor: Colors.white.withValues(alpha: 0.94),
+                selectedColor: type.option.color.withValues(alpha: 0.14),
+                side: BorderSide(
+                  color: enabledTypes.contains(type)
+                      ? type.option.color.withValues(alpha: 0.55)
+                      : const Color(0xFFE2E8F0),
+                ),
+                labelStyle: const TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -643,12 +966,16 @@ class _SidePanel extends StatelessWidget {
     required this.filters,
     required this.options,
     required this.selected,
+    required this.selectedExplorePost,
+    required this.onExplorePostOpen,
     required this.onFiltersChanged,
   });
 
   final AlertFilters filters;
   final AlertFilterOptions options;
   final AlertMapItem? selected;
+  final PostEntity? selectedExplorePost;
+  final ValueChanged<PostEntity> onExplorePostOpen;
   final ValueChanged<AlertFilters> onFiltersChanged;
 
   @override
@@ -727,9 +1054,15 @@ class _SidePanel extends StatelessWidget {
             const SizedBox(height: 16),
             const _PanelTitle(title: 'Detalle'),
             const SizedBox(height: 10),
-            selected == null
-                ? const _EmptyDetail()
-                : _AlertDetail(alert: selected!),
+            if (selectedExplorePost != null)
+              _ExplorePostDetail(
+                post: selectedExplorePost!,
+                onOpen: () => onExplorePostOpen(selectedExplorePost!),
+              )
+            else if (selected != null)
+              _AlertDetail(alert: selected!)
+            else
+              const _EmptyDetail(),
           ],
         ),
       ),
@@ -836,8 +1169,74 @@ class _EmptyDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Text(
-      'Selecciona un marcador para revisar producto, severidad, precio, confianza e imagenes.',
+      'Selecciona un marcador para revisar su detalle.',
       style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700),
+    );
+  }
+}
+
+class _ExplorePostDetail extends StatelessWidget {
+  const _ExplorePostDetail({required this.post, required this.onOpen});
+
+  final PostEntity post;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final option = post.type.option;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: option.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(option.icon, color: option.color, size: 18),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                post.title,
+                style: const TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          post.description,
+          style: const TextStyle(
+            color: Color(0xFF64748B),
+            fontWeight: FontWeight.w700,
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _DetailRow('Publicado por', post.authorName),
+        _DetailRow('Tipo', option.label),
+        _DetailRow('Ubicacion', post.address ?? 'Sin dato'),
+        _DetailRow('Likes', '${post.likesCount}'),
+        _DetailRow('Comentarios', '${post.commentsCount}'),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: onOpen,
+            icon: const Icon(Icons.open_in_new_rounded),
+            label: const Text('Ver publicacion'),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1348,7 +1747,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                     height: 220,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: AppConfig.googleMapsApiKey.isEmpty
+                      child: kIsWeb && AppConfig.googleMapsApiKey.isEmpty
                           ? const _MapStateMessage(
                               icon: Icons.key_off_rounded,
                               title: 'Configura Google Maps',
@@ -1360,6 +1759,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                                 target: _location,
                                 zoom: 13,
                               ),
+                              style: mapiaCleanMapStyle,
                               cameraTargetBounds: CameraTargetBounds(
                                 boliviaBounds,
                               ),

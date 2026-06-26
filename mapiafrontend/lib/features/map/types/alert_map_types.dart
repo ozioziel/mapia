@@ -105,7 +105,8 @@ class AlertMapSummary {
       highRiskAlerts: (json['highRiskAlerts'] as num?)?.toInt() ?? 0,
       mostAffectedProduct: json['mostAffectedProduct'] as String?,
       mostAffectedDepartment: json['mostAffectedDepartment'] as String?,
-      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+      updatedAt:
+          DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
           DateTime.now(),
     );
   }
@@ -119,6 +120,9 @@ class AlertFilters {
     this.product,
     this.alertType,
     this.severity,
+    this.latitude,
+    this.longitude,
+    this.radiusKm,
   });
 
   final String? department;
@@ -127,6 +131,9 @@ class AlertFilters {
   final String? product;
   final AlertType? alertType;
   final AlertSeverity? severity;
+  final double? latitude;
+  final double? longitude;
+  final double? radiusKm;
 
   bool get isEmpty =>
       department == null &&
@@ -136,6 +143,24 @@ class AlertFilters {
       alertType == null &&
       severity == null;
 
+  AlertFilters nearby({
+    required double latitude,
+    required double longitude,
+    double radiusKm = 3,
+  }) {
+    return AlertFilters(
+      department: department,
+      municipality: municipality,
+      zone: zone,
+      product: product,
+      alertType: alertType,
+      severity: severity,
+      latitude: latitude,
+      longitude: longitude,
+      radiusKm: radiusKm,
+    );
+  }
+
   AlertFilters copyWith({
     String? department,
     String? municipality,
@@ -143,6 +168,9 @@ class AlertFilters {
     String? product,
     AlertType? alertType,
     AlertSeverity? severity,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
     bool clearDepartment = false,
     bool clearMunicipality = false,
     bool clearZone = false,
@@ -152,11 +180,16 @@ class AlertFilters {
   }) {
     return AlertFilters(
       department: clearDepartment ? null : department ?? this.department,
-      municipality: clearMunicipality ? null : municipality ?? this.municipality,
+      municipality: clearMunicipality
+          ? null
+          : municipality ?? this.municipality,
       zone: clearZone ? null : zone ?? this.zone,
       product: clearProduct ? null : product ?? this.product,
       alertType: clearAlertType ? null : alertType ?? this.alertType,
       severity: clearSeverity ? null : severity ?? this.severity,
+      latitude: latitude,
+      longitude: longitude,
+      radiusKm: radiusKm,
     );
   }
 
@@ -167,6 +200,9 @@ class AlertFilters {
     'product': product,
     'alertType': alertType?.apiValue,
     'severity': severity?.apiValue,
+    'lat': latitude?.toString(),
+    'lng': longitude?.toString(),
+    'radiusKm': radiusKm?.toString(),
   };
 }
 

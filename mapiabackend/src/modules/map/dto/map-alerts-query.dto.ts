@@ -1,9 +1,41 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsISO8601, IsOptional, IsString, Length } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsIn,
+  IsISO8601,
+  IsLatitude,
+  IsLongitude,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Max,
+  Min,
+} from 'class-validator';
 import { ALERT_TYPES, REPORT_SEVERITIES } from '@modules/reports/dto/create-citizen-report.dto';
 import { AlertType, ReportSeverity } from '@modules/reports/entities/alert-report.entity';
 
 export class MapAlertsQueryDto {
+  @ApiPropertyOptional({ example: -16.5, description: 'Latitud del usuario' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsLatitude()
+  lat?: number;
+
+  @ApiPropertyOptional({ example: -68.15, description: 'Longitud del usuario' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsLongitude()
+  lng?: number;
+
+  @ApiPropertyOptional({ example: 3, default: 3, description: 'Radio en km' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.1)
+  @Max(50)
+  radiusKm?: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

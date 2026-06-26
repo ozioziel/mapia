@@ -232,6 +232,21 @@ export class MapService {
     if (query.to) {
       qb.andWhere('report.createdAt <= :to', { to: query.to });
     }
+    if (query.lat !== undefined && query.lng !== undefined) {
+      const meters = clampRadiusToMeters(
+        query.radiusKm,
+        this.geo.defaultRadiusKm,
+        this.geo.maxRadiusKm,
+      );
+      qb.andWhere(
+        `ST_DWithin(
+          ST_SetSRID(ST_MakePoint(report.longitude, report.latitude), 4326)::geography,
+          ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+          :meters
+        )`,
+        { lng: query.lng, lat: query.lat, meters },
+      );
+    }
 
     return qb;
   }

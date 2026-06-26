@@ -10,3 +10,7 @@ final boliviaBounds = LatLngBounds(
 bool isInsideBolivia(double lat, double lng) {
   return lat >= -22.9 && lat <= -9.6 && lng >= -69.7 && lng <= -57.4;
 }
+
+bool isInsideBoliviaBounds(LatLng position) {
+  return isInsideBolivia(position.latitude, position.longitude);
+}
