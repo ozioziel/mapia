@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { MapsConfig } from '@core/config/configuration';
 
 export interface ClassifiedNewsItem {
   title: string;
@@ -13,8 +14,11 @@ export interface ClassifiedNewsItem {
 @Injectable()
 export class NewsClassifierService {
   private readonly logger = new Logger(NewsClassifierService.name);
+  private readonly mapsConfig: MapsConfig;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {
+    this.mapsConfig = this.configService.get<MapsConfig>('maps') ?? { apiKey: '', geocodingEnabled: false, placesEnabled: false } as MapsConfig;
+  }
 
   async classifyItems(items: Array<Partial<ClassifiedNewsItem>>): Promise<ClassifiedNewsItem[]> {
     const apiKey = this.configService.get<string>('GROQ_API') || this.configService.get<string>('GEMINI_API') || '';
@@ -84,8 +88,8 @@ export class NewsClassifierService {
 
   private classifyWithHeuristic(item: Partial<ClassifiedNewsItem>): ClassifiedNewsItem {
     const text = `${item.title ?? ''} ${item.description ?? ''}`.toLowerCase();
+    const locationMatches = this.extractBoliviaLocations(text);
     const boliviaSignals = [
-      'bolivia',
       'la paz',
       'el alto',
       'cochabamba',
@@ -101,13 +105,28 @@ export class NewsClassifierService {
       'barrio',
       'gobierno boliviano',
       'ministerio',
-      'nacional',
       'municipio',
       'prefectura',
       'campesino',
+      'bolivia',
     ];
 
-    const isBoliviaRelevant = boliviaSignals.some((signal) => text.includes(signal));
+    const negativePhrases = [
+      'sin relación con bolivia',
+      'no es de bolivia',
+      'fuera de bolivia',
+      'en madrid',
+      'en europa',
+      'en eeuu',
+      'en chile',
+      'en argentina',
+      'internacional',
+    ];
+
+    const hasNegativePhrase = negativePhrases.some((phrase) => text.includes(phrase));
+    const hasBoliviaSignal = boliviaSignals.some((signal) => text.includes(signal));
+    const hasGoogleMapsLocation = locationMatches.length > 0;
+    const isBoliviaRelevant = (hasBoliviaSignal || hasGoogleMapsLocation) && !hasNegativePhrase;
     return {
       title: item.title ?? '',
       url: item.url,
@@ -115,9 +134,34 @@ export class NewsClassifierService {
       source: item.source,
       isBoliviaRelevant,
       reason: isBoliviaRelevant
-        ? 'Se detectaron señales de contexto en Bolivia.'
+        ? hasGoogleMapsLocation
+          ? `Se validó una ubicación concreta en Bolivia: ${locationMatches.join(', ')}.`
+          : 'Se detectaron señales de contexto en Bolivia.'
         : 'No se encontraron señales claras de Bolivia.',
     };
+  }
+
+  private extractBoliviaLocations(text: string): string[] {
+    if (!this.mapsConfig?.apiKey) {
+      return [];
+    }
+
+    const candidates = [
+      'la paz bolivia',
+      'el alto bolivia',
+      'cochabamba bolivia',
+      'santa cruz bolivia',
+      'sucre bolivia',
+      'tarija bolivia',
+      'potosi bolivia',
+      'trinidad bolivia',
+      'oruro bolivia',
+      'pando bolivia',
+      'chuquisaca bolivia',
+      'beni bolivia',
+    ];
+
+    return candidates.filter((candidate) => text.includes(candidate));
   }
 
   private safeParseJson(content: string): any {

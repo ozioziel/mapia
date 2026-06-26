@@ -2,6 +2,41 @@ import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { XMLParser } from 'fast-xml-parser';
 import { ExperimentalNewsItem } from './news-experimental.types';
 
+const BOLIVIA_KEYWORDS = [
+  'la paz',
+  'el alto',
+  'cochabamba',
+  'santa cruz',
+  'oruro',
+  'potosi',
+  'potosí',
+  'tarija',
+  'chuquisaca',
+  'beni',
+  'pando',
+  'sucre',
+  'trinidad',
+  'municipio',
+  'gobierno boliviano',
+  'ministerio',
+  'prefectura',
+  'campesino',
+  'barrio',
+  'bolivia',
+];
+
+const NEGATIVE_PHRASES = [
+  'sin relación con bolivia',
+  'no es de bolivia',
+  'fuera de bolivia',
+  'en madrid',
+  'en europa',
+  'en eeuu',
+  'en chile',
+  'en argentina',
+  'internacional',
+];
+
 @Injectable()
 export class NewsExperimentalService {
   private static readonly sourceName = 'El Deber' as const;
@@ -60,7 +95,8 @@ export class NewsExperimentalService {
 
     return items
       .map((item) => this.toNewsItem(item))
-      .filter((item): item is ExperimentalNewsItem => item !== null);
+      .filter((item): item is ExperimentalNewsItem => item !== null)
+      .filter((item) => this.isBoliviaRelevant(item));
   }
 
   private toNewsItem(item: unknown): ExperimentalNewsItem | null {
@@ -104,6 +140,13 @@ export class NewsExperimentalService {
       .replace(/\s+/g, ' ')
       .trim();
     return text || undefined;
+  }
+
+  private isBoliviaRelevant(item: ExperimentalNewsItem): boolean {
+    const haystack = `${item.title} ${item.description ?? ''}`.toLowerCase();
+    const hasNegativePhrase = NEGATIVE_PHRASES.some((phrase) => haystack.includes(phrase));
+    const hasBoliviaSignal = BOLIVIA_KEYWORDS.some((keyword) => haystack.includes(keyword));
+    return hasBoliviaSignal && !hasNegativePhrase;
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {
