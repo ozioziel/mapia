@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mapiafrontend/core/config/app_config.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
@@ -406,19 +405,12 @@ class _MapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final missingKey = AppConfig.googleMapsApiKey.isEmpty;
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Stack(
         children: [
           Positioned.fill(
-            child: missingKey
-                ? const _MapStateMessage(
-                    icon: Icons.key_off_rounded,
-                    title: 'Falta la API key de Google Maps',
-                    message: 'Ejecuta Flutter con GOOGLE_MAPS_API_KEY configurado.',
-                  )
-                : GoogleMap(
+            child: GoogleMap(
                     onMapCreated: onMapCreated,
                     initialCameraPosition: const CameraPosition(
                       target: boliviaCenter,
@@ -1235,13 +1227,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                     height: 220,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: AppConfig.googleMapsApiKey.isEmpty
-                          ? const _MapStateMessage(
-                              icon: Icons.key_off_rounded,
-                              title: 'Configura Google Maps',
-                              message: 'No se puede seleccionar el punto sin API key.',
-                            )
-                          : GoogleMap(
+                      child: GoogleMap(
                               initialCameraPosition: CameraPosition(target: _location, zoom: 13),
                               cameraTargetBounds: CameraTargetBounds(boliviaBounds),
                               minMaxZoomPreference: const MinMaxZoomPreference(5.2, 18),
