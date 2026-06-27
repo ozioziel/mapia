@@ -43,7 +43,9 @@ jobs:
           cache: true
 
       - name: Instalar dependencias
-        run: flutter pub get
+        run: |
+          flutter clean
+          flutter pub get
 
       - name: Compilar APK (release)
         run: >
