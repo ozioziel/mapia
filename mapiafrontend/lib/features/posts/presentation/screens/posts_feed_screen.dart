@@ -127,12 +127,12 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
       ),
       body: _buildBody(context),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).pushNamed('/create-post'),
+        onPressed: () => Navigator.of(context).pushNamed('/create-event'),
         backgroundColor: AppTheme.boliviaYellow,
         foregroundColor: AppTheme.textNavy,
         elevation: 0,
-        icon: const Icon(Icons.add_rounded),
-        label: Text(context.l10n.publish),
+        icon: const Icon(Icons.event_available_rounded),
+        label: const Text('Subir evento'),
       ),
       bottomNavigationBar: MapiaBottomNavigation(
         currentIndex: 1,

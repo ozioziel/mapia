@@ -23,7 +23,7 @@ class ProfileApi {
   }
 
   Future<List<Map<String, dynamic>>> getUserPosts(String userId) async {
-    final json = await _client.getJson(ApiEndpoints.userPosts(userId), {
+    final json = await _client.getJson(ApiEndpoints.myPosts, {
       'limit': '20',
       'page': '1',
     });

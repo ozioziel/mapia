@@ -152,7 +152,9 @@ class ReportsApi {
     late final http.Response response;
     try {
       final streamed = await _http.send(request).timeout(_uploadTimeout);
-      response = await http.Response.fromStream(streamed).timeout(_uploadTimeout);
+      response = await http.Response.fromStream(
+        streamed,
+      ).timeout(_uploadTimeout);
     } on TimeoutException {
       throw ApiException('Tiempo de espera agotado: $requestUri', 0);
     } catch (_) {
@@ -165,7 +167,7 @@ class ReportsApi {
         response.statusCode,
       );
     }
-    
+
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
     return ParsedReport.fromJson(decoded);
   }
@@ -204,7 +206,9 @@ class ReportsApi {
     late final http.Response response;
     try {
       final streamed = await _http.send(request).timeout(_uploadTimeout);
-      response = await http.Response.fromStream(streamed).timeout(_uploadTimeout);
+      response = await http.Response.fromStream(
+        streamed,
+      ).timeout(_uploadTimeout);
     } on TimeoutException {
       throw ApiException('Tiempo de espera agotado: $requestUri', 0);
     } catch (_) {
@@ -279,7 +283,7 @@ class ReportsApi {
       );
     }
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    return decoded['id'] as String? ?? '';
+    return decoded['postId'] as String? ?? decoded['id'] as String? ?? '';
   }
 
   Future<void> deleteReport(String id) async {
