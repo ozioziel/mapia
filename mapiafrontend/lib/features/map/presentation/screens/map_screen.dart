@@ -1510,6 +1510,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
   bool _isPublishing = false;
   bool _isListening = false;
   bool _isMapSdkLoading = kIsWeb && AppConfig.googleMapsApiKey.isNotEmpty;
+  bool _showPreview = false;
   String? _error;
   GoogleMapController? _mapController;
 
@@ -1647,7 +1648,10 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
     required String source,
     required String title,
     required String description,
+    bool hasImages = false,
   }) {
+    if (hasImages) return null;
+
     final combined = '$source $title $description'.trim().toLowerCase();
     final letters = RegExp(r'[a-záéíóúñ]').allMatches(combined).length;
     final cleaned = combined.replaceAll(RegExp(r'[^a-záéíóúñ0-9\s]'), ' ');
@@ -1669,14 +1673,15 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
 
   Future<void> _parseReport() async {
     final text = _sourceController.text.trim();
-    if (text.length < 5) {
-      setState(() => _error = 'Escribe o dicta un reporte primero');
+    if (text.isEmpty && _images.isEmpty) {
+      setState(() => _error = 'Escribe un reporte o sube una imagen');
       return;
     }
     final validationError = _validateReportContent(
       source: text,
       title: '',
       description: '',
+      hasImages: _images.isNotEmpty,
     );
     if (validationError != null) {
       setState(() => _error = validationError);
@@ -1716,6 +1721,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
         _severity = parsed.severity;
         _confidence = parsed.confidence;
         _isParsing = false;
+        _showPreview = true;
       });
     } catch (error) {
       setState(() {
@@ -1804,13 +1810,9 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final safeBottom = MediaQuery.paddingOf(context).bottom;
-
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.92,
-      ),
       decoration: const BoxDecoration(
         color: Color(0xFFF8FAFC),
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
@@ -1822,10 +1824,17 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
             padding: const EdgeInsets.fromLTRB(16, 14, 8, 0),
             child: Row(
               children: [
-                const Expanded(
+                if (_showPreview)
+                  IconButton(
+                    onPressed: () => setState(() => _showPreview = false),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                  ),
+                Expanded(
                   child: Text(
-                    'Publicar reporte',
-                    style: TextStyle(
+                    _showPreview ? 'Confirmar evento' : 'Subir evento',
+                    style: const TextStyle(
                       color: Color(0xFF0F172A),
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -1842,246 +1851,9 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
           Flexible(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _sourceController,
-                    minLines: 4,
-                    maxLines: 7,
-                    decoration: const InputDecoration(
-                      labelText: 'Escribir reporte',
-                      hintText:
-                          'En el mercado Rodriguez el azucar subio a 9 Bs...',
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _toggleVoice,
-                          icon: Icon(
-                            _isListening
-                                ? Icons.stop_rounded
-                                : Icons.mic_rounded,
-                          ),
-                          label: Text(
-                            _isListening ? 'Detener dictado' : 'Dictar con voz',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _isParsing ? null : _parseReport,
-                          icon: _isParsing
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Icon(_images.isNotEmpty ? Icons.image_search_rounded : Icons.auto_awesome_rounded),
-                          label: Text(_images.isNotEmpty ? 'Analizar con IA Visual' : 'Analizar texto'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _SheetSection(
-                    title: 'Datos detectados',
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: _titleController,
-                          decoration: const InputDecoration(
-                            labelText: 'Titulo',
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _descriptionController,
-                          minLines: 2,
-                          maxLines: 4,
-                          decoration: const InputDecoration(
-                            labelText: 'Descripcion',
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _productController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Producto',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextField(
-                                controller: _priceController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: 'Precio Bs',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        DropdownButtonFormField<AlertType>(
-                          initialValue: _alertType,
-                          decoration: const InputDecoration(
-                            labelText: 'Tipo de alerta',
-                          ),
-                          items: AlertType.values
-                              .map(
-                                (type) => DropdownMenuItem(
-                                  value: type,
-                                  child: Text(type.label),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) =>
-                              setState(() => _alertType = value ?? _alertType),
-                        ),
-                        const SizedBox(height: 10),
-                        DropdownButtonFormField<AlertSeverity>(
-                          initialValue: _severity,
-                          decoration: const InputDecoration(
-                            labelText: 'Severidad',
-                          ),
-                          items: AlertSeverity.values
-                              .map(
-                                (severity) => DropdownMenuItem(
-                                  value: severity,
-                                  child: Text(severity.label),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) =>
-                              setState(() => _severity = value ?? _severity),
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _departmentController,
-                          decoration: const InputDecoration(
-                            labelText: 'Departamento',
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _municipalityController,
-                          decoration: const InputDecoration(
-                            labelText: 'Municipio',
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _zoneController,
-                          decoration: const InputDecoration(labelText: 'Zona'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _SheetSection(
-                    title: 'Ubicacion',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          height: 220,
-                          width: double.infinity,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: _buildLocationMap(),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Lat ${_location.latitude.toStringAsFixed(5)}, Lng ${_location.longitude.toStringAsFixed(5)}',
-                          style: TextStyle(
-                            color:
-                                isInsideBolivia(
-                                  _location.latitude,
-                                  _location.longitude,
-                                )
-                                ? const Color(0xFF64748B)
-                                : const Color(0xFFEF4444),
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        OutlinedButton.icon(
-                          onPressed: _requestLocation,
-                          icon: const Icon(Icons.my_location_rounded),
-                          label: const Text('Usar ubicacion actual'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _SheetSection(
-                    title: 'Imágenes',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Sube hasta 3 fotos para que la IA entienda mejor la situación.',
-                          style: TextStyle(
-                            color: const Color(0xFF64748B),
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: _images.length >= 3 ? null : _pickImages,
-                          icon: const Icon(Icons.add_photo_alternate_rounded),
-                          label: const Text('Agregar imágenes'),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 44),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                        if (_images.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: [
-                              for (final image in _images)
-                                _ImagePreview(
-                                  image: image,
-                                  onRemove: () => setState(
-                                    () => _images = _images
-                                        .where((item) => item != image)
-                                        .toList(),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      _error!,
-                      style: const TextStyle(
-                        color: Color(0xFFEF4444),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ],
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: _showPreview ? _buildPreview() : _buildInputForm(),
               ),
             ),
           ),
@@ -2092,21 +1864,318 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
               border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
             ),
             padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + safeBottom),
-            child: FilledButton.icon(
-              onPressed: _isPublishing ? null : _publish,
-              icon: _isPublishing
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.publish_rounded),
-              label: const Text('Publicar'),
-            ),
+            child: _showPreview
+                ? FilledButton.icon(
+                    onPressed: _isPublishing ? null : _publish,
+                    icon: _isPublishing
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.publish_rounded),
+                    label: const Text('Publicar evento'),
+                  )
+                : FilledButton.icon(
+                    onPressed: _isParsing ? null : _parseReport,
+                    icon: _isParsing
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(_images.isNotEmpty ? Icons.image_search_rounded : Icons.auto_awesome_rounded),
+                    label: Text(_images.isNotEmpty ? 'Analizar con IA Visual' : 'Analizar texto'),
+                  ),
           ),
           if (bottomInset > 0) SizedBox(height: bottomInset),
         ],
       ),
+    );
+  }
+
+  Widget _buildInputForm() {
+    return Column(
+      key: const ValueKey('input_form'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'Paso 1 de 2',
+                style: TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Describe el evento o sube fotos. En el siguiente paso podrás revisar y confirmar los datos antes de publicar.',
+                style: TextStyle(color: Color(0xFF475569), fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        TextField(
+          controller: _sourceController,
+          minLines: 4,
+          maxLines: 7,
+          decoration: const InputDecoration(
+            labelText: 'Descripción del evento',
+            hintText: 'En el mercado Rodriguez el azúcar subió a 9 Bs...',
+          ),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _toggleVoice,
+          icon: Icon(_isListening ? Icons.stop_rounded : Icons.mic_rounded),
+          label: Text(_isListening ? 'Detener dictado' : 'Dictar con voz'),
+          style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 44)),
+        ),
+        const SizedBox(height: 16),
+        _SheetSection(
+          title: 'Ubicación',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 220,
+                width: double.infinity,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: _buildLocationMap(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Lat ${_location.latitude.toStringAsFixed(5)}, Lng ${_location.longitude.toStringAsFixed(5)}',
+                style: TextStyle(
+                  color: isInsideBolivia(_location.latitude, _location.longitude)
+                      ? const Color(0xFF64748B)
+                      : const Color(0xFFEF4444),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _requestLocation,
+                icon: const Icon(Icons.my_location_rounded),
+                label: const Text('Usar ubicación actual'),
+                style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 44)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        _SheetSection(
+          title: 'Imágenes',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Agrega hasta 3 fotos para que la IA entienda mejor la situación.',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _images.length >= 3 ? null : _pickImages,
+                icon: const Icon(Icons.add_photo_alternate_rounded),
+                label: const Text('Agregar imágenes'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 44),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              if (_images.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (final image in _images)
+                      _ImagePreview(
+                        image: image,
+                        onRemove: () => setState(
+                          () => _images = _images.where((item) => item != image).toList(),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 12),
+          Text(_error!, style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w800)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPreview() {
+    return Column(
+      key: const ValueKey('preview_form'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.auto_awesome_rounded, color: Theme.of(context).primaryColor),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Paso 2 de 2: Confirmar evento',
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Chip(
+                    label: Text(_alertType.label),
+                    avatar: const Icon(Icons.category_rounded, size: 18),
+                  ),
+                  Chip(
+                    label: Text(_severity.label),
+                    avatar: const Icon(Icons.warning_amber_rounded, size: 18),
+                  ),
+                  Chip(
+                    label: Text('Confianza ${(_confidence * 100).round()}%'),
+                    avatar: const Icon(Icons.check_circle_rounded, size: 18),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: 'Título del evento'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _descriptionController,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(labelText: 'Descripción de la IA'),
+              ),
+            ],
+          ),
+        ),
+        if (_images.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          AppCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Imágenes seleccionadas', style: TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (final image in _images)
+                      _ImagePreview(
+                        image: image,
+                        onRemove: () {},
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Text('Puedes volver al paso anterior si deseas cambiar las fotos.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 14),
+        _SheetSection(
+          title: 'Detalles extraídos',
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<AlertType>(
+                      initialValue: _alertType,
+                      decoration: const InputDecoration(labelText: 'Categoría'),
+                      items: AlertType.values.map((type) => DropdownMenuItem(value: type, child: Text(type.label))).toList(),
+                      onChanged: (value) => setState(() => _alertType = value ?? _alertType),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: DropdownButtonFormField<AlertSeverity>(
+                      initialValue: _severity,
+                      decoration: const InputDecoration(labelText: 'Severidad'),
+                      items: AlertSeverity.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label))).toList(),
+                      onChanged: (value) => setState(() => _severity = value ?? _severity),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _productController,
+                      decoration: const InputDecoration(labelText: 'Producto / Info extra'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Precio Bs / Valor'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        _SheetSection(
+          title: 'Ubicación identificada',
+          child: Column(
+            children: [
+              TextField(
+                controller: _departmentController,
+                decoration: const InputDecoration(labelText: 'Departamento'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _municipalityController,
+                decoration: const InputDecoration(labelText: 'Municipio'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _zoneController,
+                decoration: const InputDecoration(labelText: 'Zona'),
+              ),
+            ],
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 12),
+          Text(_error!, style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w800)),
+        ],
+      ],
     );
   }
 }
@@ -2157,10 +2226,10 @@ class _ImagePreview extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                  const BoxShadow(
+                    color: Color.fromRGBO(0, 0, 0, 0.05),
                     blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    offset: Offset(0, 2),
                   ),
                 ],
               ),
@@ -2195,7 +2264,7 @@ class _ImagePreview extends StatelessWidget {
                 ),
                 padding: EdgeInsets.zero,
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withOpacity(0.6),
+                  backgroundColor: const Color.fromRGBO(0, 0, 0, 0.6),
                   foregroundColor: Colors.white,
                 ),
               ),
