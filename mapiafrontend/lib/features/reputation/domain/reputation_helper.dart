@@ -40,7 +40,7 @@ ReputationInfo reputationInfoFor({
       score: null,
       postsCount: 0,
       tier: ReputationTier.none,
-      label: 'Sin reputaciÃ³n',
+      label: 'Sin reputación',
       color: Color(0xFF8792A2),
       softColor: Color(0xFFE8ECF1),
     );
@@ -51,7 +51,7 @@ ReputationInfo reputationInfoFor({
       score: normalizedScore,
       postsCount: postsCount,
       tier: ReputationTier.low,
-      label: 'ReputaciÃ³n baja',
+      label: 'Reputación baja',
       color: const Color(0xFFC75D58),
       softColor: const Color(0xFFF8E8E6),
     );
@@ -62,7 +62,7 @@ ReputationInfo reputationInfoFor({
       score: normalizedScore,
       postsCount: postsCount,
       tier: ReputationTier.medium,
-      label: 'ReputaciÃ³n media',
+      label: 'Reputación media',
       color: const Color(0xFFD38B25),
       softColor: const Color(0xFFFFF0D6),
     );
@@ -73,7 +73,7 @@ ReputationInfo reputationInfoFor({
       score: normalizedScore,
       postsCount: postsCount,
       tier: ReputationTier.good,
-      label: 'Buena reputaciÃ³n',
+      label: 'Buena reputación',
       color: const Color(0xFF278160),
       softColor: const Color(0xFFE4F4ED),
     );
@@ -83,7 +83,7 @@ ReputationInfo reputationInfoFor({
     score: normalizedScore,
     postsCount: postsCount,
     tier: ReputationTier.excellent,
-    label: 'Excelente reputaciÃ³n',
+    label: 'Excelente reputación',
     color: const Color(0xFF147A7B),
     softColor: const Color(0xFFDFF5F3),
   );

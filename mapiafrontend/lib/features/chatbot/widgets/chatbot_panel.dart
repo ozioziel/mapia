@@ -4,6 +4,7 @@ import 'package:mapiafrontend/features/chatbot/models/chat_message.dart';
 import 'package:mapiafrontend/features/chatbot/presentation/chatbot_controller.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
 import 'package:mapiafrontend/features/map/utils/severity.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
@@ -35,11 +36,34 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
   bool _isRecording = false;
   bool _isTranscribing = false;
 
+  final FlutterTts _tts = FlutterTts();
+  int? _speakingIndex;
+
   @override
   void initState() {
     super.initState();
     _bot.addListener(_handleBotUpdate);
+    _tts.setCompletionHandler(() {
+      if (mounted) setState(() => _speakingIndex = null);
+    });
+    _tts.setCancelHandler(() {
+      if (mounted) setState(() => _speakingIndex = null);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  }
+
+  /// Lee en voz alta la respuesta (toca de nuevo para detener).
+  Future<void> _speak(String text, int index) async {
+    if (_speakingIndex == index) {
+      await _tts.stop();
+      if (mounted) setState(() => _speakingIndex = null);
+      return;
+    }
+    await _tts.stop();
+    await _tts.setLanguage('es-ES');
+    await _tts.setSpeechRate(0.5);
+    if (mounted) setState(() => _speakingIndex = index);
+    await _tts.speak(text);
   }
 
   void _handleBotUpdate() {
@@ -50,6 +74,7 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
   void dispose() {
     _bot.removeListener(_handleBotUpdate);
     // OJO: no se hace _bot.dispose() porque es la instancia compartida.
+    _tts.stop();
     _recorder.dispose();
     _controller.dispose();
     _scrollController.dispose();
@@ -185,6 +210,8 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
                       return _MessageBubble(
                         message: messages[index],
                         onIncidentTap: _openIncidentOnMap,
+                        isSpeaking: _speakingIndex == index,
+                        onSpeak: () => _speak(messages[index].text, index),
                       );
                     },
                   );
@@ -296,10 +323,17 @@ class _ChatHeader extends StatelessWidget {
 }
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message, required this.onIncidentTap});
+  const _MessageBubble({
+    required this.message,
+    required this.onIncidentTap,
+    required this.onSpeak,
+    required this.isSpeaking,
+  });
 
   final ChatMessage message;
   final ValueChanged<AlertMapItem> onIncidentTap;
+  final VoidCallback onSpeak;
+  final bool isSpeaking;
 
   @override
   Widget build(BuildContext context) {
@@ -344,6 +378,25 @@ class _MessageBubble extends StatelessWidget {
             ),
           ),
         ),
+        if (!isUser && message.text.trim().isNotEmpty)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: onSpeak,
+              icon: Icon(
+                isSpeaking
+                    ? Icons.stop_circle_rounded
+                    : Icons.volume_up_rounded,
+                size: 18,
+              ),
+              label: Text(isSpeaking ? 'Detener' : 'Escuchar'),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 32),
+                foregroundColor: AppTheme.primaryBlue,
+              ),
+            ),
+          ),
         if (message.incidents.isNotEmpty) ...[
           const SizedBox(height: 8),
           for (final incident in message.incidents)
