@@ -7,6 +7,9 @@ import 'package:mapiafrontend/features/map/utils/severity.dart';
 import 'package:mapiafrontend/features/news/domain/entities/map_news_item.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
+/// Radio mínimo (m) que se muestra en el círculo de un evento en el mapa.
+const int kMinEventRadiusMeters = 50;
+
 class MapMarkerBuilder {
   const MapMarkerBuilder({
     required this.alerts,
@@ -46,7 +49,7 @@ class MapMarkerBuilder {
       for (final alert in alerts) _alertCircle(alert),
       for (final item in news) _newsCircle(item),
       for (final item in publications)
-        if (item.showOnMap && item.radiusMeters > 0 && item.category != PostType.alert) _publicationCircle(item),
+        if (item.showOnMap && item.category != PostType.alert) _publicationCircle(item),
     };
   }
 
@@ -126,7 +129,11 @@ class MapMarkerBuilder {
     return Circle(
       circleId: CircleId('publication_circle_${item.publicationId}'),
       center: item.position,
-      radius: item.radiusMeters.toDouble(),
+      // Mínimo hardcodeado de 50 m aunque el evento se haya creado sin radio.
+      radius: (item.radiusMeters < kMinEventRadiusMeters
+              ? kMinEventRadiusMeters
+              : item.radiusMeters)
+          .toDouble(),
       fillColor: item.category.option.color.withValues(
         alpha: isSelected ? 0.2 : 0.1,
       ),
