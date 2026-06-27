@@ -30,6 +30,7 @@ class AlertMapItem {
     this.zone,
     this.avgPrice,
     this.images = const [],
+    this.userId,
     this.isMine = false,
   });
 
@@ -49,6 +50,7 @@ class AlertMapItem {
   final double? avgPrice;
   final DateTime lastReportedAt;
   final List<String> images;
+  final String? userId;
   final bool isMine;
 
   LatLng get position => LatLng(latitude, longitude);
@@ -76,6 +78,7 @@ class AlertMapItem {
         for (final image in (json['images'] as List? ?? const []))
           if (image is String) image,
       ],
+      userId: json['userId'] as String?,
       isMine: json['isMine'] as bool? ?? false,
     );
   }
