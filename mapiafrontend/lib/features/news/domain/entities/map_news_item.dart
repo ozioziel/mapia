@@ -1,6 +1,17 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-enum MapNewsCategory { evento, bloqueo, corteServicio, venta, noticia }
+enum MapNewsCategory {
+  bloqueo,
+  accidente,
+  seguridad,
+  transporte,
+  clima,
+  desastre,
+  servicios,
+  ambiente,
+  evento,
+  otroRelevante,
+}
 
 class MapNewsItem {
   const MapNewsItem({
@@ -55,33 +66,48 @@ class MapNewsItem {
 
 extension MapNewsCategoryUi on MapNewsCategory {
   String get apiValue => switch (this) {
-    MapNewsCategory.evento => 'evento',
     MapNewsCategory.bloqueo => 'bloqueo',
-    MapNewsCategory.corteServicio => 'corte_servicio',
-    MapNewsCategory.venta => 'venta',
-    MapNewsCategory.noticia => 'noticia',
+    MapNewsCategory.accidente => 'accidente',
+    MapNewsCategory.seguridad => 'seguridad',
+    MapNewsCategory.transporte => 'transporte',
+    MapNewsCategory.clima => 'clima',
+    MapNewsCategory.desastre => 'desastre',
+    MapNewsCategory.servicios => 'servicios',
+    MapNewsCategory.ambiente => 'ambiente',
+    MapNewsCategory.evento => 'evento',
+    MapNewsCategory.otroRelevante => 'otro_relevante',
   };
 
   String get label => switch (this) {
-    MapNewsCategory.evento => 'Evento',
     MapNewsCategory.bloqueo => 'Bloqueo',
-    MapNewsCategory.corteServicio => 'Corte de servicio',
-    MapNewsCategory.venta => 'Venta',
-    MapNewsCategory.noticia => 'Noticia',
+    MapNewsCategory.accidente => 'Accidente',
+    MapNewsCategory.seguridad => 'Seguridad',
+    MapNewsCategory.transporte => 'Transporte',
+    MapNewsCategory.clima => 'Clima',
+    MapNewsCategory.desastre => 'Emergencia',
+    MapNewsCategory.servicios => 'Servicios',
+    MapNewsCategory.ambiente => 'Ambiente',
+    MapNewsCategory.evento => 'Evento',
+    MapNewsCategory.otroRelevante => 'Novedad',
   };
 
   double get markerHue => switch (this) {
-    MapNewsCategory.evento => BitmapDescriptor.hueViolet,
     MapNewsCategory.bloqueo => BitmapDescriptor.hueOrange,
-    MapNewsCategory.corteServicio => BitmapDescriptor.hueYellow,
-    MapNewsCategory.venta => BitmapDescriptor.hueGreen,
-    MapNewsCategory.noticia => BitmapDescriptor.hueAzure,
+    MapNewsCategory.accidente => BitmapDescriptor.hueRed,
+    MapNewsCategory.seguridad => BitmapDescriptor.hueMagenta,
+    MapNewsCategory.transporte => BitmapDescriptor.hueBlue,
+    MapNewsCategory.clima => BitmapDescriptor.hueCyan,
+    MapNewsCategory.desastre => BitmapDescriptor.hueMagenta,
+    MapNewsCategory.servicios => BitmapDescriptor.hueYellow,
+    MapNewsCategory.ambiente => BitmapDescriptor.hueGreen,
+    MapNewsCategory.evento => BitmapDescriptor.hueViolet,
+    MapNewsCategory.otroRelevante => BitmapDescriptor.hueAzure,
   };
 }
 
 MapNewsCategory mapNewsCategoryFromApi(String? value) {
   return MapNewsCategory.values.firstWhere(
     (category) => category.apiValue == value,
-    orElse: () => MapNewsCategory.noticia,
+    orElse: () => MapNewsCategory.otroRelevante,
   );
 }
