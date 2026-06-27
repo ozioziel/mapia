@@ -259,10 +259,6 @@ class AppLocalizationsGn extends AppLocalizations {
   String get privacyPolicy => 'Política de privacidad';
 
   @override
-  String get demoLoginMessage =>
-      'Eiporu [demo@mapia.app](mailto:demo@mapia.app) ha mapia123 oike hag̃ua.';
-
-  @override
   String get searchMapia => 'Eheka Mapia-pe';
 
   @override
@@ -323,9 +319,6 @@ class AppLocalizationsGn extends AppLocalizations {
 
   @override
   String get changePhoto => 'Emoambue ta\'anga';
-
-  @override
-  String get simulatedPhotoReady => 'Ta\'anga simulada oĩma oñeñongatu hag̃ua.';
 
   @override
   String get name => 'Téra';

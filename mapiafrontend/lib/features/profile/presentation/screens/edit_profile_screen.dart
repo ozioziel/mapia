@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
+import 'package:mapiafrontend/core/network/authenticated_api_client.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
+import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
+import 'package:mapiafrontend/features/profile/data/datasources/profile_api.dart';
 import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider_factory.dart';
 import 'package:mapiafrontend/features/profile/presentation/providers/profile_provider.dart';
 import 'package:mapiafrontend/features/profile/presentation/widgets/editable_avatar.dart';
@@ -21,6 +25,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _bioController;
   String? _avatarUrl;
   bool _formReady = false;
+  final _picker = ImagePicker();
 
   @override
   void didChangeDependencies() {
@@ -63,19 +68,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() {});
   }
 
-  void _simulatePhotoSelection() {
-    setState(() {
-      _avatarUrl =
-          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=240';
-    });
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.simulatedPhotoReady),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+  Future<void> _pickAndUploadAvatar() async {
+    final auth = AuthScope.of(context);
+    final image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      imageQuality: 86,
+    );
+    if (image == null) return;
+
+    try {
+      final api = ProfileApi(client: createAuthenticatedApiClient(auth));
+      final profile = await api.uploadAvatar(image);
+      if (!mounted) return;
+      setState(() => _avatarUrl = profile['avatarUrl'] as String?);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('No se pudo subir la foto: $error'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
   }
 
   Future<void> _save() async {
@@ -171,14 +188,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       child: EditableAvatar(
                         name: _firstNameController.text,
                         avatarUrl: _avatarUrl,
-                        onTap: _simulatePhotoSelection,
+                        onTap: _pickAndUploadAvatar,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextButton.icon(
                       onPressed: provider.isSaving
                           ? null
-                          : _simulatePhotoSelection,
+                          : _pickAndUploadAvatar,
                       icon: const Icon(Icons.photo_camera_outlined),
                       label: Text(context.l10n.changePhoto),
                     ),

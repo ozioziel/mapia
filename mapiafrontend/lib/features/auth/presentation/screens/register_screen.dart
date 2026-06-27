@@ -70,8 +70,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     String? message;
     if (firstName.isEmpty || lastName.isEmpty) {
       message = 'Nombre y apellido son obligatorios.';
-    } else if (username.length < 3 || !RegExp(r'^[a-zA-Z0-9._]+$').hasMatch(username)) {
-      message = 'El usuario debe tener 3-40 caracteres (letras, numeros, punto o _).';
+    } else if (username.length < 3 ||
+        !RegExp(r'^[a-zA-Z0-9._]+$').hasMatch(username)) {
+      message =
+          'El usuario debe tener 3-40 caracteres (letras, numeros, punto o _).';
     } else if (email.isEmpty || !email.contains('@')) {
       message = 'Ingresa un correo electronico valido.';
     } else if (password.length < 8) {
@@ -217,7 +219,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Inicio con Google estara disponible pronto.'),
+                        content: Text(
+                          'Inicio con Google estara disponible pronto.',
+                        ),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );

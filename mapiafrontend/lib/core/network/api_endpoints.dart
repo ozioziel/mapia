@@ -5,6 +5,7 @@ class ApiEndpoints {
   static const logout = '/auth/logout';
   static const me = '/auth/me';
   static const profileMe = '/profiles/me';
+  static const profileAvatar = '/profiles/me/avatar';
   static const profilePhoneSend = '/profiles/me/phone/send-code';
   static const profilePhoneVerify = '/profiles/me/phone/verify';
 

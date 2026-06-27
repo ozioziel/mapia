@@ -11,9 +11,9 @@ class ApiClient {
     http.Client? httpClient,
     String? Function()? accessTokenProvider,
     TokenRefreshCallback? onUnauthorized,
-  })  : _http = httpClient ?? http.Client(),
-        _accessTokenProvider = accessTokenProvider,
-        _onUnauthorized = onUnauthorized;
+  }) : _http = httpClient ?? http.Client(),
+       _accessTokenProvider = accessTokenProvider,
+       _onUnauthorized = onUnauthorized;
 
   static const _timeout = Duration(seconds: 12);
 

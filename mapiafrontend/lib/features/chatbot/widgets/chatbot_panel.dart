@@ -58,7 +58,9 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
 
   void _snack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _send([String? value]) async {
@@ -320,12 +322,15 @@ class _MessageBubble extends StatelessWidget {
                   bottomLeft: Radius.circular(isUser ? 18 : 5),
                   bottomRight: Radius.circular(isUser ? 5 : 18),
                 ),
-                border:
-                    isUser ? null : Border.all(color: const Color(0xFFE1E7DE)),
+                border: isUser
+                    ? null
+                    : Border.all(color: const Color(0xFFE1E7DE)),
               ),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 10,
+                ),
                 child: Text(
                   message.text,
                   style: TextStyle(

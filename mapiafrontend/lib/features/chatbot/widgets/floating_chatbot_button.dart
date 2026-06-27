@@ -120,9 +120,7 @@ class _ChatBubbleButton extends StatelessWidget {
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 160),
               child: Icon(
-                isOpen
-                    ? Icons.close_rounded
-                    : Icons.chat_bubble_rounded,
+                isOpen ? Icons.close_rounded : Icons.chat_bubble_rounded,
                 key: ValueKey(isOpen),
                 color: Colors.white,
                 size: 20,

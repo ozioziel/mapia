@@ -22,7 +22,8 @@ class NewsStatusModel extends NewsStatus {
       totalNewsDetected: json['totalNewsDetected'] as int? ?? 0,
       totalPostsGenerated: json['totalPostsGenerated'] as int? ?? 0,
       activeSources: activeSources,
-      configuredInterval: json['configuredInterval'] as String? ?? 'Cada 30 minutos',
+      configuredInterval:
+          json['configuredInterval'] as String? ?? 'Cada 30 minutos',
     );
   }
 }

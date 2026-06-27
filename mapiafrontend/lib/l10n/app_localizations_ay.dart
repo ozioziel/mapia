@@ -259,10 +259,6 @@ class AppLocalizationsAy extends AppLocalizations {
   String get privacyPolicy => 'Privacidad política';
 
   @override
-  String get demoLoginMessage =>
-      'Mant\'añatakix [demo@mapia.app](mailto:demo@mapia.app) ukat mapia123 apnaqam.';
-
-  @override
   String get searchMapia => 'Mapian thaqaña';
 
   @override
@@ -327,9 +323,6 @@ class AppLocalizationsAy extends AppLocalizations {
 
   @override
   String get changePhoto => 'Jamuqa mayjt\'ayaña';
-
-  @override
-  String get simulatedPhotoReady => 'Simulada jamuqa imañatak wakicht\'ata.';
 
   @override
   String get name => 'Suti';

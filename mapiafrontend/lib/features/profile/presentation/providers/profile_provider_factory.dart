@@ -20,7 +20,5 @@ ProfileProvider createProfileProvider(BuildContext context) {
     userId: user.id,
   );
 
-  return ProfileProvider(
-    repository: ProfileRepositoryImpl(datasource),
-  );
+  return ProfileProvider(repository: ProfileRepositoryImpl(datasource));
 }

@@ -259,9 +259,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get privacyPolicy => 'Política de privacidad';
 
   @override
-  String get demoLoginMessage => 'Usa demo@mapia.app y mapia123 para ingresar.';
-
-  @override
   String get searchMapia => 'Buscar en Mapia';
 
   @override
@@ -323,9 +320,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get changePhoto => 'Cambiar foto';
-
-  @override
-  String get simulatedPhotoReady => 'Foto simulada lista para guardar.';
 
   @override
   String get name => 'Nombre';

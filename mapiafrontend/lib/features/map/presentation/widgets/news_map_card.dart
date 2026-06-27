@@ -28,7 +28,11 @@ class NewsMapCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(_iconForCategory(item.category), color: _colorForCategory(item.category), size: 20),
+              Icon(
+                _iconForCategory(item.category),
+                color: _colorForCategory(item.category),
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -43,7 +47,10 @@ class NewsMapCard extends StatelessWidget {
               IconButton(
                 tooltip: 'Cerrar',
                 onPressed: onClose,
-                constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+                constraints: const BoxConstraints.tightFor(
+                  width: 34,
+                  height: 34,
+                ),
                 padding: EdgeInsets.zero,
                 icon: const Icon(Icons.close_rounded, size: 20),
               ),
@@ -104,7 +111,8 @@ class NewsMapCard extends StatelessWidget {
   }
 }
 
-IconData newsIconForCategory(MapNewsCategory category) => _iconForCategory(category);
+IconData newsIconForCategory(MapNewsCategory category) =>
+    _iconForCategory(category);
 
 IconData _iconForCategory(MapNewsCategory category) {
   return switch (category) {

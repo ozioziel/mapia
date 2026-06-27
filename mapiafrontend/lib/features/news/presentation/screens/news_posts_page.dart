@@ -31,14 +31,13 @@ class _NewsPostsPageState extends State<NewsPostsPage> {
 
   Future<void> _openOriginalUrl(String url) async {
     final uri = Uri.tryParse(url);
-    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    if (uri == null ||
+        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo abrir el enlace original.'),
-          ),
+          const SnackBar(content: Text('No se pudo abrir el enlace original.')),
         );
     }
   }
@@ -68,9 +67,7 @@ class _NewsPostsPageState extends State<NewsPostsPage> {
           animation: _provider,
           builder: (context, _) {
             if (_provider.isLoading && _provider.posts.isEmpty) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
 
             if (_provider.error != null && _provider.posts.isEmpty) {
@@ -89,7 +86,8 @@ class _NewsPostsPageState extends State<NewsPostsPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 itemCount: _provider.posts.length + 2,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return _NewsHeaderSection(
@@ -227,7 +225,11 @@ class _NewsStatusCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.info_outline_rounded, size: 16, color: AppTheme.primaryBlue),
+              const Icon(
+                Icons.info_outline_rounded,
+                size: 16,
+                color: AppTheme.primaryBlue,
+              ),
               const SizedBox(width: 6),
               const Text(
                 'Estado del Polling',
@@ -262,8 +264,14 @@ class _NewsStatusCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _StatusStat(label: 'Última revisión', value: timeStr),
-              _StatusStat(label: 'Noticias', value: '${status.totalNewsDetected}'),
-              _StatusStat(label: 'Posts creados', value: '${status.totalPostsGenerated}'),
+              _StatusStat(
+                label: 'Noticias',
+                value: '${status.totalNewsDetected}',
+              ),
+              _StatusStat(
+                label: 'Posts creados',
+                value: '${status.totalPostsGenerated}',
+              ),
             ],
           ),
         ],
@@ -318,7 +326,10 @@ class _NewsPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('d MMM yyyy, HH:mm', 'es').format(post.createdAt);
+    final dateStr = DateFormat(
+      'd MMM yyyy, HH:mm',
+      'es',
+    ).format(post.createdAt);
 
     return AppCard(
       padding: const EdgeInsets.all(16),
@@ -407,11 +418,7 @@ class _NewsPostCard extends StatelessWidget {
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
+  const _Badge({required this.label, required this.icon, required this.color});
 
   final String label;
   final IconData icon;

@@ -46,14 +46,20 @@ class ChatbotApi {
 
   /// Sube un archivo de audio y devuelve la transcripción (OpenAI Whisper).
   Future<String> transcribe(String audioPath) async {
-    final request = http.MultipartRequest('POST', _client.uri(ApiEndpoints.chatbotTranscribe))
-      ..files.add(await http.MultipartFile.fromPath('audio', audioPath));
+    final request = http.MultipartRequest(
+      'POST',
+      _client.uri(ApiEndpoints.chatbotTranscribe),
+    )..files.add(await http.MultipartFile.fromPath('audio', audioPath));
 
-    final streamed = await _http.send(request).timeout(const Duration(seconds: 60));
+    final streamed = await _http
+        .send(request)
+        .timeout(const Duration(seconds: 60));
     final response = await http.Response.fromStream(streamed);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('La transcripción falló (estado ${response.statusCode}).');
+      throw Exception(
+        'La transcripción falló (estado ${response.statusCode}).',
+      );
     }
 
     final decoded = jsonDecode(response.body);

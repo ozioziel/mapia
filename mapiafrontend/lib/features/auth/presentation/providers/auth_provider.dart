@@ -4,11 +4,9 @@ import 'package:mapiafrontend/features/auth/data/datasources/auth_local_datasour
 import 'package:mapiafrontend/features/auth/data/models/auth_models.dart';
 
 class AuthProvider extends ChangeNotifier {
-  AuthProvider({
-    AuthApi? authApi,
-    AuthLocalDatasource? localDatasource,
-  })  : _authApi = authApi ?? AuthApi(),
-        _localDatasource = localDatasource ?? const AuthLocalDatasource();
+  AuthProvider({AuthApi? authApi, AuthLocalDatasource? localDatasource})
+    : _authApi = authApi ?? AuthApi(),
+      _localDatasource = localDatasource ?? const AuthLocalDatasource();
 
   final AuthApi _authApi;
   final AuthLocalDatasource _localDatasource;
@@ -44,10 +42,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (_) {
       try {
         final refreshed = await _authApi.refresh(stored.tokens.refreshToken);
-        _session = AuthSession(
-          user: refreshed.user,
-          tokens: refreshed.tokens,
-        );
+        _session = AuthSession(user: refreshed.user, tokens: refreshed.tokens);
         await _localDatasource.saveSession(_session!);
       } catch (_) {
         await _localDatasource.clearSession();
@@ -59,10 +54,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     _error = null;
     notifyListeners();
     try {

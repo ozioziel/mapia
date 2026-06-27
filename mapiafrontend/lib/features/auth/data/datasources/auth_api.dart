@@ -45,19 +45,11 @@ class AuthApi {
   }
 
   Future<void> logout({required String accessToken}) async {
-    await _client.postJson(
-      ApiEndpoints.logout,
-      {},
-      accessToken: accessToken,
-    );
+    await _client.postJson(ApiEndpoints.logout, {}, accessToken: accessToken);
   }
 
   Future<AuthUser> me({required String accessToken}) async {
-    final json = await _client.getJson(
-      ApiEndpoints.me,
-      const {},
-      accessToken,
-    );
+    final json = await _client.getJson(ApiEndpoints.me, const {}, accessToken);
     return AuthUser.fromJson(json);
   }
 }

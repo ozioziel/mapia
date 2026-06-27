@@ -177,8 +177,8 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  /// Centra la cámara en la incidencia indicada al navegar desde el chatbot.
-  /// Si el controlador aún no existe, se aplica luego en [_handleMapCreated].
+  /// Centra la cÃ¡mara en la incidencia indicada al navegar desde el chatbot.
+  /// Si el controlador aÃºn no existe, se aplica luego en [_handleMapCreated].
   Future<void> _applyPendingFocus() async {
     final target = _pendingFocus;
     if (target == null || _mapController == null) return;
@@ -454,7 +454,7 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _onMapLongPressed(LatLng destination) async {
     final origin = _currentLocation;
     if (origin == null) {
-      setState(() => _routeError = 'Activa tu ubicación para trazar la ruta');
+      setState(() => _routeError = 'Activa tu ubicaciÃ³n para trazar la ruta');
       return;
     }
     setState(() {
@@ -523,10 +523,15 @@ class _MapScreenState extends State<MapScreen> {
     for (final b in _routeInfo?.blockades ?? const []) {
       markers.add(
         Marker(
-          markerId: MarkerId('block_${b.position.latitude}_${b.position.longitude}'),
+          markerId: MarkerId(
+            'block_${b.position.latitude}_${b.position.longitude}',
+          ),
           position: b.position,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: InfoWindow(title: b.title, snippet: 'Obstrucción: ${b.category}'),
+          infoWindow: InfoWindow(
+            title: b.title,
+            snippet: 'ObstrucciÃ³n: ${b.category}',
+          ),
         ),
       );
     }
@@ -747,7 +752,7 @@ class _MapScreenState extends State<MapScreen> {
       );
       return;
     }
-    // Si se llegó al mapa desde el chatbot antes de que el mapa existiera.
+    // Si se llegÃ³ al mapa desde el chatbot antes de que el mapa existiera.
     if (_selected != null) {
       controller.animateCamera(
         CameraUpdate.newLatLngZoom(_selected!.position, 14),
@@ -1791,7 +1796,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
   LatLng _location = boliviaCenter;
   double _confidence = 0.75;
   List<XFile> _images = [];
-  // Análisis IA (Paso 1) + formulario dinámico (Paso 2).
+  // AnÃ¡lisis IA (Paso 1) + formulario dinÃ¡mico (Paso 2).
   AnalyzedReport? _analyzed;
   String _category = 'otro';
   String _categoryLabel = 'Otro';
@@ -2020,8 +2025,11 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
     if (hasImages) return null;
 
     final combined = '$source $title $description'.trim().toLowerCase();
-    final letters = RegExp(r'[a-záéíóúñ]').allMatches(combined).length;
-    final cleaned = combined.replaceAll(RegExp(r'[^a-záéíóúñ0-9\s]'), ' ');
+    final letters = RegExp(r'[a-zÃ¡Ã©Ã­Ã³ÃºÃ±]').allMatches(combined).length;
+    final cleaned = combined.replaceAll(
+      RegExp(r'[^a-zÃ¡Ã©Ã­Ã³ÃºÃ±0-9\s]'),
+      ' ',
+    );
     final words = cleaned
         .split(RegExp(r'\s+'))
         .where((word) => word.length >= 2)
@@ -2315,7 +2323,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
               ),
               SizedBox(height: 10),
               Text(
-                'Describe el evento o sube fotos. En el siguiente paso podrás revisar y confirmar los datos antes de publicar.',
+                'Describe el evento o sube fotos. En el siguiente paso podrÃ¡s revisar y confirmar los datos antes de publicar.',
                 style: TextStyle(color: Color(0xFF475569), fontSize: 14),
               ),
             ],
@@ -2327,8 +2335,8 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
           minLines: 4,
           maxLines: 7,
           decoration: const InputDecoration(
-            labelText: 'Descripción del evento',
-            hintText: 'En el mercado Rodriguez el azúcar subió a 9 Bs...',
+            labelText: 'DescripciÃ³n del evento',
+            hintText: 'En el mercado Rodriguez el azÃºcar subiÃ³ a 9 Bs...',
           ),
         ),
         const SizedBox(height: 10),
@@ -2342,7 +2350,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
         ),
         const SizedBox(height: 16),
         _SheetSection(
-          title: 'Ubicación',
+          title: 'UbicaciÃ³n',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2369,7 +2377,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
               OutlinedButton.icon(
                 onPressed: _requestLocation,
                 icon: const Icon(Icons.my_location_rounded),
-                label: const Text('Usar ubicación actual'),
+                label: const Text('Usar ubicaciÃ³n actual'),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 44),
                 ),
@@ -2379,19 +2387,19 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
         ),
         const SizedBox(height: 14),
         _SheetSection(
-          title: 'Imágenes',
+          title: 'ImÃ¡genes',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Agrega hasta 3 fotos para que la IA entienda mejor la situación.',
+                'Agrega hasta 3 fotos para que la IA entienda mejor la situaciÃ³n.',
                 style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: _images.length >= 3 ? null : _pickImages,
                 icon: const Icon(Icons.add_photo_alternate_rounded),
-                label: const Text('Agregar imágenes'),
+                label: const Text('Agregar imÃ¡genes'),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 44),
                   shape: RoundedRectangleBorder(
@@ -2480,7 +2488,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                 initialValue: kReportCategories.any((c) => c.code == _category)
                     ? _category
                     : 'otro',
-                decoration: const InputDecoration(labelText: 'Categoría'),
+                decoration: const InputDecoration(labelText: 'CategorÃ­a'),
                 items: kReportCategories
                     .map(
                       (c) =>
@@ -2496,7 +2504,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
               TextField(
                 controller: _titleController,
                 decoration: const InputDecoration(
-                  labelText: 'Título o nombre del evento',
+                  labelText: 'TÃ­tulo o nombre del evento',
                 ),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
@@ -2508,7 +2516,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                 controller: _descriptionController,
                 minLines: 2,
                 maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Descripción'),
+                decoration: const InputDecoration(labelText: 'DescripciÃ³n'),
               ),
               if (_analyzed?.usedAi ?? false) ...[
                 const SizedBox(height: 12),
@@ -2556,7 +2564,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Ubicación textual',
+                    'UbicaciÃ³n textual',
                     style: TextStyle(
                       color: Color(0xFF64748B),
                       fontWeight: FontWeight.w800,
@@ -2615,11 +2623,15 @@ class _RouteBanner extends StatelessWidget {
     final List<Widget> content;
     if (isLoading) {
       content = const [
-        SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+        SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
         SizedBox(width: 12),
         Expanded(
           child: Text(
-            'Calculando la mejor ruta…',
+            'Calculando la mejor rutaâ€¦',
             style: TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
@@ -2629,15 +2641,22 @@ class _RouteBanner extends StatelessWidget {
         const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444)),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(error!, style: const TextStyle(fontWeight: FontWeight.w700)),
+          child: Text(
+            error!,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
         ),
       ];
     } else {
       final r = route!;
       content = [
         Icon(
-          r.avoidedBlockades ? Icons.alt_route_rounded : Icons.warning_amber_rounded,
-          color: r.avoidedBlockades ? const Color(0xFF2563EB) : const Color(0xFFEF4444),
+          r.avoidedBlockades
+              ? Icons.alt_route_rounded
+              : Icons.warning_amber_rounded,
+          color: r.avoidedBlockades
+              ? const Color(0xFF2563EB)
+              : const Color(0xFFEF4444),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -2646,14 +2665,17 @@ class _RouteBanner extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '${r.distanceText} · ${r.durationText}',
-                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                '${r.distanceText} Â· ${r.durationText}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 r.avoidedBlockades
                     ? 'Ruta libre de bloqueos'
-                    : 'Atención: pasa por ${r.blockadesOnRoute} obstrucción(es)',
+                    : 'AtenciÃ³n: pasa por ${r.blockadesOnRoute} obstrucciÃ³n(es)',
                 style: TextStyle(
                   color: r.avoidedBlockades
                       ? const Color(0xFF16A34A)
