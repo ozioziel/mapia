@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/chatbot/models/chat_message.dart';
+import 'package:mapiafrontend/features/chatbot/presentation/chatbot_controller.dart';
+import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
+import 'package:mapiafrontend/features/map/utils/severity.dart';
 
 class ChatbotPanel extends StatefulWidget {
   const ChatbotPanel({super.key, required this.onClose, this.compact = false});
@@ -14,51 +17,42 @@ class ChatbotPanel extends StatefulWidget {
 
 class _ChatbotPanelState extends State<ChatbotPanel> {
   static const List<String> _suggestions = [
-    'Quiero ir al Multicine',
-    '¿Qué hay por aquí cerca?',
-    'Muéstrame rutas populares',
-    '¿Hay bloqueos en el camino?',
-    'Recomiéndame lugares cerca',
-    'Buscar eventos en La Paz',
+    '¿Qué incidencias hay cerca?',
+    'Bloqueos en La Paz',
+    'Alertas de combustible',
+    'Sobreprecios en El Alto',
+    'Incidencias graves',
   ];
 
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<ChatMessage> _messages = [
-    ChatMessage(
-      text:
-          'Hola, soy el Asistente MAPIA. Estoy en modo prueba y puedo simular ayuda sobre rutas, lugares y alertas.',
-      isUser: false,
-      createdAt: DateTime.now(),
-    ),
-  ];
+  late final ChatbotController _bot;
+
+  @override
+  void initState() {
+    super.initState();
+    _bot = ChatbotController();
+    _bot.addListener(_handleBotUpdate);
+  }
+
+  void _handleBotUpdate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  }
 
   @override
   void dispose() {
+    _bot.removeListener(_handleBotUpdate);
+    _bot.dispose();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _sendText([String? value]) {
+  void _send([String? value]) {
     final text = (value ?? _controller.text).trim();
-    if (text.isEmpty) return;
-
+    if (text.isEmpty || _bot.isSending) return;
     _controller.clear();
-    setState(() {
-      _messages.add(
-        ChatMessage(text: text, isUser: true, createdAt: DateTime.now()),
-      );
-      _messages.add(
-        ChatMessage(
-          text: _fakeAssistantReply(text),
-          isUser: false,
-          createdAt: DateTime.now(),
-        ),
-      );
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    _bot.send(text);
   }
 
   void _scrollToBottom() {
@@ -68,29 +62,6 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
       duration: const Duration(milliseconds: 240),
       curve: Curves.easeOutCubic,
     );
-  }
-
-  String _fakeAssistantReply(String text) {
-    final normalized = text.toLowerCase();
-    if (normalized.contains('multicine')) {
-      return 'Puedo ayudarte a encontrar una ruta hacia el Multicine. Por ahora esta es una vista de prueba, pero aquí aparecerán recomendaciones de rutas, lugares cercanos y alertas importantes.';
-    }
-    if (normalized.contains('bloqueo') ||
-        normalized.contains('bloqueos') ||
-        normalized.contains('tramite') ||
-        normalized.contains('trámite')) {
-      return 'En una versión futura revisaré noticias y alertas para avisarte si existen bloqueos, tráfico o problemas en la ruta. Por ahora esta respuesta es simulada.';
-    }
-    if (normalized.contains('cerca')) {
-      return 'Pronto podré mostrarte lugares cercanos, rutas recomendadas y puntos útiles dentro de MAPIA. Por ahora esta respuesta es solo visual.';
-    }
-    if (normalized.contains('ruta') || normalized.contains('rutas')) {
-      return 'Todavía estoy en modo prueba, pero la idea es ayudarte a comparar rutas populares, tiempos aproximados y alertas relevantes.';
-    }
-    if (normalized.contains('evento') || normalized.contains('eventos')) {
-      return 'En una versión futura podré sugerirte eventos y noticias de La Paz conectados a tu ubicación o búsqueda.';
-    }
-    return 'Todavía estoy en modo prueba, pero pronto podré ayudarte con rutas, lugares, noticias y recomendaciones dentro de MAPIA.';
   }
 
   @override
@@ -115,19 +86,35 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
           children: [
             _ChatHeader(onClose: widget.onClose),
             Expanded(
-              child: ListView.separated(
-                controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-                itemCount: _messages.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final message = _messages[index];
-                  return _MessageBubble(message: message);
+              child: ListenableBuilder(
+                listenable: _bot,
+                builder: (context, _) {
+                  final messages = _bot.messages;
+                  final itemCount = messages.length + (_bot.isSending ? 1 : 0);
+                  return ListView.separated(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                    itemCount: itemCount,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      if (index >= messages.length) {
+                        return const _TypingBubble();
+                      }
+                      return _MessageBubble(message: messages[index]);
+                    },
+                  );
                 },
               ),
             ),
-            _SuggestionChips(suggestions: _suggestions, onSelected: _sendText),
-            _ChatInput(controller: _controller, onSend: _sendText),
+            _SuggestionChips(suggestions: _suggestions, onSelected: _send),
+            ListenableBuilder(
+              listenable: _bot,
+              builder: (context, _) => _ChatInput(
+                controller: _controller,
+                onSend: _send,
+                enabled: !_bot.isSending,
+              ),
+            ),
           ],
         ),
       ),
@@ -197,7 +184,7 @@ class _ChatHeader extends StatelessWidget {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Pregúntame sobre rutas, lugares o noticias',
+                  'Pregúntame por las incidencias registradas',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -228,33 +215,144 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 310),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: isUser ? AppTheme.primaryBlue : const Color(0xFFF4F7F4),
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(isUser ? 18 : 5),
-              bottomRight: Radius.circular(isUser ? 5 : 18),
-            ),
-            border: isUser ? null : Border.all(color: const Color(0xFFE1E7DE)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-            child: Text(
-              message.text,
-              style: TextStyle(
-                color: isUser ? Colors.white : AppTheme.textNavy,
-                fontSize: 13.5,
-                height: 1.32,
-                fontWeight: FontWeight.w600,
+    return Column(
+      crossAxisAlignment: isUser
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 310),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: isUser ? AppTheme.primaryBlue : const Color(0xFFF4F7F4),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(18),
+                  topRight: const Radius.circular(18),
+                  bottomLeft: Radius.circular(isUser ? 18 : 5),
+                  bottomRight: Radius.circular(isUser ? 5 : 18),
+                ),
+                border:
+                    isUser ? null : Border.all(color: const Color(0xFFE1E7DE)),
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                child: Text(
+                  message.text,
+                  style: TextStyle(
+                    color: isUser ? Colors.white : AppTheme.textNavy,
+                    fontSize: 13.5,
+                    height: 1.32,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           ),
+        ),
+        if (message.incidents.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          for (final incident in message.incidents)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: _IncidentCard(incident: incident),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _IncidentCard extends StatelessWidget {
+  const _IncidentCard({required this.incident});
+
+  final AlertMapItem incident;
+
+  @override
+  Widget build(BuildContext context) {
+    final place =
+        incident.zone ?? incident.municipality ?? incident.department ?? '—';
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 320),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: const Color(0xFFE1E7DE)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              margin: const EdgeInsets.only(top: 4, right: 9),
+              decoration: BoxDecoration(
+                color: severityColor(incident.severity),
+                shape: BoxShape.circle,
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    incident.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.textNavy,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${incident.alertType.label} · ${incident.severity.label} · $place',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.mutedText,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F7F4),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomLeft: Radius.circular(5),
+            bottomRight: Radius.circular(18),
+          ),
+          border: Border.all(color: const Color(0xFFE1E7DE)),
+        ),
+        child: const SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
     );
@@ -300,10 +398,15 @@ class _SuggestionChips extends StatelessWidget {
 }
 
 class _ChatInput extends StatelessWidget {
-  const _ChatInput({required this.controller, required this.onSend});
+  const _ChatInput({
+    required this.controller,
+    required this.onSend,
+    this.enabled = true,
+  });
 
   final TextEditingController controller;
   final VoidCallback onSend;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -316,6 +419,7 @@ class _ChatInput extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
+                enabled: enabled,
                 minLines: 1,
                 maxLines: 3,
                 textInputAction: TextInputAction.send,
@@ -335,7 +439,7 @@ class _ChatInput extends StatelessWidget {
               width: 48,
               height: 48,
               child: FilledButton(
-                onPressed: onSend,
+                onPressed: enabled ? onSend : null,
                 style: FilledButton.styleFrom(
                   padding: EdgeInsets.zero,
                   shape: const CircleBorder(),
