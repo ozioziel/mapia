@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart';
-import 'package:mapiafrontend/features/profile/data/datasources/profile_mock_datasource.dart';
+import 'package:mapiafrontend/features/profile/domain/repositories/profile_repository.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
 class CreatePostProvider extends ChangeNotifier {
-  CreatePostProvider({ProfileMockDatasource? profileDatasource})
-    : _profileDatasource = profileDatasource ?? ProfileMockDatasource() {
+  CreatePostProvider({required ProfileRepository profileRepository})
+    : _profileRepository = profileRepository {
     loadPublishingEligibility();
   }
 
-  final ProfileMockDatasource _profileDatasource;
+  final ProfileRepository _profileRepository;
 
   String title = '';
   String description = '';
@@ -27,11 +27,17 @@ class CreatePostProvider extends ChangeNotifier {
     isCheckingProfile = true;
     notifyListeners();
 
-    final profile = await _profileDatasource.getProfile();
-    phoneVerified = profile.phoneVerified;
-    canPublish = profile.canPublish;
-    isCheckingProfile = false;
-    notifyListeners();
+    try {
+      final profile = await _profileRepository.getProfile();
+      phoneVerified = profile.phoneVerified;
+      canPublish = profile.canPublish;
+    } catch (_) {
+      phoneVerified = false;
+      canPublish = false;
+    } finally {
+      isCheckingProfile = false;
+      notifyListeners();
+    }
   }
 
   void updateTitle(String value) {

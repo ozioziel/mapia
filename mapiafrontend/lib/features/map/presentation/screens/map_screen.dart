@@ -1760,13 +1760,18 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
               labelText: f.required ? '${f.label} *' : f.label,
               helperText: f.hint,
               suffixIcon: f.detectedByAi
-                  ? const Icon(Icons.auto_awesome_rounded,
-                      size: 18, color: Color(0xFF22C55E))
+                  ? const Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 18,
+                      color: Color(0xFF22C55E),
+                    )
                   : null,
             ),
           );
       }
-      widgets.add(Padding(padding: const EdgeInsets.only(bottom: 12), child: input));
+      widgets.add(
+        Padding(padding: const EdgeInsets.only(bottom: 12), child: input),
+      );
     }
     return widgets;
   }
@@ -2009,7 +2014,9 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
         .map((f) => f.label)
         .toList();
     if (missing.isNotEmpty) {
-      setState(() => _error = 'Completa los campos esenciales: ${missing.join(', ')}');
+      setState(
+        () => _error = 'Completa los campos esenciales: ${missing.join(', ')}',
+      );
       return;
     }
 
@@ -2402,7 +2409,6 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-<<<<<<< HEAD
               Row(
                 children: [
                   Expanded(
@@ -2485,21 +2491,24 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                 controller: _zoneController,
                 decoration: const InputDecoration(labelText: 'Zona'),
               ),
-=======
               DropdownButtonFormField<String>(
                 initialValue: kReportCategories.any((c) => c.code == _category)
                     ? _category
                     : 'otro',
                 decoration: const InputDecoration(labelText: 'Categoría'),
                 items: kReportCategories
-                    .map((c) => DropdownMenuItem(value: c.code, child: Text(c.label)))
+                    .map(
+                      (c) =>
+                          DropdownMenuItem(value: c.code, child: Text(c.label)),
+                    )
                     .toList(),
                 onChanged: (value) {
                   if (value == null) return;
                   setState(() {
                     _category = value;
-                    _categoryLabel =
-                        kReportCategories.firstWhere((c) => c.code == value).label;
+                    _categoryLabel = kReportCategories
+                        .firstWhere((c) => c.code == value)
+                        .label;
                     _alertType = _alertTypeForCategory(value);
                   });
                 },
@@ -2512,7 +2521,6 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
               ),
               const SizedBox(height: 12),
               ..._buildDynamicFields(),
->>>>>>> 6ce59c8c8912e5d234d4319510eae3378701a8ce
             ],
           ),
         ),
