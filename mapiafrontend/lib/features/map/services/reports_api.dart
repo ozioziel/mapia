@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:image_picker/image_picker.dart';
 import 'package:mapiafrontend/core/network/api_client.dart';
 import 'package:mapiafrontend/core/network/api_endpoints.dart';
@@ -97,6 +98,15 @@ class ReportsApi {
   final ApiClient _client;
   final http.Client _http;
 
+  /// Content-Type de la imagen según su extensión (evita que se envíe como
+  /// application/octet-stream y el backend lo rechace).
+  MediaType _imageMediaType(String name) {
+    final n = name.toLowerCase();
+    if (n.endsWith('.png')) return MediaType('image', 'png');
+    if (n.endsWith('.webp')) return MediaType('image', 'webp');
+    return MediaType('image', 'jpeg');
+  }
+
   Future<ParsedReport> parseReport({
     required String text,
     double? latitude,
@@ -134,6 +144,7 @@ class ReportsApi {
           'images',
           await image.readAsBytes(),
           filename: image.name,
+          contentType: _imageMediaType(image.name),
         ),
       );
     }
@@ -185,6 +196,7 @@ class ReportsApi {
           'images',
           await image.readAsBytes(),
           filename: image.name,
+          contentType: _imageMediaType(image.name),
         ),
       );
     }
@@ -243,6 +255,7 @@ class ReportsApi {
           'images',
           await image.readAsBytes(),
           filename: image.name,
+          contentType: _imageMediaType(image.name),
         ),
       );
     }
