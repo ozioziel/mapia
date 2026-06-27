@@ -17,6 +17,7 @@ class ApiEndpoints {
   static const mapFilters = '/map/filters';
   static const newsTodayMap = '/news/today/map';
   static const parseReport = '/reports/parse';
+  static const parseReportWithImages = '/reports/parse-with-images';
   static const publishReport = '/reports';
   static const myReports = '/reports/mine';
   static const reportCandidates = '/report-candidates';

@@ -105,6 +105,55 @@ class ReportsApi {
     return ParsedReport.fromJson(json);
   }
 
+  Future<ParsedReport> parseReportWithImages({
+    required String text,
+    required List<XFile> images,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final requestUri = _client.uri(ApiEndpoints.parseReportWithImages);
+    final request = http.MultipartRequest('POST', requestUri);
+
+    final token = _client.accessTokenProvider?.call();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    request.fields['text'] = text;
+    if (latitude != null) request.fields['latitude'] = latitude.toString();
+    if (longitude != null) request.fields['longitude'] = longitude.toString();
+
+    for (final image in images) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'images',
+          await image.readAsBytes(),
+          filename: image.name,
+        ),
+      );
+    }
+
+    late final http.Response response;
+    try {
+      final streamed = await _http.send(request).timeout(_uploadTimeout);
+      response = await http.Response.fromStream(streamed).timeout(_uploadTimeout);
+    } on TimeoutException {
+      throw ApiException('Tiempo de espera agotado: $requestUri', 0);
+    } catch (_) {
+      throw ApiException('No se pudo conectar con $requestUri', 0);
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        response.body.isEmpty ? 'No se pudo analizar' : response.body,
+        response.statusCode,
+      );
+    }
+    
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    return ParsedReport.fromJson(decoded);
+  }
+
   Future<String> publishReport(PublishReportInput input) async {
     final requestUri = _client.uri(ApiEndpoints.publishReport);
     final request = http.MultipartRequest('POST', requestUri);

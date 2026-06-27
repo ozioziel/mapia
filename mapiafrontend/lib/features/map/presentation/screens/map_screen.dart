@@ -1672,11 +1672,21 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
     });
 
     try {
-      final parsed = await widget.reportsApi.parseReport(
-        text: text,
-        latitude: _location.latitude,
-        longitude: _location.longitude,
-      );
+      final ParsedReport parsed;
+      if (_images.isNotEmpty) {
+        parsed = await widget.reportsApi.parseReportWithImages(
+          text: text,
+          images: _images,
+          latitude: _location.latitude,
+          longitude: _location.longitude,
+        );
+      } else {
+        parsed = await widget.reportsApi.parseReport(
+          text: text,
+          latitude: _location.latitude,
+          longitude: _location.longitude,
+        );
+      }
       setState(() {
         _titleController.text = parsed.title;
         _descriptionController.text = parsed.description;
@@ -1856,8 +1866,8 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Icon(Icons.auto_awesome_rounded),
-                          label: const Text('Analizar'),
+                              : Icon(_images.isNotEmpty ? Icons.image_search_rounded : Icons.auto_awesome_rounded),
+                          label: Text(_images.isNotEmpty ? 'Analizar con IA Visual' : 'Analizar texto'),
                         ),
                       ),
                     ],
@@ -2000,31 +2010,47 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                   ),
                   const SizedBox(height: 14),
                   _SheetSection(
-                    title: 'Imagenes',
+                    title: 'Imágenes',
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(
+                          'Sube hasta 3 fotos para que la IA entienda mejor la situación.',
+                          style: TextStyle(
+                            color: const Color(0xFF64748B),
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         OutlinedButton.icon(
                           onPressed: _images.length >= 3 ? null : _pickImages,
-                          icon: const Icon(Icons.photo_library_rounded),
-                          label: const Text('Agregar imagenes'),
+                          icon: const Icon(Icons.add_photo_alternate_rounded),
+                          label: const Text('Agregar imágenes'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final image in _images)
-                              _ImagePreview(
-                                image: image,
-                                onRemove: () => setState(
-                                  () => _images = _images
-                                      .where((item) => item != image)
-                                      .toList(),
+                        if (_images.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              for (final image in _images)
+                                _ImagePreview(
+                                  image: image,
+                                  onRemove: () => setState(
+                                    () => _images = _images
+                                        .where((item) => item != image)
+                                        .toList(),
+                                  ),
                                 ),
-                              ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -2109,35 +2135,52 @@ class _ImagePreview extends StatelessWidget {
       builder: (context, snapshot) {
         return Stack(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: snapshot.hasData
-                  ? Image.memory(
-                      snapshot.data!,
-                      width: 86,
-                      height: 86,
-                      fit: BoxFit.cover,
-                    )
-                  : Container(
-                      width: 86,
-                      height: 86,
-                      color: const Color(0xFFE2E8F0),
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: snapshot.hasData
+                    ? Image.memory(
+                        snapshot.data!,
+                        width: 116,
+                        height: 116,
+                        fit: BoxFit.cover,
+                      )
+                    : Container(
+                        width: 116,
+                        height: 116,
+                        color: const Color(0xFFF8FAFC),
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       ),
-                    ),
+              ),
             ),
             Positioned(
-              top: 2,
-              right: 2,
+              top: 4,
+              right: 4,
               child: IconButton.filledTonal(
                 onPressed: onRemove,
                 icon: const Icon(Icons.close_rounded, size: 16),
                 constraints: const BoxConstraints.tightFor(
-                  width: 30,
-                  height: 30,
+                  width: 28,
+                  height: 28,
                 ),
                 padding: EdgeInsets.zero,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withOpacity(0.6),
+                  foregroundColor: Colors.white,
+                ),
               ),
             ),
           ],
