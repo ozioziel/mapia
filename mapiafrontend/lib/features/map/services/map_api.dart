@@ -32,7 +32,7 @@ class MapApi {
       'east': east?.toString(),
       'west': west?.toString(),
     });
-    final items = json['items'] as List? ?? const [];
+    final items = json['items'] as List? ?? json['value'] as List? ?? const [];
     return [
       for (final item in items)
         if (item is Map<String, dynamic>)
@@ -52,4 +52,5 @@ class MapApi {
     final json = await _client.getJson(ApiEndpoints.mapFilters);
     return AlertFilterOptions.fromJson(json);
   }
+
 }

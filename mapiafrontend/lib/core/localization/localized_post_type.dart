@@ -18,6 +18,7 @@ extension LocalizedPostType on PostType {
       PostType.security => l10n.security,
       PostType.lostFound => l10n.lostFound,
       PostType.other => l10n.other,
+      PostType.alert => l10n.alerts,
     };
   }
 
@@ -36,6 +37,7 @@ extension LocalizedPostType on PostType {
       PostType.security => l10n.security,
       PostType.lostFound => l10n.lostFoundPlural,
       PostType.other => l10n.otherPlural,
+      PostType.alert => l10n.alerts,
     };
   }
 
@@ -54,6 +56,7 @@ extension LocalizedPostType on PostType {
       PostType.security => l10n.securityDescription,
       PostType.lostFound => l10n.lostFoundDescription,
       PostType.other => l10n.otherDescription,
+      PostType.alert => l10n.alertsNearYou,
     };
   }
 }
