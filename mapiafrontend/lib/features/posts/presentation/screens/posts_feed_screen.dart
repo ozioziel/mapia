@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/localization/localized_post_type.dart';
 import 'package:mapiafrontend/core/localization/time_ago.dart';
+import 'package:mapiafrontend/core/network/authenticated_api_client.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
-import 'package:mapiafrontend/features/posts/data/datasources/mock_posts_datasource.dart';
+import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
+import 'package:mapiafrontend/features/posts/data/services/posts_api.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 import 'package:mapiafrontend/features/reputation/domain/reputation_helper.dart';
 import 'package:mapiafrontend/features/reputation/presentation/widgets/reputation_badge.dart';
@@ -20,13 +22,15 @@ class PostsFeedScreen extends StatefulWidget {
 }
 
 class _PostsFeedScreenState extends State<PostsFeedScreen> {
-  final List<PostEntity> _posts = const MockPostsDatasource().getPosts();
   final ScrollController _scrollController = ScrollController();
+  List<PostEntity> _posts = const [];
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToFocusedPost());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPosts());
   }
 
   @override
@@ -47,6 +51,33 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
       duration: const Duration(milliseconds: 420),
       curve: Curves.easeOutCubic,
     );
+  }
+
+  Future<void> _loadPosts() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final api = PostsApi(
+        client: createAuthenticatedApiClient(AuthScope.of(context)),
+      );
+      final posts = await api.fetchPosts();
+      if (!mounted) return;
+      setState(() {
+        _posts = posts;
+        _isLoading = false;
+      });
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _scrollToFocusedPost(),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   void _openPost(PostEntity post) {
@@ -94,7 +125,48 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
           ),
         ],
       ),
-      body: ListView.separated(
+      body: _buildBody(context),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).pushNamed('/create-post'),
+        backgroundColor: AppTheme.boliviaYellow,
+        foregroundColor: AppTheme.textNavy,
+        elevation: 0,
+        icon: const Icon(Icons.add_rounded),
+        label: Text(context.l10n.publish),
+      ),
+      bottomNavigationBar: MapiaBottomNavigation(
+        currentIndex: 1,
+        onIndexChanged: _handleNavTap,
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return _PostsStateMessage(
+        icon: Icons.cloud_off_rounded,
+        title: 'No pudimos cargar publicaciones',
+        message: _error!,
+        actionLabel: context.l10n.retry,
+        onAction: _loadPosts,
+      );
+    }
+    if (_posts.isEmpty) {
+      return _PostsStateMessage(
+        icon: Icons.forum_outlined,
+        title: 'Aun no hay publicaciones',
+        message:
+            'Cuando alguien publique con ubicacion, aparecera aqui y en el mapa.',
+        actionLabel: 'Actualizar',
+        onAction: _loadPosts,
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadPosts,
+      child: ListView.separated(
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 108),
         itemCount: _posts.length,
@@ -107,18 +179,6 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
             onTap: () => _openPost(post),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).pushNamed('/create-post'),
-        backgroundColor: AppTheme.boliviaYellow,
-        foregroundColor: AppTheme.textNavy,
-        elevation: 0,
-        icon: const Icon(Icons.add_rounded),
-        label: Text(context.l10n.publish),
-      ),
-      bottomNavigationBar: MapiaBottomNavigation(
-        currentIndex: 1,
-        onIndexChanged: _handleNavTap,
       ),
     );
   }
@@ -138,7 +198,9 @@ class _PostFeedItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final option = post.type.option;
-    final reputation = authorReputationInfo(post.authorName);
+    final reputation = post.authorReputation == null
+        ? authorReputationInfo(post.authorName)
+        : reputationInfoFor(score: post.authorReputation, postsCount: 1);
 
     return AppCard(
       onTap: onTap,
@@ -270,6 +332,58 @@ class _PostFeedItem extends StatelessWidget {
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PostsStateMessage extends StatelessWidget {
+  const _PostsStateMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: AppTheme.mutedText, size: 42),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.textNavy,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.mutedText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
+            FilledButton(onPressed: onAction, child: Text(actionLabel)),
           ],
         ),
       ),

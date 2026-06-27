@@ -1,103 +1,133 @@
 import 'package:flutter/material.dart';
-import 'package:mapiafrontend/core/localization/l10n_extension.dart';
-import 'package:mapiafrontend/core/localization/localized_post_type.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
+import 'package:mapiafrontend/features/reputation/domain/reputation_helper.dart';
+import 'package:mapiafrontend/features/reputation/presentation/widgets/reputation_badge.dart';
 
 class MapPostPreviewCard extends StatelessWidget {
   const MapPostPreviewCard({
     super.key,
     required this.post,
     required this.onGoTap,
+    required this.onClose,
   });
 
   final PostEntity post;
   final VoidCallback onGoTap;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    final option = post.type.option;
+    final reputation = post.authorReputation == null
+        ? authorReputationInfo(post.authorName)
+        : reputationInfoFor(score: post.authorReputation, postsCount: 1);
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 158),
+      constraints: const BoxConstraints(maxHeight: 156),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(14),
         elevation: 10,
         shadowColor: Colors.black.withValues(alpha: 0.18),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 13, 12, 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: option.color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(option.icon, color: option.color, size: 20),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      post.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppTheme.textNavy,
-                        fontSize: 15.5,
-                        height: 1.12,
-                        fontWeight: FontWeight.w900,
-                      ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppTheme.primaryBlue.withValues(
+                      alpha: 0.1,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${post.type.label(context)} - ${post.authorName}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: option.color,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      post.address ?? context.l10n.laPaz,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppTheme.mutedText,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: FilledButton(
-                  onPressed: onGoTap,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.primaryBlue,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(52, 36),
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    backgroundImage: post.authorAvatarUrl == null
+                        ? null
+                        : NetworkImage(post.authorAvatarUrl!),
+                    child: post.authorAvatarUrl == null
+                        ? Text(
+                            post.authorName.characters.first.toUpperCase(),
+                            style: const TextStyle(
+                              color: AppTheme.primaryBlue,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          )
+                        : null,
                   ),
-                  child: Text(
-                    context.l10n.continueText,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                post.authorName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppTheme.textNavy,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            ReputationBadge(
+                              reputation: reputation,
+                              compact: true,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 7),
+                        Text(
+                          post.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.textNavy,
+                            fontSize: 16,
+                            height: 1.12,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  IconButton(
+                    onPressed: onClose,
+                    icon: const Icon(Icons.close_rounded),
+                    color: AppTheme.mutedText,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Spacer(),
+                  FilledButton.icon(
+                    onPressed: onGoTap,
+                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.primaryBlue,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 38),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    label: const Text(
+                      'Ir a la publicacion',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

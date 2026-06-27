@@ -14,6 +14,7 @@ class ApiEndpoints {
   static const chatbotTranscribe = '/chatbot/transcribe';
 
   static const mapAlerts = '/map/alerts';
+  static const mapPublications = '/map/publications';
   static const mapSummary = '/map/summary';
   static const mapFilters = '/map/filters';
   static const newsTodayMap = '/news/today/map';
@@ -27,6 +28,10 @@ class ApiEndpoints {
 
   static String reportCandidateFromPost(String postId) =>
       '/report-candidates/from-post/$postId';
+
+  static String postById(String postId) => '/posts/$postId';
+
+  static String postComments(String postId) => '/posts/$postId/comments';
 
   static String reportCandidateStatus(String id) =>
       '/report-candidates/$id/status';
