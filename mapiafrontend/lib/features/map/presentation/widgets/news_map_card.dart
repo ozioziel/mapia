@@ -116,20 +116,30 @@ IconData newsIconForCategory(MapNewsCategory category) =>
 
 IconData _iconForCategory(MapNewsCategory category) {
   return switch (category) {
-    MapNewsCategory.evento => Icons.event_rounded,
     MapNewsCategory.bloqueo => Icons.warning_amber_rounded,
-    MapNewsCategory.corteServicio => Icons.bolt_rounded,
-    MapNewsCategory.venta => Icons.local_offer_rounded,
-    MapNewsCategory.noticia => Icons.info_rounded,
+    MapNewsCategory.accidente => Icons.car_crash_rounded,
+    MapNewsCategory.seguridad => Icons.security_rounded,
+    MapNewsCategory.transporte => Icons.directions_bus_rounded,
+    MapNewsCategory.clima => Icons.water_drop_rounded,
+    MapNewsCategory.desastre => Icons.emergency_rounded,
+    MapNewsCategory.servicios => Icons.bolt_rounded,
+    MapNewsCategory.ambiente => Icons.park_rounded,
+    MapNewsCategory.evento => Icons.event_rounded,
+    MapNewsCategory.otroRelevante => Icons.info_rounded,
   };
 }
 
 Color _colorForCategory(MapNewsCategory category) {
   return switch (category) {
-    MapNewsCategory.evento => const Color(0xFF7C3AED),
     MapNewsCategory.bloqueo => const Color(0xFFEA580C),
-    MapNewsCategory.corteServicio => const Color(0xFFEAB308),
-    MapNewsCategory.venta => AppTheme.boliviaGreen,
-    MapNewsCategory.noticia => AppTheme.primaryBlue,
+    MapNewsCategory.accidente => const Color(0xFFDC2626),
+    MapNewsCategory.seguridad => const Color(0xFFE11D48),
+    MapNewsCategory.transporte => const Color(0xFF2563EB),
+    MapNewsCategory.clima => const Color(0xFF0891B2),
+    MapNewsCategory.desastre => const Color(0xFF9333EA),
+    MapNewsCategory.servicios => const Color(0xFFEAB308),
+    MapNewsCategory.ambiente => AppTheme.boliviaGreen,
+    MapNewsCategory.evento => const Color(0xFF7C3AED),
+    MapNewsCategory.otroRelevante => AppTheme.primaryBlue,
   };
 }
