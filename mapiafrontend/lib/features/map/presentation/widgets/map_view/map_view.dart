@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mapiafrontend/features/location/domain/entities/location_entity.dart';
-import 'package:mapiafrontend/features/map/presentation/widgets/map_view/mock_map_view.dart';
+import 'package:mapiafrontend/features/map/presentation/widgets/map_view/static_map_view.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
 class MapView extends StatelessWidget {
@@ -23,7 +23,7 @@ class MapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MockMapView(
+    return StaticMapView(
       posts: posts,
       selectedPost: selectedPost,
       userLocation: userLocation,

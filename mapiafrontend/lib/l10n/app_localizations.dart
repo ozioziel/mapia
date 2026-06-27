@@ -594,12 +594,6 @@ abstract class AppLocalizations {
   /// **'Política de privacidad'**
   String get privacyPolicy;
 
-  /// No description provided for @demoLoginMessage.
-  ///
-  /// In es, this message translates to:
-  /// **'Usa demo@mapia.app y mapia123 para ingresar.'**
-  String get demoLoginMessage;
-
   /// No description provided for @searchMapia.
   ///
   /// In es, this message translates to:
@@ -713,12 +707,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Cambiar foto'**
   String get changePhoto;
-
-  /// No description provided for @simulatedPhotoReady.
-  ///
-  /// In es, this message translates to:
-  /// **'Foto simulada lista para guardar.'**
-  String get simulatedPhotoReady;
 
   /// No description provided for @name.
   ///

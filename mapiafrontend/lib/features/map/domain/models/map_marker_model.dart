@@ -7,7 +7,6 @@ enum MapPointSourceType {
   backendPost,
   backendRoute,
   backendPlace,
-  mock,
 }
 
 class MapMarkerModel {

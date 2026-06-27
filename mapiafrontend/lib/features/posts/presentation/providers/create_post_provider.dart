@@ -88,11 +88,10 @@ class CreatePostProvider extends ChangeNotifier {
     success = false;
     notifyListeners();
 
-    await Future<void>.delayed(const Duration(milliseconds: 650));
-
     isLoading = false;
-    success = true;
+    success = false;
+    hasValidationError = true;
     notifyListeners();
-    return true;
+    return false;
   }
 }

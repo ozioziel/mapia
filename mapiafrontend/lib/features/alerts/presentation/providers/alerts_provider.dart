@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:mapiafrontend/features/alerts/data/datasources/alerts_mock_datasource.dart';
 import 'package:mapiafrontend/features/alerts/data/repositories/alerts_repository_impl.dart';
 import 'package:mapiafrontend/features/alerts/domain/entities/nearby_alert_group_entity.dart';
 import 'package:mapiafrontend/features/alerts/domain/usecases/get_nearby_alert_groups_usecase.dart';
@@ -15,13 +14,13 @@ class AlertsProvider extends ChangeNotifier {
        _getPostsByTypeUsecase =
            getPostsByTypeUsecase ?? _defaultGetPostsByTypeUsecase;
 
-  static const userMockLocation = AppLocationEntity(
+  static const defaultLocation = AppLocationEntity(
     latitude: -16.5000,
     longitude: -68.1500,
-    address: 'La Paz, Bolivia / Sopocachi / Zona actual mock',
+    address: 'La Paz, Bolivia',
   );
 
-  static final _repository = AlertsRepositoryImpl(const AlertsMockDatasource());
+  static final _repository = AlertsRepositoryImpl();
   static final _defaultGetGroupsUsecase = GetNearbyAlertGroupsUsecase(
     _repository,
   );
@@ -39,7 +38,7 @@ class AlertsProvider extends ChangeNotifier {
   bool isLoading = false;
   String? error;
 
-  AppLocationEntity get currentLocation => userMockLocation;
+  AppLocationEntity get currentLocation => defaultLocation;
 
   Future<void> loadGroups() async {
     isLoading = true;

@@ -87,13 +87,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Candidato registrado para la demo local.'),
+          SnackBar(
+            content: Text('No se pudo registrar el candidato: $error'),
             behavior: SnackBarBehavior.floating,
           ),
         );

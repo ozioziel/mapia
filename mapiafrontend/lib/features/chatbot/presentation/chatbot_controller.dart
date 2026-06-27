@@ -68,7 +68,8 @@ class ChatbotController extends ChangeNotifier {
   }
 
   /// Transcribe un archivo de audio usando el backend (OpenAI Whisper).
-  Future<String> transcribe(String audioPath) => _chatbotApi.transcribe(audioPath);
+  Future<String> transcribe(String audioPath) =>
+      _chatbotApi.transcribe(audioPath);
 
   Future<Position?> _lastKnownPosition() async {
     try {
@@ -111,9 +112,13 @@ class ChatbotController extends ChangeNotifier {
         s.contains('diesel') ||
         s.contains('gnv')) {
       type = AlertType.combustible;
-    } else if (s.contains('precio') || s.contains('caro') || s.contains('sobreprecio')) {
+    } else if (s.contains('precio') ||
+        s.contains('caro') ||
+        s.contains('sobreprecio')) {
       type = AlertType.sobreprecio;
-    } else if (s.contains('no hay') || s.contains('agotado') || s.contains('desabastec')) {
+    } else if (s.contains('no hay') ||
+        s.contains('agotado') ||
+        s.contains('desabastec')) {
       type = AlertType.productoNoDisponible;
     }
 
@@ -157,7 +162,11 @@ class ChatbotController extends ChangeNotifier {
     final lines = <String>[];
     for (var i = 0; i < shown.length; i++) {
       final it = shown[i];
-      final place = it.zone ?? it.municipality ?? it.department ?? 'ubicación no especificada';
+      final place =
+          it.zone ??
+          it.municipality ??
+          it.department ??
+          'ubicación no especificada';
       lines.add('${i + 1}. ${it.title} · ${it.severity.label} · $place');
     }
     final n = shown.length;

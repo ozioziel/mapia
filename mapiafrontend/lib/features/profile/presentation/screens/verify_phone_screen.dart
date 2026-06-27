@@ -141,7 +141,8 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
                       ),
                       const SizedBox(height: 18),
                       OutlinedButton.icon(
-                        onPressed: provider.isSendingCode || profile.phoneVerified
+                        onPressed:
+                            provider.isSendingCode || profile.phoneVerified
                             ? null
                             : _sendCode,
                         icon: provider.isSendingCode
@@ -173,7 +174,8 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
                       ),
                       const SizedBox(height: 8),
                       FilledButton.icon(
-                        onPressed: provider.isVerifyingCode || profile.phoneVerified
+                        onPressed:
+                            provider.isVerifyingCode || profile.phoneVerified
                             ? null
                             : _verifyCode,
                         icon: provider.isVerifyingCode

@@ -6,8 +6,8 @@ import 'package:mapiafrontend/features/location/domain/entities/location_entity.
 import 'package:mapiafrontend/features/map/presentation/widgets/user_map_marker.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
-class MockMapView extends StatelessWidget {
-  const MockMapView({
+class StaticMapView extends StatelessWidget {
+  const StaticMapView({
     super.key,
     required this.posts,
     required this.selectedPost,
@@ -31,7 +31,7 @@ class MockMapView extends StatelessWidget {
       onTap: onMapTap,
       child: Stack(
         children: [
-          const Positioned.fill(child: _LaPazMockMap()),
+          const Positioned.fill(child: _LaPazStaticMap()),
           Positioned.fill(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -267,8 +267,8 @@ class _MapLabel extends StatelessWidget {
   }
 }
 
-class _LaPazMockMap extends StatelessWidget {
-  const _LaPazMockMap();
+class _LaPazStaticMap extends StatelessWidget {
+  const _LaPazStaticMap();
 
   @override
   Widget build(BuildContext context) {

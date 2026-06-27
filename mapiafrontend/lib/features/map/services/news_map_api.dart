@@ -20,7 +20,9 @@ class NewsMapApi {
         .get(uri, headers: const {'Accept': 'application/json'})
         .timeout(const Duration(seconds: 12));
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('El backend respondio con estado ${response.statusCode}.');
+      throw Exception(
+        'El backend respondio con estado ${response.statusCode}.',
+      );
     }
 
     final decoded = jsonDecode(response.body);

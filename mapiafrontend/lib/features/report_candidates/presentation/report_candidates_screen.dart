@@ -63,23 +63,42 @@ class _ReportCandidatesScreenState extends State<ReportCandidatesScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
               children: [
-                if (provider.error != null || provider.usingMockData)
-                  _Notice(
-                    text: provider.error ?? 'Mostrando candidatos de prueba.',
-                  ),
-                const SizedBox(height: 10),
-                for (final candidate in provider.candidates) ...[
-                  _CandidateCard(
-                    candidate: candidate,
-                    onOpenPost: () => _openPost(candidate),
-                    onOpenMap: () => _openMap(candidate),
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                if (provider.error != null) _Notice(text: provider.error!),
+                if (provider.error != null) const SizedBox(height: 10),
+                if (provider.candidates.isEmpty)
+                  const _EmptyCandidates()
+                else
+                  for (final candidate in provider.candidates) ...[
+                    _CandidateCard(
+                      candidate: candidate,
+                      onOpenPost: () => _openPost(candidate),
+                      onOpenMap: () => _openMap(candidate),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
               ],
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _EmptyCandidates extends StatelessWidget {
+  const _EmptyCandidates();
+
+  @override
+  Widget build(BuildContext context) {
+    return const AppCard(
+      padding: EdgeInsets.all(18),
+      child: Text(
+        'Aún no hay candidatos reales para revisar.',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: AppTheme.mutedText,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

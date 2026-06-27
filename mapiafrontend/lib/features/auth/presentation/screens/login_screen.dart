@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    _showError(auth.error ?? context.l10n.demoLoginMessage);
+    _showError(auth.error ?? 'No se pudo iniciar sesión.');
   }
 
   void _showError(String message) {
