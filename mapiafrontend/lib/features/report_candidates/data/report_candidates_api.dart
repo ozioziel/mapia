@@ -86,6 +86,13 @@ ReportCandidate _candidateFromJson(Map<String, dynamic> json) {
         DateTime.tryParse(json['createdAt'] as String? ?? '') ??
         DateTime.tryParse(json['created_at'] as String? ?? '') ??
         DateTime.now(),
+    authorReputationScore:
+        json['authorReputationScore'] as int? ??
+        json['author_reputation_score'] as int?,
+    authorPostsCount:
+        json['authorPostsCount'] as int? ??
+        json['author_posts_count'] as int? ??
+        0,
     aiSummary: json['aiSummary'] as String? ?? json['ai_summary'] as String?,
     suggestedSolution:
         json['suggestedSolution'] as String? ??

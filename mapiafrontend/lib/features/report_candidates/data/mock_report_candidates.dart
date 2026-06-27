@@ -16,6 +16,8 @@ class MockReportCandidates {
       lng: -68.1372,
       citizenSupportCount: 58,
       commentsCount: 17,
+      authorReputationScore: 82,
+      authorPostsCount: 18,
       createdAt: DateTime.now().subtract(const Duration(hours: 5)),
       suggestedSolution:
           'Realizar inspeccion vial, senalizar el area y programar reparacion del pavimento.',
@@ -34,6 +36,8 @@ class MockReportCandidates {
       lng: -66.1653,
       citizenSupportCount: 44,
       commentsCount: 13,
+      authorReputationScore: 74,
+      authorPostsCount: 11,
       createdAt: DateTime.now().subtract(const Duration(hours: 8)),
       suggestedSolution:
           'Coordinar verificacion tecnica y comunicar horario estimado de reposicion.',
@@ -52,6 +56,8 @@ class MockReportCandidates {
       lng: -68.1651,
       citizenSupportCount: 71,
       commentsCount: 25,
+      authorReputationScore: 91,
+      authorPostsCount: 24,
       createdAt: DateTime.now().subtract(const Duration(hours: 2)),
       suggestedSolution:
           'Verificar la situacion en via publica y coordinar rutas alternas temporales.',
@@ -70,6 +76,8 @@ class MockReportCandidates {
       lng: -63.1812,
       citizenSupportCount: 31,
       commentsCount: 9,
+      authorReputationScore: 63,
+      authorPostsCount: 8,
       createdAt: DateTime.now().subtract(const Duration(hours: 11)),
       suggestedSolution:
           'Programar limpieza, verificar frecuencia de recojo y comunicar canales de seguimiento.',
@@ -88,6 +96,8 @@ class MockReportCandidates {
       lng: -65.2627,
       citizenSupportCount: 18,
       commentsCount: 6,
+      authorReputationScore: 45,
+      authorPostsCount: 5,
       createdAt: DateTime.now().subtract(const Duration(days: 1)),
       suggestedSolution:
           'Verificar luminarias y coordinar mantenimiento con la unidad correspondiente.',

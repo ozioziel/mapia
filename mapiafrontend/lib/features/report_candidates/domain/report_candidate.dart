@@ -34,6 +34,8 @@ class ReportCandidate {
     required this.citizenSupportCount,
     required this.commentsCount,
     required this.createdAt,
+    this.authorReputationScore,
+    this.authorPostsCount = 0,
     this.locationText,
     this.lat,
     this.lng,
@@ -57,6 +59,8 @@ class ReportCandidate {
   final int citizenSupportCount;
   final int commentsCount;
   final DateTime createdAt;
+  final int? authorReputationScore;
+  final int authorPostsCount;
   final String? aiSummary;
   final String? suggestedSolution;
   final String? rejectionReason;
@@ -81,6 +85,8 @@ class ReportCandidate {
       citizenSupportCount: citizenSupportCount,
       commentsCount: commentsCount,
       createdAt: createdAt,
+      authorReputationScore: authorReputationScore,
+      authorPostsCount: authorPostsCount,
       aiSummary: aiSummary,
       suggestedSolution: suggestedSolution,
       rejectionReason: rejectionReason ?? this.rejectionReason,
