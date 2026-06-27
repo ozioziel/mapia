@@ -57,6 +57,8 @@ class _MapScreenState extends State<MapScreen> {
   Timer? _newsRefreshTimer;
   String? _activeUserId;
   String? _pendingNewsId;
+  String? _pendingAlertId;
+  LatLng? _pendingFocus;
 
   void _bindToUser() {
     final auth = AuthScope.of(context);
@@ -72,6 +74,12 @@ class _MapScreenState extends State<MapScreen> {
     _newsMapApi = NewsMapApi();
     final args = ModalRoute.of(context)?.settings.arguments;
     _pendingNewsId = args is Map ? args['newsId'] as String? : null;
+    _pendingAlertId = args is Map ? args['alertId'] as String? : null;
+    final focusLat = args is Map ? args['lat'] : null;
+    final focusLng = args is Map ? args['lng'] : null;
+    _pendingFocus = (focusLat is num && focusLng is num)
+        ? LatLng(focusLat.toDouble(), focusLng.toDouble())
+        : null;
     setState(() {
       _selected = null;
       _selectedNews = null;
@@ -112,7 +120,26 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _initializeMap() async {
     await _loadGoogleMapsSdk();
     await _requestCurrentLocation();
-    await Future.wait([_loadAlerts(), _loadMapNews()]);
+    await Future.wait([
+      _loadAlerts(selectId: _pendingAlertId),
+      _loadMapNews(),
+    ]);
+    if (_pendingAlertId != null) {
+      _pendingFocus = _selected?.position ?? _pendingFocus;
+      _pendingAlertId = null;
+      await _applyPendingFocus();
+    }
+  }
+
+  /// Centra la cámara en la incidencia indicada al navegar desde el chatbot.
+  /// Si el controlador aún no existe, se aplica luego en [_handleMapCreated].
+  Future<void> _applyPendingFocus() async {
+    final target = _pendingFocus;
+    if (target == null || _mapController == null) return;
+    _pendingFocus = null;
+    await _mapController!.animateCamera(
+      CameraUpdate.newLatLngZoom(target, 14),
+    );
   }
 
   Future<void> _loadAlertMarkerIcons() async {
@@ -456,7 +483,16 @@ class _MapScreenState extends State<MapScreen> {
       controller.animateCamera(
         CameraUpdate.newLatLngZoom(selected.position, 13),
       );
+      return;
     }
+    // Si se llegó al mapa desde el chatbot antes de que el mapa existiera.
+    if (_selected != null) {
+      controller.animateCamera(
+        CameraUpdate.newLatLngZoom(_selected!.position, 14),
+      );
+      return;
+    }
+    _applyPendingFocus();
   }
 
   Future<void> _handleLocatePressed() async {

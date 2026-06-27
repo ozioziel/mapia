@@ -12,6 +12,10 @@ class ChatbotController extends ChangeNotifier {
     : _chatbotApi = chatbotApi ?? ChatbotApi(),
       _mapApi = mapApi ?? MapApi();
 
+  /// Instancia compartida a nivel de app: mantiene el historial del chat aunque
+  /// el panel se cierre y se reabra, o se navegue entre pantallas.
+  static final ChatbotController shared = ChatbotController();
+
   final ChatbotApi _chatbotApi;
   final MapApi _mapApi;
 
