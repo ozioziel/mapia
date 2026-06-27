@@ -11,6 +11,7 @@ class ApiEndpoints {
   static String userPosts(String userId) => '/posts/user/$userId';
 
   static const chatbotAsk = '/chatbot/ask';
+  static const chatbotTranscribe = '/chatbot/transcribe';
 
   static const mapAlerts = '/map/alerts';
   static const mapSummary = '/map/summary';

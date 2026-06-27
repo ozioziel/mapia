@@ -4,7 +4,8 @@ import 'package:mapiafrontend/features/chatbot/models/chat_message.dart';
 import 'package:mapiafrontend/features/chatbot/presentation/chatbot_controller.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
 import 'package:mapiafrontend/features/map/utils/severity.dart';
-import 'package:speech_to_text/speech_to_text.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 
 class ChatbotPanel extends StatefulWidget {
   const ChatbotPanel({super.key, required this.onClose, this.compact = false});
@@ -30,14 +31,14 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
   // Controlador compartido: el historial sobrevive al cerrar/reabrir el panel.
   final ChatbotController _bot = ChatbotController.shared;
 
-  final SpeechToText _speech = SpeechToText();
-  bool _isListening = false;
+  final AudioRecorder _recorder = AudioRecorder();
+  bool _isRecording = false;
+  bool _isTranscribing = false;
 
   @override
   void initState() {
     super.initState();
     _bot.addListener(_handleBotUpdate);
-    // Al reabrir, mostrar el final del chat existente.
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
 
@@ -49,52 +50,76 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
   void dispose() {
     _bot.removeListener(_handleBotUpdate);
     // OJO: no se hace _bot.dispose() porque es la instancia compartida.
-    _speech.stop();
+    _recorder.dispose();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _send([String? value]) {
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _send([String? value]) async {
     final text = (value ?? _controller.text).trim();
     if (text.isEmpty || _bot.isSending) return;
-    if (_isListening) {
-      _speech.stop();
-      _isListening = false;
+    if (_isRecording) {
+      await _recorder.stop();
+      if (mounted) setState(() => _isRecording = false);
     }
     _controller.clear();
     _bot.send(text);
   }
 
+  /// Graba voz y la transcribe con Whisper (OpenAI) vía el backend.
   Future<void> _toggleVoice() async {
-    if (_isListening) {
-      await _speech.stop();
-      if (mounted) setState(() => _isListening = false);
+    if (_isTranscribing) return;
+
+    if (_isRecording) {
+      final path = await _recorder.stop();
+      if (mounted) setState(() => _isRecording = false);
+      if (path == null) return;
+      await _transcribe(path);
       return;
     }
 
-    final available = await _speech.initialize();
-    if (!available) {
+    final hasPermission = await _recorder.hasPermission();
+    if (!hasPermission) {
+      _snack('Se necesita permiso de micrófono para dictar');
+      return;
+    }
+
+    final dir = await getTemporaryDirectory();
+    final path =
+        '${dir.path}/mapia_chatbot_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    await _recorder.start(
+      const RecordConfig(encoder: AudioEncoder.aacLc),
+      path: path,
+    );
+    if (mounted) setState(() => _isRecording = true);
+  }
+
+  Future<void> _transcribe(String path) async {
+    setState(() => _isTranscribing = true);
+    try {
+      final text = await _bot.transcribe(path);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo iniciar el dictado por voz')),
-      );
-      return;
-    }
-
-    setState(() => _isListening = true);
-    await _speech.listen(
-      listenOptions: SpeechListenOptions(localeId: 'es_BO'),
-      onResult: (result) {
-        if (!mounted) return;
+      if (text.isEmpty) {
+        _snack('No se entendió el audio, intenta de nuevo');
+      } else {
         setState(() {
-          _controller.text = result.recognizedWords;
+          _controller.text = text;
           _controller.selection = TextSelection.fromPosition(
             TextPosition(offset: _controller.text.length),
           );
         });
-      },
-    );
+      }
+    } catch (_) {
+      _snack('No se pudo transcribir el audio');
+    } finally {
+      if (mounted) setState(() => _isTranscribing = false);
+    }
   }
 
   void _openIncidentOnMap(AlertMapItem incident) {
@@ -171,7 +196,8 @@ class _ChatbotPanelState extends State<ChatbotPanel> {
                 controller: _controller,
                 onSend: _send,
                 onMic: _toggleVoice,
-                isListening: _isListening,
+                isRecording: _isRecording,
+                isTranscribing: _isTranscribing,
                 enabled: !_bot.isSending,
               ),
             ),
@@ -479,18 +505,26 @@ class _ChatInput extends StatelessWidget {
     required this.controller,
     required this.onSend,
     required this.onMic,
-    this.isListening = false,
+    this.isRecording = false,
+    this.isTranscribing = false,
     this.enabled = true,
   });
 
   final TextEditingController controller;
-  final VoidCallback onSend;
+  final ValueChanged<String?> onSend;
   final VoidCallback onMic;
-  final bool isListening;
+  final bool isRecording;
+  final bool isTranscribing;
   final bool enabled;
 
   @override
   Widget build(BuildContext context) {
+    final hint = isRecording
+        ? 'Grabando… toca el micrófono para terminar'
+        : isTranscribing
+        ? 'Transcribiendo…'
+        : 'Escribe tu mensaje';
+
     return SafeArea(
       top: false,
       child: Padding(
@@ -500,22 +534,18 @@ class _ChatInput extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
-                enabled: enabled,
+                enabled: enabled && !isTranscribing,
                 minLines: 1,
                 maxLines: 3,
                 textInputAction: TextInputAction.send,
-                onSubmitted: (_) => onSend(),
+                onSubmitted: onSend,
                 decoration: InputDecoration(
-                  hintText: isListening ? 'Escuchando…' : 'Escribe tu mensaje',
-                  prefixIcon:
-                      const Icon(Icons.chat_bubble_outline_rounded),
-                  suffixIcon: IconButton(
-                    tooltip: isListening ? 'Detener dictado' : 'Dictar con voz',
+                  hintText: hint,
+                  prefixIcon: const Icon(Icons.chat_bubble_outline_rounded),
+                  suffixIcon: _MicButton(
+                    isRecording: isRecording,
+                    isTranscribing: isTranscribing,
                     onPressed: onMic,
-                    icon: Icon(
-                      isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                      color: isListening ? AppTheme.boliviaRed : AppTheme.mutedText,
-                    ),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -529,7 +559,7 @@ class _ChatInput extends StatelessWidget {
               width: 48,
               height: 48,
               child: FilledButton(
-                onPressed: enabled ? onSend : null,
+                onPressed: enabled ? () => onSend(null) : null,
                 style: FilledButton.styleFrom(
                   padding: EdgeInsets.zero,
                   shape: const CircleBorder(),
@@ -540,6 +570,40 @@ class _ChatInput extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MicButton extends StatelessWidget {
+  const _MicButton({
+    required this.isRecording,
+    required this.isTranscribing,
+    required this.onPressed,
+  });
+
+  final bool isRecording;
+  final bool isTranscribing;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isTranscribing) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    return IconButton(
+      tooltip: isRecording ? 'Detener grabación' : 'Dictar con voz',
+      onPressed: onPressed,
+      icon: Icon(
+        isRecording ? Icons.stop_circle_rounded : Icons.mic_none_rounded,
+        color: isRecording ? AppTheme.boliviaRed : AppTheme.mutedText,
       ),
     );
   }

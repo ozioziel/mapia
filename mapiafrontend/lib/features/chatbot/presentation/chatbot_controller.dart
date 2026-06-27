@@ -67,6 +67,9 @@ class ChatbotController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Transcribe un archivo de audio usando el backend (OpenAI Whisper).
+  Future<String> transcribe(String audioPath) => _chatbotApi.transcribe(audioPath);
+
   Future<Position?> _lastKnownPosition() async {
     try {
       return await Geolocator.getLastKnownPosition();
