@@ -24,7 +24,7 @@ class ApiEndpoints {
   static const parseReport = '/reports/parse';
   static const parseReportWithImages = '/reports/parse-with-images';
   static const analyzeReport = '/reports/analyze';
-  static const publishReport = '/posts';
+  static const publishReport = '/reports';
   static const myReports = '/posts/mine?type=ALERT';
   static const reportCandidates = '/report-candidates';
   static const generateCitizenReport = '/reports/generate';

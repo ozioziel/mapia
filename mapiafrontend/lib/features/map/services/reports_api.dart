@@ -237,7 +237,6 @@ class ReportsApi {
 
     request.fields.addAll({
       'title': input.title,
-      'type': 'ALERT',
       if (input.description != null) 'description': input.description!,
       if (input.product != null) 'product': input.product!,
       'alertType': input.alertType.apiValue,
