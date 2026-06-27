@@ -9,9 +9,11 @@ typedef TokenRefreshCallback = Future<String?> Function();
 class ApiClient {
   ApiClient({
     http.Client? httpClient,
-    this._accessTokenProvider,
-    this._onUnauthorized,
-  }) : _http = httpClient ?? http.Client();
+    String? Function()? accessTokenProvider,
+    TokenRefreshCallback? onUnauthorized,
+  })  : _http = httpClient ?? http.Client(),
+        _accessTokenProvider = accessTokenProvider,
+        _onUnauthorized = onUnauthorized;
 
   static const _timeout = Duration(seconds: 12);
 

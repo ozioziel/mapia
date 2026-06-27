@@ -2,7 +2,7 @@ import 'package:mapiafrontend/core/network/api_client.dart';
 import 'package:mapiafrontend/core/network/api_endpoints.dart';
 
 class ProfileApi {
-  ProfileApi({required this._client});
+  ProfileApi({required ApiClient client}) : _client = client;
 
   final ApiClient _client;
 

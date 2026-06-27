@@ -4,10 +4,10 @@ import 'package:mapiafrontend/features/profile/domain/entities/profile_entity.da
 
 class ProfileRemoteDatasource {
   ProfileRemoteDatasource({
-    required this._api,
+    required ProfileApi api,
     required this.userEmail,
     required this.userId,
-  });
+  }) : _api = api;
 
   final ProfileApi _api;
   final String userEmail;

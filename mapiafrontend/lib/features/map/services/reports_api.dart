@@ -83,8 +83,9 @@ class PublishReportInput {
 }
 
 class ReportsApi {
-  ReportsApi({required this._client, http.Client? httpClient})
-    : _http = httpClient ?? http.Client();
+  ReportsApi({required ApiClient client, http.Client? httpClient})
+    : _client = client,
+      _http = httpClient ?? http.Client();
 
   static const _uploadTimeout = Duration(seconds: 30);
 

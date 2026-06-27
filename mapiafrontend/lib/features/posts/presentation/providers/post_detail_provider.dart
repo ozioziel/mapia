@@ -7,8 +7,8 @@ import 'package:mapiafrontend/features/posts/domain/repositories/post_repository
 class PostDetailProvider extends ChangeNotifier {
   PostDetailProvider({
     required this.postId,
-    this._repository = const MockPostRepository(),
-  });
+    PostRepository repository = const MockPostRepository(),
+  }) : _repository = repository;
 
   final String postId;
   final PostRepository _repository;
