@@ -46,7 +46,9 @@ class PostsApi {
     required double latitude,
     required double longitude,
     String? address,
+    String? locationName,
     int? radiusMeters,
+    bool showOnMap = true,
     List<XFile> images = const [],
   }) async {
     final request = http.MultipartRequest('POST', _client.uri('/posts'));
@@ -64,9 +66,13 @@ class PostsApi {
     if (address != null && address.trim().isNotEmpty) {
       request.fields['address'] = address.trim();
     }
+    if (locationName != null && locationName.trim().isNotEmpty) {
+      request.fields['locationName'] = locationName.trim();
+    }
     if (radiusMeters != null) {
       request.fields['radiusMeters'] = radiusMeters.toString();
     }
+    request.fields['showOnMap'] = showOnMap.toString();
 
     for (final image in images) {
       request.files.add(

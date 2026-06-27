@@ -139,7 +139,9 @@ class CreatePostProvider extends ChangeNotifier {
         latitude: location.lat,
         longitude: location.lng,
         address: address,
+        locationName: address,
         radiusMeters: radiusMeters,
+        showOnMap: true,
         images: image != null ? [image!] : const [],
       );
       createdPostId = post.id;

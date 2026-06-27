@@ -191,6 +191,21 @@ class _EventLocationPickerState extends State<EventLocationPicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Row(
+          children: [
+            Icon(Icons.location_on_outlined, size: 18, color: AppTheme.textNavy),
+            SizedBox(width: 8),
+            Text(
+              'Ubicacion',
+              style: TextStyle(
+                color: AppTheme.textNavy,
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
         _buildMapBox(),
         const SizedBox(height: 12),
         Row(
@@ -260,12 +275,20 @@ class _EventLocationPickerState extends State<EventLocationPicker> {
               bottom: 10,
               child: FloatingActionButton.small(
                 heroTag: 'event_loc_my_location',
+                tooltip: 'Usar ubicacion actual',
                 onPressed: () => _useCurrentLocation(),
                 backgroundColor: Colors.white,
                 foregroundColor: AppTheme.primaryBlue,
                 child: const Icon(Icons.my_location_rounded),
               ),
             ),
+            if (_selected == null)
+              Positioned(
+                left: 10,
+                right: 72,
+                bottom: 14,
+                child: _NoLocationSelectedHint(),
+              ),
           ],
         ),
       ),
@@ -339,7 +362,7 @@ class _EventLocationPickerState extends State<EventLocationPicker> {
               isDense: true,
               filled: true,
               fillColor: Colors.white,
-              hintText: 'Buscar ubicación del evento...',
+              hintText: 'Buscar lugar del evento...',
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _searchController.text.isEmpty
                   ? null
@@ -388,6 +411,43 @@ class _EventLocationPickerState extends State<EventLocationPicker> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _NoLocationSelectedHint extends StatelessWidget {
+  const _NoLocationSelectedHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.touch_app_rounded, size: 17, color: AppTheme.primaryBlue),
+            SizedBox(width: 7),
+            Expanded(
+              child: Text(
+                'Toca el mapa o busca un lugar',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppTheme.textNavy,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

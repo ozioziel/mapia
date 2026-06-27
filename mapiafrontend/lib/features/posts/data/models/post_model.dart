@@ -30,7 +30,10 @@ class PostModel {
           : null,
       latitude: _double(json['latitude']),
       longitude: _double(json['longitude']),
+      radiusMeters: _int(json['radiusMeters']),
+      showOnMap: json['showOnMap'] != false,
       address: _nullableString(json['address']),
+      locationName: _nullableString(json['locationName']),
       mediaUrl: firstMedia == null ? null : _nullableString(firstMedia['url']),
       mediaType: firstMedia == null
           ? PostMediaType.none

@@ -28,6 +28,8 @@ class PostEntity {
     required this.authorName,
     required this.latitude,
     required this.longitude,
+    required this.radiusMeters,
+    required this.showOnMap,
     required this.likesCount,
     required this.dislikesCount,
     required this.commentsCount,
@@ -39,6 +41,7 @@ class PostEntity {
     this.authorAvatarUrl,
     this.authorReputation,
     this.address,
+    this.locationName,
     this.mediaUrl,
     this.mediaType = PostMediaType.none,
   });
@@ -52,7 +55,10 @@ class PostEntity {
   final int? authorReputation;
   final double latitude;
   final double longitude;
+  final int radiusMeters;
+  final bool showOnMap;
   final String? address;
+  final String? locationName;
   final String? mediaUrl;
   final PostMediaType mediaType;
   final int likesCount;
@@ -80,6 +86,8 @@ class PostEntity {
       authorName: authorName,
       latitude: latitude,
       longitude: longitude,
+      radiusMeters: radiusMeters,
+      showOnMap: showOnMap,
       likesCount: likesCount ?? this.likesCount,
       dislikesCount: dislikesCount ?? this.dislikesCount,
       commentsCount: commentsCount ?? this.commentsCount,
@@ -91,6 +99,7 @@ class PostEntity {
       authorAvatarUrl: authorAvatarUrl,
       authorReputation: authorReputation,
       address: address,
+      locationName: locationName,
       mediaUrl: mediaUrl,
       mediaType: mediaType,
     );

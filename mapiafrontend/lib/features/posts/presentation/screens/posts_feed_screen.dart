@@ -304,6 +304,7 @@ class _PostFeedItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final option = post.type.option;
+    final locationLabel = post.locationName ?? post.address;
     final reputation = post.authorReputation == null
         ? authorReputationInfo(post.authorName)
         : reputationInfoFor(score: post.authorReputation, postsCount: 1);
@@ -353,7 +354,7 @@ class _PostFeedItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '${localizedTimeAgo(context, post.createdAt)} - ${post.address ?? context.l10n.laPaz}',
+                        '${localizedTimeAgo(context, post.createdAt)} - ${locationLabel ?? context.l10n.laPaz}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -395,6 +396,10 @@ class _PostFeedItem extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            if (post.showOnMap && locationLabel != null) ...[
+              _MapVisibilityChip(radiusMeters: post.radiusMeters),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 _TinyAction(
@@ -443,6 +448,59 @@ class _PostFeedItem extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapVisibilityChip extends StatelessWidget {
+  const _MapVisibilityChip({required this.radiusMeters});
+
+  final int radiusMeters;
+
+  String get _radiusLabel {
+    if (radiusMeters <= 0) return 'punto exacto';
+    if (radiusMeters < 1000) return '$radiusMeters m';
+    final km = radiusMeters / 1000;
+    return '${km.toStringAsFixed(km >= 10 ? 0 : 1)} km';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryBlue.withValues(alpha: 0.09),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: AppTheme.primaryBlue.withValues(alpha: 0.18),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.map_outlined,
+              size: 15,
+              color: AppTheme.primaryBlue,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                'Visible en mapa - $_radiusLabel',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppTheme.primaryBlue,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
           ],
         ),
