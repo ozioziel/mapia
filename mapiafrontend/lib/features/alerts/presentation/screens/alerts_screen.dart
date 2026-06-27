@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/alerts/presentation/providers/alerts_provider.dart';
+import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/alerts/presentation/widgets/alert_radius_selector.dart';
 import 'package:mapiafrontend/features/alerts/presentation/widgets/nearby_alert_group_card.dart';
 import 'package:mapiafrontend/shared/widgets/app_surface.dart';
@@ -20,7 +21,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   void initState() {
     super.initState();
-    _provider = AlertsProvider()..loadGroups();
+    _provider = AlertsProvider(mapApi: MapApi())..loadGroups();
   }
 
   @override

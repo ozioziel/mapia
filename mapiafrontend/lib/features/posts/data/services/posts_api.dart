@@ -1,3 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
+import 'package:image_picker/image_picker.dart';
 import 'package:mapiafrontend/core/network/api_client.dart';
 import 'package:mapiafrontend/core/network/api_endpoints.dart';
 import 'package:mapiafrontend/features/posts/data/models/post_model.dart';
@@ -5,9 +11,19 @@ import 'package:mapiafrontend/features/posts/domain/entities/comment_entity.dart
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
 class PostsApi {
-  PostsApi({ApiClient? client}) : _client = client ?? ApiClient();
+  PostsApi({ApiClient? client, http.Client? httpClient})
+    : _client = client ?? ApiClient(),
+      _http = httpClient ?? http.Client();
 
   final ApiClient _client;
+  final http.Client _http;
+
+  MediaType _imageMediaType(String name) {
+    final n = name.toLowerCase();
+    if (n.endsWith('.png')) return MediaType('image', 'png');
+    if (n.endsWith('.webp')) return MediaType('image', 'webp');
+    return MediaType('image', 'jpeg');
+  }
 
   Future<List<PostEntity>> fetchPosts({int page = 1, int limit = 50}) async {
     final json = await _client.getJson(ApiEndpoints.publications, {
@@ -19,6 +35,59 @@ class PostsApi {
       for (final item in items)
         if (item is Map<String, dynamic>) PostModel.fromJson(item),
     ];
+  }
+
+  /// Crea una publicación real (POST /posts) con imágenes opcionales.
+  /// Requiere ApiClient autenticado.
+  Future<PostEntity> createPost({
+    required String title,
+    required String description,
+    required PostType type,
+    required double latitude,
+    required double longitude,
+    String? address,
+    int? radiusMeters,
+    List<XFile> images = const [],
+  }) async {
+    final request = http.MultipartRequest('POST', _client.uri('/posts'));
+
+    final token = _client.accessTokenProvider?.call();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    request.fields['title'] = title;
+    request.fields['description'] = description;
+    request.fields['type'] = postTypeToApi(type);
+    request.fields['latitude'] = latitude.toString();
+    request.fields['longitude'] = longitude.toString();
+    if (address != null && address.trim().isNotEmpty) {
+      request.fields['address'] = address.trim();
+    }
+    if (radiusMeters != null) {
+      request.fields['radiusMeters'] = radiusMeters.toString();
+    }
+
+    for (final image in images) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'images',
+          await image.readAsBytes(),
+          filename: image.name,
+          contentType: _imageMediaType(image.name),
+        ),
+      );
+    }
+
+    final streamed = await _http.send(request).timeout(const Duration(seconds: 40));
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        response.body.isEmpty ? 'No se pudo publicar' : response.body,
+      );
+    }
+    return PostModel.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
   Future<PostEntity> fetchPostById(String postId) async {

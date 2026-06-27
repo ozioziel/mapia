@@ -3,6 +3,7 @@ import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/localization/localized_post_type.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/alerts/presentation/providers/alerts_provider.dart';
+import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/alerts/presentation/widgets/nearby_post_card.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 import 'package:mapiafrontend/shared/widgets/app_surface.dart';
@@ -27,7 +28,8 @@ class _NearbyPostsScreenState extends State<NearbyPostsScreen> {
   @override
   void initState() {
     super.initState();
-    _provider = AlertsProvider()..loadPostsByType(widget.type, widget.radiusKm);
+    _provider = AlertsProvider(mapApi: MapApi())
+      ..loadPostsByType(widget.type, widget.radiusKm);
   }
 
   @override

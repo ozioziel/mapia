@@ -21,7 +21,7 @@ class ReportCandidatesProvider extends ChangeNotifier {
       candidates = await api.fetchCandidates();
     } catch (e) {
       candidates = const [];
-      error = e.toString();
+      error = 'No pudimos cargar los reportes. Inténtalo de nuevo.';
     } finally {
       isLoading = false;
       notifyListeners();

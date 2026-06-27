@@ -6,6 +6,7 @@ import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart'
 import 'package:mapiafrontend/features/profile/data/datasources/profile_api.dart';
 import 'package:mapiafrontend/features/profile/data/datasources/profile_remote_datasource.dart';
 import 'package:mapiafrontend/features/profile/data/repositories/profile_repository_impl.dart';
+import 'package:mapiafrontend/features/posts/data/services/posts_api.dart';
 import 'package:mapiafrontend/features/posts/presentation/providers/create_post_provider.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/create_post_form.dart';
 import 'package:mapiafrontend/shared/widgets/app_surface.dart';
@@ -38,6 +39,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
     _provider = CreatePostProvider(
       profileRepository: ProfileRepositoryImpl(datasource),
+      postsApi: PostsApi(client: client),
     );
   }
 

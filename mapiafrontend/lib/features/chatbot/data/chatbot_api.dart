@@ -26,11 +26,17 @@ class ChatbotApi {
   final ApiClient _client;
   final http.Client _http;
 
-  Future<ChatbotReply> ask(String message, {double? lat, double? lng}) async {
+  Future<ChatbotReply> ask(
+    String message, {
+    double? lat,
+    double? lng,
+    List<Map<String, String>> history = const [],
+  }) async {
     final json = await _client.postJson(ApiEndpoints.chatbotAsk, {
       'message': message,
       'lat': ?lat,
       'lng': ?lng,
+      if (history.isNotEmpty) 'history': history,
     });
 
     final rawItems = json['incidents'] as List? ?? const [];

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/posts/presentation/providers/create_post_provider.dart';
-import 'package:mapiafrontend/features/posts/presentation/widgets/post_location_preview.dart';
+import 'package:mapiafrontend/features/posts/presentation/widgets/event_location_picker.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_photo_picker.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/post_type_selector.dart';
 import 'package:mapiafrontend/shared/widgets/app_surface.dart';
@@ -55,16 +55,18 @@ class CreatePostForm extends StatelessWidget {
         const SizedBox(height: 18),
         SectionLabel(l10n.optionalPhoto),
         PostPhotoPicker(
-          imageSource: provider.imageSource,
-          onSelectSource: provider.selectImageSource,
+          image: provider.image,
+          onPick: provider.setImage,
         ),
         const SizedBox(height: 18),
-        SectionLabel(l10n.location),
-        PostLocationPreview(
-          address: provider.usesCurrentLocation
-              ? l10n.nearCurrentLocation
-              : l10n.defaultApproxLocation,
-          onUseCurrentLocation: provider.useCurrentLocation,
+        SectionLabel('Ubicación del evento'),
+        EventLocationPicker(
+          onChanged: (selection) => provider.setLocation(
+            latitude: selection.latitude,
+            longitude: selection.longitude,
+            address: selection.address,
+            radiusMeters: selection.radiusMeters,
+          ),
         ),
         if (!provider.phoneVerified && !provider.isCheckingProfile) ...[
           const SizedBox(height: 14),
