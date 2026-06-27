@@ -18,6 +18,7 @@ import 'package:mapiafrontend/features/map/presentation/widgets/map_marker_build
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/news_map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
+import 'package:mapiafrontend/features/reports/data/analyzed_report.dart';
 import 'package:mapiafrontend/features/map/styles/mapia_map_style.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
 import 'package:mapiafrontend/features/map/utils/alert_marker_icons.dart';
@@ -1506,6 +1507,14 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
   LatLng _location = boliviaCenter;
   double _confidence = 0.75;
   List<XFile> _images = [];
+  // Análisis IA (Paso 1) + formulario dinámico (Paso 2).
+  AnalyzedReport? _analyzed;
+  String _category = 'otro';
+  String _categoryLabel = 'Otro';
+  String _riskLevel = 'info';
+  String _summary = '';
+  final Map<String, TextEditingController> _dynCtrls = {};
+  final Map<String, String?> _dynValues = {};
   bool _isParsing = false;
   bool _isPublishing = false;
   bool _isListening = false;
@@ -1531,8 +1540,112 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
     _departmentController.dispose();
     _municipalityController.dispose();
     _zoneController.dispose();
+    for (final c in _dynCtrls.values) {
+      c.dispose();
+    }
     _speech.stop();
     super.dispose();
+  }
+
+  void _rebuildDynamicFields(AnalyzedReport analyzed) {
+    for (final c in _dynCtrls.values) {
+      c.dispose();
+    }
+    _dynCtrls.clear();
+    _dynValues.clear();
+    for (final f in analyzed.fields) {
+      if (f.type == 'select' || f.type == 'bool') {
+        _dynValues[f.key] = f.value;
+      } else {
+        _dynCtrls[f.key] = TextEditingController(text: f.value ?? '');
+      }
+    }
+  }
+
+  AlertType _alertTypeForCategory(String c) {
+    switch (c) {
+      case 'bloqueo':
+      case 'marcha':
+        return AlertType.bloqueo;
+      case 'combustible':
+        return AlertType.combustible;
+      case 'abastecimiento':
+        return AlertType.productoNoDisponible;
+      default:
+        return AlertType.otro;
+    }
+  }
+
+  AlertSeverity _severityForRisk(String r) {
+    switch (r) {
+      case 'low':
+        return AlertSeverity.low;
+      case 'medium':
+        return AlertSeverity.medium;
+      case 'high':
+      case 'critical':
+        return AlertSeverity.high;
+      default:
+        return AlertSeverity.normal;
+    }
+  }
+
+  Map<String, String> _collectDynamicValues() {
+    final out = <String, String>{};
+    for (final f in _analyzed?.fields ?? const []) {
+      final raw = (f.type == 'select' || f.type == 'bool')
+          ? _dynValues[f.key]
+          : _dynCtrls[f.key]?.text.trim();
+      if (raw != null && raw.isNotEmpty) out[f.key] = raw;
+    }
+    return out;
+  }
+
+  List<Widget> _buildDynamicFields() {
+    final fields = _analyzed?.fields ?? const [];
+    final widgets = <Widget>[];
+    for (final f in fields) {
+      final Widget input;
+      switch (f.type) {
+        case 'select':
+          final current = _dynValues[f.key];
+          input = DropdownButtonFormField<String>(
+            initialValue: f.options.contains(current) ? current : null,
+            decoration: InputDecoration(labelText: f.label, helperText: f.hint),
+            items: f.options
+                .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                .toList(),
+            onChanged: (v) => setState(() => _dynValues[f.key] = v),
+          );
+        case 'bool':
+          input = SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(f.label),
+            value: _dynValues[f.key] == 'true',
+            onChanged: (v) =>
+                setState(() => _dynValues[f.key] = v ? 'true' : 'false'),
+          );
+        default:
+          final isNum = f.type == 'number';
+          final isArea = f.type == 'textarea';
+          input = TextField(
+            controller: _dynCtrls[f.key],
+            keyboardType: isNum ? TextInputType.number : TextInputType.text,
+            minLines: isArea ? 2 : 1,
+            maxLines: isArea ? 4 : 1,
+            decoration: InputDecoration(
+              labelText: f.required ? '${f.label} *' : f.label,
+              helperText: f.hint,
+              suffixIcon: f.detectedByAi
+                  ? const Icon(Icons.auto_awesome_rounded,
+                      size: 18, color: Color(0xFF22C55E))
+                  : null,
+            ),
+          );
+      }
+      widgets.add(Padding(padding: const EdgeInsets.only(bottom: 12), child: input));
+    }
+    return widgets;
   }
 
   Future<void> _loadGoogleMapsSdk() async {
@@ -1694,32 +1807,25 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
     });
 
     try {
-      final ParsedReport parsed;
-      if (_images.isNotEmpty) {
-        parsed = await widget.reportsApi.parseReportWithImages(
-          text: text,
-          images: _images,
-          latitude: _location.latitude,
-          longitude: _location.longitude,
-        );
-      } else {
-        parsed = await widget.reportsApi.parseReport(
-          text: text,
-          latitude: _location.latitude,
-          longitude: _location.longitude,
-        );
-      }
+      final analyzed = await widget.reportsApi.analyzeReport(
+        text: text,
+        images: _images,
+        latitude: _location.latitude,
+        longitude: _location.longitude,
+      );
+      _rebuildDynamicFields(analyzed);
       setState(() {
-        _titleController.text = parsed.title;
-        _descriptionController.text = parsed.description;
-        _productController.text = parsed.product;
-        _priceController.text = parsed.price?.toString() ?? '';
-        _departmentController.text = parsed.department ?? '';
-        _municipalityController.text = parsed.municipality ?? '';
-        _zoneController.text = parsed.zone ?? '';
-        _alertType = parsed.alertType;
-        _severity = parsed.severity;
-        _confidence = parsed.confidence;
+        _analyzed = analyzed;
+        _category = analyzed.category;
+        _categoryLabel = analyzed.categoryLabel;
+        _riskLevel = analyzed.riskLevel;
+        _summary = analyzed.summary;
+        _confidence = analyzed.confidence;
+        _alertType = _alertTypeForCategory(analyzed.category);
+        _severity = _severityForRisk(analyzed.riskLevel);
+        _titleController.text = analyzed.title;
+        _descriptionController.text = analyzed.description;
+        _zoneController.text = analyzed.zone ?? '';
         _isParsing = false;
         _showPreview = true;
       });
@@ -1774,10 +1880,31 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
       return;
     }
 
+    final values = _collectDynamicValues();
+    final missing = (_analyzed?.fields ?? const [])
+        .where((f) => f.required && (values[f.key] == null))
+        .map((f) => f.label)
+        .toList();
+    if (missing.isNotEmpty) {
+      setState(() => _error = 'Completa los campos esenciales: ${missing.join(', ')}');
+      return;
+    }
+
     setState(() {
       _isPublishing = true;
       _error = null;
     });
+
+    final details = <String, dynamic>{
+      'category': _category,
+      'categoryLabel': _categoryLabel,
+      'group': _analyzed?.group,
+      'icon': _analyzed?.icon,
+      'color': _analyzed?.color,
+      'riskLevel': _riskLevel,
+      'summary': _summary,
+      'values': values,
+    };
 
     try {
       final id = await widget.reportsApi.publishReport(
@@ -1796,6 +1923,8 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
           sourceText: _sourceController.text.trim(),
           confidence: _confidence,
           images: _images,
+          category: _category,
+          details: details,
         ),
       );
       if (!mounted) return;
@@ -2046,17 +2175,18 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                 runSpacing: 8,
                 children: [
                   Chip(
-                    label: Text(_alertType.label),
+                    label: Text(_categoryLabel),
                     avatar: const Icon(Icons.category_rounded, size: 18),
                   ),
                   Chip(
-                    label: Text(_severity.label),
+                    label: Text('Riesgo: $_riskLevel'),
                     avatar: const Icon(Icons.warning_amber_rounded, size: 18),
                   ),
-                  Chip(
-                    label: Text('Confianza ${(_confidence * 100).round()}%'),
-                    avatar: const Icon(Icons.check_circle_rounded, size: 18),
-                  ),
+                  if (_analyzed?.usedAi ?? false)
+                    const Chip(
+                      label: Text('Detectado por IA'),
+                      avatar: Icon(Icons.auto_awesome_rounded, size: 18),
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -2103,71 +2233,36 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
         ],
         const SizedBox(height: 14),
         _SheetSection(
-          title: 'Detalles extraídos',
+          title: 'Datos del aviso',
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<AlertType>(
-                      initialValue: _alertType,
-                      decoration: const InputDecoration(labelText: 'Categoría'),
-                      items: AlertType.values.map((type) => DropdownMenuItem(value: type, child: Text(type.label))).toList(),
-                      onChanged: (value) => setState(() => _alertType = value ?? _alertType),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: DropdownButtonFormField<AlertSeverity>(
-                      initialValue: _severity,
-                      decoration: const InputDecoration(labelText: 'Severidad'),
-                      items: AlertSeverity.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label))).toList(),
-                      onChanged: (value) => setState(() => _severity = value ?? _severity),
-                    ),
-                  ),
-                ],
+              DropdownButtonFormField<String>(
+                initialValue: kReportCategories.any((c) => c.code == _category)
+                    ? _category
+                    : 'otro',
+                decoration: const InputDecoration(labelText: 'Categoría'),
+                items: kReportCategories
+                    .map((c) => DropdownMenuItem(value: c.code, child: Text(c.label)))
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _category = value;
+                    _categoryLabel =
+                        kReportCategories.firstWhere((c) => c.code == value).label;
+                    _alertType = _alertTypeForCategory(value);
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Campos recomendados para esta categoría. Los marcados con * son '
+                'obligatorios; los demás son opcionales pero hacen el aviso más útil.',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 12.5),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _productController,
-                      decoration: const InputDecoration(labelText: 'Producto / Info extra'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _priceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Precio Bs / Valor'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        _SheetSection(
-          title: 'Ubicación identificada',
-          child: Column(
-            children: [
-              TextField(
-                controller: _departmentController,
-                decoration: const InputDecoration(labelText: 'Departamento'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _municipalityController,
-                decoration: const InputDecoration(labelText: 'Municipio'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _zoneController,
-                decoration: const InputDecoration(labelText: 'Zona'),
-              ),
+              ..._buildDynamicFields(),
             ],
           ),
         ),

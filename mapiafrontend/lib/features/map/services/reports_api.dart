@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mapiafrontend/core/network/api_client.dart';
 import 'package:mapiafrontend/core/network/api_endpoints.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
+import 'package:mapiafrontend/features/reports/data/analyzed_report.dart';
 
 class ParsedReport {
   const ParsedReport({
@@ -64,6 +65,8 @@ class PublishReportInput {
     this.price,
     this.sourceText,
     this.confidence,
+    this.category,
+    this.details,
   });
 
   final String title;
@@ -80,6 +83,8 @@ class PublishReportInput {
   final String? sourceText;
   final double? confidence;
   final List<XFile> images;
+  final String? category;
+  final Map<String, dynamic>? details;
 }
 
 class ReportsApi {
@@ -154,6 +159,57 @@ class ReportsApi {
     return ParsedReport.fromJson(decoded);
   }
 
+  /// Paso 1: clasifica el aviso (texto + imágenes + ubicación) y devuelve el
+  /// esquema dinámico de campos para el Paso 2.
+  Future<AnalyzedReport> analyzeReport({
+    required String text,
+    List<XFile> images = const [],
+    double? latitude,
+    double? longitude,
+  }) async {
+    final requestUri = _client.uri(ApiEndpoints.analyzeReport);
+    final request = http.MultipartRequest('POST', requestUri);
+
+    final token = _client.accessTokenProvider?.call();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    request.fields['text'] = text;
+    if (latitude != null) request.fields['latitude'] = latitude.toString();
+    if (longitude != null) request.fields['longitude'] = longitude.toString();
+
+    for (final image in images) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'images',
+          await image.readAsBytes(),
+          filename: image.name,
+        ),
+      );
+    }
+
+    late final http.Response response;
+    try {
+      final streamed = await _http.send(request).timeout(_uploadTimeout);
+      response = await http.Response.fromStream(streamed).timeout(_uploadTimeout);
+    } on TimeoutException {
+      throw ApiException('Tiempo de espera agotado: $requestUri', 0);
+    } catch (_) {
+      throw ApiException('No se pudo conectar con $requestUri', 0);
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        response.body.isEmpty ? 'No se pudo analizar' : response.body,
+        response.statusCode,
+      );
+    }
+
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    return AnalyzedReport.fromJson(decoded);
+  }
+
   Future<String> publishReport(PublishReportInput input) async {
     final requestUri = _client.uri(ApiEndpoints.publishReport);
     final request = http.MultipartRequest('POST', requestUri);
@@ -177,6 +233,8 @@ class ReportsApi {
       if (input.price != null) 'price': input.price.toString(),
       if (input.sourceText != null) 'sourceText': input.sourceText!,
       if (input.confidence != null) 'confidence': input.confidence.toString(),
+      if (input.category != null) 'category': input.category!,
+      if (input.details != null) 'details': jsonEncode(input.details),
     });
 
     for (final image in input.images) {
