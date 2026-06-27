@@ -13,6 +13,7 @@ enum PostType {
   security,
   lostFound,
   other,
+  alert,
 }
 
 enum PostMediaType { image, video, none }
@@ -44,6 +45,16 @@ class PostEntity {
     this.locationName,
     this.mediaUrl,
     this.mediaType = PostMediaType.none,
+    this.alertType,
+    this.severity,
+    this.product,
+    this.department,
+    this.municipality,
+    this.zone,
+    this.price,
+    this.sourceText,
+    this.confidence,
+    this.category,
   });
 
   final String id;
@@ -69,6 +80,16 @@ class PostEntity {
   final PostReaction userReaction;
   final bool isVerified;
   final DateTime createdAt;
+  final String? alertType;
+  final String? severity;
+  final String? product;
+  final String? department;
+  final String? municipality;
+  final String? zone;
+  final double? price;
+  final String? sourceText;
+  final double? confidence;
+  final String? category;
 
   PostEntity copyWith({
     int? likesCount,
@@ -102,6 +123,16 @@ class PostEntity {
       locationName: locationName,
       mediaUrl: mediaUrl,
       mediaType: mediaType,
+      alertType: alertType,
+      severity: severity,
+      product: product,
+      department: department,
+      municipality: municipality,
+      zone: zone,
+      price: price,
+      sourceText: sourceText,
+      confidence: confidence,
+      category: category,
     );
   }
 }
@@ -208,6 +239,13 @@ extension PostTypeDetails on PostType {
         icon: Icons.place_rounded,
         color: Color(0xFF607D8B),
         description: 'Algo que no encaja arriba',
+      ),
+      PostType.alert => const PostTypeOption(
+        type: PostType.alert,
+        label: 'Alerta Ciudadana',
+        icon: Icons.warning_rounded,
+        color: Color(0xFFE53935),
+        description: 'Reportes y alertas ciudadanas',
       ),
     };
   }

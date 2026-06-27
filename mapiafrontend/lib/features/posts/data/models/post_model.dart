@@ -47,6 +47,16 @@ class PostModel {
       isVerified: json['isVerified'] == true,
       createdAt:
           DateTime.tryParse(_string(json['createdAt'])) ?? DateTime.now(),
+      alertType: _nullableString(json['alertType']),
+      severity: _nullableString(json['severity']),
+      product: _nullableString(json['product']),
+      department: _nullableString(json['department']),
+      municipality: _nullableString(json['municipality']),
+      zone: _nullableString(json['zone']),
+      price: _nullableDouble(json['price']),
+      sourceText: _nullableString(json['sourceText']),
+      confidence: _nullableDouble(json['confidence']),
+      category: _nullableString(json['category']),
     );
   }
 }
@@ -80,6 +90,7 @@ PostType postTypeFromApi(String value) {
     'SERVICE_CUT' => PostType.serviceCut,
     'SECURITY' => PostType.security,
     'LOST_FOUND' => PostType.lostFound,
+    'ALERT' => PostType.alert,
     _ => PostType.other,
   };
 }
@@ -97,6 +108,7 @@ String postTypeToApi(PostType type) {
     PostType.serviceCut => 'SERVICE_CUT',
     PostType.security => 'SECURITY',
     PostType.lostFound => 'LOST_FOUND',
+    PostType.alert => 'ALERT',
     PostType.other => 'OTHER',
   };
 }
@@ -129,4 +141,10 @@ int? _nullableInt(Object? value) {
   if (value == null) return null;
   if (value is num) return value.toInt();
   return int.tryParse(value.toString());
+}
+
+double? _nullableDouble(Object? value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
 }

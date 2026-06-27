@@ -19,6 +19,15 @@ class MapPublicationMarkerEntity {
     this.address,
     this.locationName,
     this.markerType = 'publication',
+    this.alertType,
+    this.severity,
+    this.product,
+    this.department,
+    this.municipality,
+    this.zone,
+    this.price,
+    this.confidence,
+    this.alertCategory,
   });
 
   final String publicationId;
@@ -36,6 +45,15 @@ class MapPublicationMarkerEntity {
   final DateTime createdAt;
   final PostType category;
   final String markerType;
+  final String? alertType;
+  final String? severity;
+  final String? product;
+  final String? department;
+  final String? municipality;
+  final String? zone;
+  final double? price;
+  final double? confidence;
+  final String? alertCategory;
 
   LatLng get position => LatLng(latitude, longitude);
 
@@ -57,6 +75,15 @@ class MapPublicationMarkerEntity {
           DateTime.tryParse(_string(json['createdAt'])) ?? DateTime.now(),
       category: postTypeFromApi(_string(json['category'])),
       markerType: _string(json['markerType'], fallback: 'publication'),
+      alertType: _nullableString(json['alertType']),
+      severity: _nullableString(json['severity']),
+      product: _nullableString(json['product']),
+      department: _nullableString(json['department']),
+      municipality: _nullableString(json['municipality']),
+      zone: _nullableString(json['zone']),
+      price: _nullableDouble(json['price']),
+      confidence: _nullableDouble(json['confidence']),
+      alertCategory: _nullableString(json['alertCategory']),
     );
   }
 
@@ -83,6 +110,15 @@ class MapPublicationMarkerEntity {
       userReaction: PostReaction.none,
       isVerified: false,
       createdAt: createdAt,
+      alertType: alertType,
+      severity: severity,
+      product: product,
+      department: department,
+      municipality: municipality,
+      zone: zone,
+      price: price,
+      confidence: confidence,
+      category: alertCategory,
     );
   }
 }
@@ -107,4 +143,10 @@ int? _nullableInt(Object? value) {
 int _int(Object? value) {
   if (value is num) return value.toInt();
   return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+double? _nullableDouble(Object? value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
 }

@@ -37,7 +37,7 @@ class MapMarkerBuilder {
       for (final alert in alerts) _alertMarker(alert),
       for (final item in news) _newsMarker(item),
       for (final item in publications)
-        if (item.showOnMap) _publicationMarker(item),
+        if (item.showOnMap && item.category != PostType.alert) _publicationMarker(item),
     };
   }
 
@@ -46,7 +46,7 @@ class MapMarkerBuilder {
       for (final alert in alerts) _alertCircle(alert),
       for (final item in news) _newsCircle(item),
       for (final item in publications)
-        if (item.showOnMap && item.radiusMeters > 0) _publicationCircle(item),
+        if (item.showOnMap && item.radiusMeters > 0 && item.category != PostType.alert) _publicationCircle(item),
     };
   }
 

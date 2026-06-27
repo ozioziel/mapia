@@ -17,31 +17,27 @@ class ApiEndpoints {
 
   static const mapAlerts = '/map/alerts';
   static const mapRoute = '/map/route';
-  static const mapPublications = '/map/publications';
+  static const mapPublications = '/map/posts';
   static const mapSummary = '/map/summary';
   static const mapFilters = '/map/filters';
   static const newsTodayMap = '/news/today/map';
   static const parseReport = '/reports/parse';
   static const parseReportWithImages = '/reports/parse-with-images';
   static const analyzeReport = '/reports/analyze';
-  static const publishReport = '/reports';
-  static const myReports = '/reports/mine';
+  static const publishReport = '/posts';
+  static const myReports = '/posts/mine?type=ALERT';
   static const reportCandidates = '/report-candidates';
   static const generateCitizenReport = '/reports/generate';
 
   static String reportCandidateFromPost(String postId) =>
       '/report-candidates/from-post/$postId';
 
-  static const publications = '/publications';
-
-  static String postById(String postId) => '/publications/$postId';
-
-  static String postComments(String postId) => '/publications/$postId/comments';
-
+  static const publications = '/posts';
+  static String postById(String postId) => '/posts/$postId';
+  static String postComments(String postId) => '/posts/$postId/comments';
   static String postReactions(String postId) =>
-      '/publications/$postId/reactions';
-
-  static String postReports(String postId) => '/publications/$postId/reports';
+      '/posts/$postId/reactions';
+  static String postReports(String postId) => '/posts/$postId/reports';
 
   static String reportCandidateStatus(String id) =>
       '/report-candidates/$id/status';

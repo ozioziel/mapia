@@ -96,6 +96,77 @@ class PostsApi {
     return PostModel.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  Future<PostEntity> createAlertPost({
+    required String title,
+    required double latitude,
+    required double longitude,
+    required String alertType,
+    required String severity,
+    String? description,
+    String? address,
+    String? locationName,
+    int? radiusMeters,
+    bool showOnMap = true,
+    List<XFile> images = const [],
+    String? product,
+    String? department,
+    String? municipality,
+    String? zone,
+    double? price,
+    String? sourceText,
+    double? confidence,
+    String? category,
+  }) async {
+    final request = http.MultipartRequest('POST', _client.uri('/posts'));
+
+    final token = _client.accessTokenProvider?.call();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    request.fields['title'] = title;
+    request.fields['type'] = 'ALERT';
+    request.fields['latitude'] = latitude.toString();
+    request.fields['longitude'] = longitude.toString();
+    request.fields['alertType'] = alertType;
+    request.fields['severity'] = severity;
+    request.fields['showOnMap'] = showOnMap.toString();
+    
+    if (description != null && description.trim().isNotEmpty) request.fields['description'] = description.trim();
+    if (address != null && address.trim().isNotEmpty) request.fields['address'] = address.trim();
+    if (locationName != null && locationName.trim().isNotEmpty) request.fields['locationName'] = locationName.trim();
+    if (radiusMeters != null) request.fields['radiusMeters'] = radiusMeters.toString();
+    if (product != null && product.trim().isNotEmpty) request.fields['product'] = product.trim();
+    if (department != null && department.trim().isNotEmpty) request.fields['department'] = department.trim();
+    if (municipality != null && municipality.trim().isNotEmpty) request.fields['municipality'] = municipality.trim();
+    if (zone != null && zone.trim().isNotEmpty) request.fields['zone'] = zone.trim();
+    if (price != null) request.fields['price'] = price.toString();
+    if (sourceText != null && sourceText.trim().isNotEmpty) request.fields['sourceText'] = sourceText.trim();
+    if (confidence != null) request.fields['confidence'] = confidence.toString();
+    if (category != null && category.trim().isNotEmpty) request.fields['category'] = category.trim();
+
+    for (final image in images) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'images',
+          await image.readAsBytes(),
+          filename: image.name,
+          contentType: _imageMediaType(image.name),
+        ),
+      );
+    }
+
+    final streamed = await _http.send(request).timeout(const Duration(seconds: 40));
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        response.body.isEmpty ? 'No se pudo publicar alerta' : response.body,
+      );
+    }
+    return PostModel.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
   Future<PostEntity> fetchPostById(String postId) async {
     final json = await _client.getJson(ApiEndpoints.postById(postId));
     return PostModel.fromJson(json);
