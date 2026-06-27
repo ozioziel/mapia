@@ -37,6 +37,9 @@ class ChatbotController extends ChangeNotifier {
     final text = rawText.trim();
     if (text.isEmpty || _isSending) return;
 
+    // Memoria corta: turnos previos ANTES de agregar el mensaje actual.
+    final history = _historyForApi();
+
     messages.add(
       ChatMessage(text: text, isUser: true, createdAt: DateTime.now()),
     );
@@ -51,6 +54,7 @@ class ChatbotController extends ChangeNotifier {
         text,
         lat: position?.latitude,
         lng: position?.longitude,
+        history: history,
       );
       reply = ChatMessage(
         text: result.reply,
@@ -65,6 +69,18 @@ class ChatbotController extends ChangeNotifier {
     messages.add(reply);
     _isSending = false;
     notifyListeners();
+  }
+
+  /// Construye la memoria corta (últimos turnos) para enviar al backend.
+  List<Map<String, String>> _historyForApi() {
+    const maxTurns = 8;
+    final relevant =
+        messages.where((m) => m.text.trim().isNotEmpty).toList();
+    final start = relevant.length > maxTurns ? relevant.length - maxTurns : 0;
+    return [
+      for (final m in relevant.sublist(start))
+        {'role': m.isUser ? 'user' : 'assistant', 'text': m.text},
+    ];
   }
 
   /// Transcribe un archivo de audio usando el backend (OpenAI Whisper).
