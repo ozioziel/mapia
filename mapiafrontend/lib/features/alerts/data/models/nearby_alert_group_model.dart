@@ -38,6 +38,7 @@ class NearbyAlertGroupModel extends NearbyAlertGroupEntity {
       PostType.security => 'Seguridad',
       PostType.lostFound => 'Perdido / encontrado',
       PostType.other => 'Otros',
+      PostType.alert => 'Alertas',
     };
   }
 
@@ -56,6 +57,7 @@ class NearbyAlertGroupModel extends NearbyAlertGroupEntity {
       PostType.security => '$verb alertas de seguridad cerca de tu ubicacion',
       PostType.lostFound => '$verb perdidos o encontrados cerca de ti',
       PostType.other => '$verb otros sucesos cerca de tu ubicacion',
+      PostType.alert => '$verb alertas cerca de tu ubicacion',
     };
   }
 }
