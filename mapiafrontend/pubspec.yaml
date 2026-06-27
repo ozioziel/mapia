@@ -33,5 +33,6 @@ flutter:
   generate: true
   uses-material-design: true
   assets:
+    - assets/images/
     - lib/src/pinguino de chill.png
     - lib/src/pinguino registrandose.png
