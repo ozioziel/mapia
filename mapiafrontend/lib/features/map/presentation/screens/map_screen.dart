@@ -20,6 +20,7 @@ import 'package:mapiafrontend/features/map/presentation/widgets/map_post_preview
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/news_map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
+import 'package:mapiafrontend/features/map/services/routing_api.dart';
 import 'package:mapiafrontend/features/reports/data/analyzed_report.dart';
 import 'package:mapiafrontend/features/map/styles/mapia_map_style.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
@@ -43,6 +44,14 @@ class _MapScreenState extends State<MapScreen> {
   MapApi? _mapApi;
   ReportsApi? _reportsApi;
   NewsMapApi? _newsMapApi;
+  RoutingApi? _routingApi;
+
+  // Ruta que evita bloqueos.
+  LatLng? _destination;
+  RouteResult? _routeInfo;
+  Set<Polyline> _routePolylines = {};
+  bool _isRouting = false;
+  String? _routeError;
 
   GoogleMapController? _mapController;
   AlertFilters _filters = const AlertFilters();
@@ -81,6 +90,7 @@ class _MapScreenState extends State<MapScreen> {
     _mapApi = MapApi(client: client);
     _reportsApi = ReportsApi(client: client);
     _newsMapApi = NewsMapApi();
+    _routingApi = RoutingApi(client: client);
     final args = ModalRoute.of(context)?.settings.arguments;
     _pendingNewsId = args is Map ? args['newsId'] as String? : null;
     _pendingAlertId = args is Map ? args['alertId'] as String? : null;
@@ -415,6 +425,107 @@ class _MapScreenState extends State<MapScreen> {
     await Future.wait([_loadAlerts(), _loadMapNews(), _loadMapPublications()]);
   }
 
+  // --- Ruta que evita bloqueos -------------------------------------------------
+
+  Future<void> _onMapLongPressed(LatLng destination) async {
+    final origin = _currentLocation;
+    if (origin == null) {
+      setState(() => _routeError = 'Activa tu ubicación para trazar la ruta');
+      return;
+    }
+    setState(() {
+      _destination = destination;
+      _isRouting = true;
+      _routeError = null;
+    });
+
+    try {
+      final result = await _routingApi!.route(
+        origin: origin,
+        destination: destination,
+      );
+      if (!mounted) return;
+      setState(() {
+        _routeInfo = result;
+        _routePolylines = {
+          Polyline(
+            polylineId: const PolylineId('route'),
+            points: result.points,
+            width: 6,
+            color: result.avoidedBlockades
+                ? const Color(0xFF2563EB)
+                : const Color(0xFFEF4444),
+          ),
+        };
+        _isRouting = false;
+      });
+      if (result.points.isNotEmpty) {
+        await _mapController?.animateCamera(
+          CameraUpdate.newLatLngBounds(_boundsOf(result.points), 60),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isRouting = false;
+        _routeError = 'No se pudo trazar la ruta';
+        _routeInfo = null;
+        _routePolylines = {};
+      });
+    }
+  }
+
+  void _clearRoute() {
+    setState(() {
+      _destination = null;
+      _routeInfo = null;
+      _routePolylines = {};
+      _routeError = null;
+    });
+  }
+
+  Set<Marker> _routeMarkers() {
+    final markers = <Marker>{};
+    final dest = _destination;
+    if (dest != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('route_destination'),
+          position: dest,
+          infoWindow: const InfoWindow(title: 'Destino'),
+        ),
+      );
+    }
+    for (final b in _routeInfo?.blockades ?? const []) {
+      markers.add(
+        Marker(
+          markerId: MarkerId('block_${b.position.latitude}_${b.position.longitude}'),
+          position: b.position,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: InfoWindow(title: b.title, snippet: 'Obstrucción: ${b.category}'),
+        ),
+      );
+    }
+    return markers;
+  }
+
+  LatLngBounds _boundsOf(List<LatLng> points) {
+    var minLat = points.first.latitude;
+    var maxLat = points.first.latitude;
+    var minLng = points.first.longitude;
+    var maxLng = points.first.longitude;
+    for (final p in points) {
+      minLat = p.latitude < minLat ? p.latitude : minLat;
+      maxLat = p.latitude > maxLat ? p.latitude : maxLat;
+      minLng = p.longitude < minLng ? p.longitude : minLng;
+      maxLng = p.longitude > maxLng ? p.longitude : maxLng;
+    }
+    return LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+  }
+
   Future<void> _openPublishReport() async {
     final id = await showModalBottomSheet<String>(
       context: context,
@@ -518,8 +629,26 @@ class _MapScreenState extends State<MapScreen> {
                 _selectedPublication = null;
               }),
               onRetry: ({selectId}) => _refreshMapData(),
+              routePolylines: _routePolylines,
+              routeMarkers: _routeMarkers(),
+              onMapLongPressed: _onMapLongPressed,
             ),
           ),
+          if (_isRouting || _routeInfo != null || _routeError != null)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 24,
+              child: SafeArea(
+                top: false,
+                child: _RouteBanner(
+                  isLoading: _isRouting,
+                  route: _routeInfo,
+                  error: _routeError,
+                  onClose: _clearRoute,
+                ),
+              ),
+            ),
           Positioned(
             top: 0,
             left: 12,
@@ -703,6 +832,9 @@ class _MapCard extends StatelessWidget {
     required this.onCameraIdle,
     required this.onMapTapped,
     required this.onRetry,
+    required this.routePolylines,
+    required this.routeMarkers,
+    required this.onMapLongPressed,
   });
 
   final List<AlertMapItem> alerts;
@@ -725,6 +857,9 @@ class _MapCard extends StatelessWidget {
   final VoidCallback onCameraIdle;
   final VoidCallback onMapTapped;
   final Future<void> Function({String? selectId}) onRetry;
+  final Set<Polyline> routePolylines;
+  final Set<Marker> routeMarkers;
+  final ValueChanged<LatLng> onMapLongPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -761,10 +896,12 @@ class _MapCard extends StatelessWidget {
                   compassEnabled: true,
                   rotateGesturesEnabled: true,
                   tiltGesturesEnabled: true,
-                  markers: _markers(),
+                  markers: {..._markers(), ...routeMarkers},
                   circles: _circles(),
+                  polylines: routePolylines,
                   onCameraIdle: onCameraIdle,
                   onTap: (_) => onMapTapped(),
+                  onLongPress: onMapLongPressed,
                 ),
         ),
         if (isLoading)
@@ -1751,21 +1888,43 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
         default:
           final isNum = f.type == 'number';
           final isArea = f.type == 'textarea';
+          final ctrl = _dynCtrls[f.key];
+          final hasSuggestions = f.suggestions.isNotEmpty;
+          Widget? suffix;
+          if (hasSuggestions) {
+            // Combo editable: el usuario puede escribir o elegir una sugerencia IA.
+            suffix = PopupMenuButton<String>(
+              icon: const Icon(Icons.arrow_drop_down_circle_outlined),
+              tooltip: 'Sugerencias de la IA',
+              onSelected: (v) => setState(() {
+                ctrl?.text = v;
+                ctrl?.selection =
+                    TextSelection.fromPosition(TextPosition(offset: v.length));
+              }),
+              itemBuilder: (_) => [
+                for (final s in f.suggestions)
+                  PopupMenuItem<String>(value: s, child: Text(s)),
+              ],
+            );
+          } else if (f.detectedByAi) {
+            suffix = const Icon(
+              Icons.auto_awesome_rounded,
+              size: 18,
+              color: Color(0xFF22C55E),
+            );
+          }
           input = TextField(
-            controller: _dynCtrls[f.key],
+            controller: ctrl,
             keyboardType: isNum ? TextInputType.number : TextInputType.text,
             minLines: isArea ? 2 : 1,
             maxLines: isArea ? 4 : 1,
             decoration: InputDecoration(
               labelText: f.required ? '${f.label} *' : f.label,
-              helperText: f.hint,
-              suffixIcon: f.detectedByAi
-                  ? const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 18,
-                      color: Color(0xFF22C55E),
-                    )
-                  : null,
+              helperText: f.hint ??
+                  (hasSuggestions
+                      ? 'Toca ▾ para ver sugerencias de la IA'
+                      : null),
+              suffixIcon: suffix,
             ),
           );
       }
@@ -2535,6 +2694,101 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _RouteBanner extends StatelessWidget {
+  const _RouteBanner({
+    required this.isLoading,
+    required this.route,
+    required this.error,
+    required this.onClose,
+  });
+
+  final bool isLoading;
+  final RouteResult? route;
+  final String? error;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> content;
+    if (isLoading) {
+      content = const [
+        SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+        SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            'Calculando la mejor ruta…',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ];
+    } else if (error != null) {
+      content = [
+        const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(error!, style: const TextStyle(fontWeight: FontWeight.w700)),
+        ),
+      ];
+    } else {
+      final r = route!;
+      content = [
+        Icon(
+          r.avoidedBlockades ? Icons.alt_route_rounded : Icons.warning_amber_rounded,
+          color: r.avoidedBlockades ? const Color(0xFF2563EB) : const Color(0xFFEF4444),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${r.distanceText} · ${r.durationText}',
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                r.avoidedBlockades
+                    ? 'Ruta libre de bloqueos'
+                    : 'Atención: pasa por ${r.blockadesOnRoute} obstrucción(es)',
+                style: TextStyle(
+                  color: r.avoidedBlockades
+                      ? const Color(0xFF16A34A)
+                      : const Color(0xFFEF4444),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ];
+    }
+
+    return Material(
+      elevation: 6,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            ...content,
+            IconButton(
+              tooltip: 'Quitar ruta',
+              onPressed: onClose,
+              icon: const Icon(Icons.close_rounded),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

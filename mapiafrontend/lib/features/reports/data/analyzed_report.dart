@@ -10,6 +10,7 @@ class AnalyzedField {
     required this.source,
     this.hint,
     this.options = const [],
+    this.suggestions = const [],
   });
 
   final String key;
@@ -20,6 +21,7 @@ class AnalyzedField {
   final String source; // 'ai' | 'empty'
   final String? hint;
   final List<String> options;
+  final List<String> suggestions;
 
   bool get detectedByAi => source == 'ai' && (value?.isNotEmpty ?? false);
 
@@ -37,6 +39,10 @@ class AnalyzedField {
       options: [
         for (final o in (json['options'] as List? ?? const []))
           if (o is String) o,
+      ],
+      suggestions: [
+        for (final s in (json['suggestions'] as List? ?? const []))
+          if (s is String) s,
       ],
     );
   }

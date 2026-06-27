@@ -14,6 +14,7 @@ class ApiEndpoints {
   static const chatbotTranscribe = '/chatbot/transcribe';
 
   static const mapAlerts = '/map/alerts';
+  static const mapRoute = '/map/route';
   static const mapPublications = '/map/publications';
   static const mapSummary = '/map/summary';
   static const mapFilters = '/map/filters';
