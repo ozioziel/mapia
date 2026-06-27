@@ -3,11 +3,8 @@ import 'package:mapiafrontend/features/auth/presentation/providers/auth_provider
 import 'package:mapiafrontend/features/auth/presentation/screens/login_screen.dart';
 
 class AuthScope extends InheritedNotifier<AuthProvider> {
-  const AuthScope({
-    super.key,
-    required AuthProvider auth,
-    required super.child,
-  }) : super(notifier: auth);
+  const AuthScope({super.key, required AuthProvider auth, required super.child})
+    : super(notifier: auth);
 
   static AuthProvider of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AuthScope>();
@@ -48,10 +45,30 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
+  bool _bootstrapScheduled = false;
+
   @override
   void initState() {
     super.initState();
-    widget.auth.bootstrap();
+    _scheduleBootstrap();
+  }
+
+  @override
+  void didUpdateWidget(covariant AuthGate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.auth != widget.auth) {
+      _bootstrapScheduled = false;
+      _scheduleBootstrap();
+    }
+  }
+
+  void _scheduleBootstrap() {
+    if (_bootstrapScheduled) return;
+    _bootstrapScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.auth.bootstrap();
+    });
   }
 
   @override

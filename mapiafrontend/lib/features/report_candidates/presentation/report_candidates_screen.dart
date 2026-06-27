@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:mapiafrontend/core/network/authenticated_api_client.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
+import 'package:mapiafrontend/features/reputation/domain/reputation_helper.dart';
+import 'package:mapiafrontend/features/reputation/presentation/widgets/reputation_badge.dart';
 import 'package:mapiafrontend/features/report_candidates/data/report_candidates_api.dart';
 import 'package:mapiafrontend/features/report_candidates/domain/report_candidate.dart';
 import 'package:mapiafrontend/features/report_candidates/presentation/report_candidates_provider.dart';
@@ -44,29 +46,10 @@ class _ReportCandidatesScreenState extends State<ReportCandidatesScreen> {
     Navigator.of(context).pushReplacementNamed('/map');
   }
 
-  Future<void> _showGeneratedReport() async {
-    await _provider?.generateReport();
-    if (!mounted || _provider?.generatedReport == null) return;
-    await showDialog<void>(
-      context: context,
-      builder: (context) =>
-          _GeneratedReportDialog(report: _provider!.generatedReport!),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return AppGradientScaffold(
-      appBar: AppBar(
-        title: const Text('Candidatos para Alcaldia'),
-        actions: [
-          IconButton(
-            tooltip: 'Generar informe',
-            onPressed: _showGeneratedReport,
-            icon: const Icon(Icons.description_rounded),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Candidatos para alcaldia')),
       body: AnimatedBuilder(
         animation: _provider!,
         builder: (context, _) {
@@ -90,19 +73,6 @@ class _ReportCandidatesScreenState extends State<ReportCandidatesScreen> {
                     candidate: candidate,
                     onOpenPost: () => _openPost(candidate),
                     onOpenMap: () => _openMap(candidate),
-                    onApprove: () => provider.updateStatus(
-                      candidate.id,
-                      ReportCandidateStatus.aprobadoParaInforme,
-                    ),
-                    onReject: () => provider.updateStatus(
-                      candidate.id,
-                      ReportCandidateStatus.rechazado,
-                      rejectionReason: 'Rechazado desde revision admin.',
-                    ),
-                    onInclude: () => provider.updateStatus(
-                      candidate.id,
-                      ReportCandidateStatus.incluidoEnInforme,
-                    ),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -148,20 +118,19 @@ class _CandidateCard extends StatelessWidget {
     required this.candidate,
     required this.onOpenPost,
     required this.onOpenMap,
-    required this.onApprove,
-    required this.onReject,
-    required this.onInclude,
   });
 
   final ReportCandidate candidate;
   final VoidCallback onOpenPost;
   final VoidCallback onOpenMap;
-  final VoidCallback onApprove;
-  final VoidCallback onReject;
-  final VoidCallback onInclude;
 
   @override
   Widget build(BuildContext context) {
+    final reputation = reputationInfoFor(
+      score: candidate.authorReputationScore,
+      postsCount: candidate.authorPostsCount,
+    );
+
     return AppCard(
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -181,11 +150,7 @@ class _CandidateCard extends StatelessWidget {
                 label: candidate.priority.label,
                 color: _priorityColor(candidate.priority),
               ),
-              _Badge(
-                icon: Icons.fact_check_rounded,
-                label: candidate.status.label,
-                color: _statusColor(candidate.status),
-              ),
+              ReputationBadge(reputation: reputation, compact: true),
             ],
           ),
           const SizedBox(height: 12),
@@ -216,24 +181,18 @@ class _CandidateCard extends StatelessWidget {
           _MetaRow(
             icon: Icons.people_alt_rounded,
             text:
-                '${candidate.citizenSupportCount} apoyos ciudadanos - ${candidate.commentsCount} comentarios',
+                '${candidate.citizenSupportCount} likes - ${candidate.commentsCount} comentarios',
+          ),
+          _MetaRow(
+            icon: Icons.workspace_premium_rounded,
+            text: reputation.hasReputation
+                ? '${reputation.label} del autor - ${reputation.score} puntos'
+                : 'Autor sin reputacion suficiente todavia',
           ),
           _MetaRow(
             icon: Icons.event_rounded,
             text: DateFormat('dd/MM/yyyy HH:mm').format(candidate.createdAt),
           ),
-          if (candidate.suggestedSolution != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Solucion sugerida: ${candidate.suggestedSolution}',
-              style: const TextStyle(
-                color: AppTheme.textNavy,
-                fontSize: 13,
-                height: 1.32,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
           const SizedBox(height: 13),
           Wrap(
             spacing: 8,
@@ -248,21 +207,6 @@ class _CandidateCard extends StatelessWidget {
                 onPressed: onOpenMap,
                 icon: const Icon(Icons.map_rounded),
                 label: const Text('Ver en mapa'),
-              ),
-              FilledButton.icon(
-                onPressed: onApprove,
-                icon: const Icon(Icons.check_rounded),
-                label: const Text('Aprobar'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: onReject,
-                icon: const Icon(Icons.close_rounded),
-                label: const Text('Rechazar'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: onInclude,
-                icon: const Icon(Icons.playlist_add_check_rounded),
-                label: const Text('Incluir en informe'),
               ),
             ],
           ),
@@ -338,50 +282,11 @@ class _Badge extends StatelessWidget {
   }
 }
 
-class _GeneratedReportDialog extends StatelessWidget {
-  const _GeneratedReportDialog({required this.report});
-
-  final GeneratedCitizenReport report;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(report.title),
-      content: SizedBox(
-        width: 720,
-        child: SingleChildScrollView(
-          child: SelectableText(
-            '${report.note}\n\n${report.body}',
-            style: const TextStyle(height: 1.35),
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cerrar'),
-        ),
-      ],
-    );
-  }
-}
-
 Color _priorityColor(ReportCandidatePriority priority) {
   return switch (priority) {
     ReportCandidatePriority.baja => const Color(0xFF0B8063),
     ReportCandidatePriority.media => const Color(0xFFFFA000),
     ReportCandidatePriority.alta => const Color(0xFFE53935),
     ReportCandidatePriority.urgente => const Color(0xFF7B1FA2),
-  };
-}
-
-Color _statusColor(ReportCandidateStatus status) {
-  return switch (status) {
-    ReportCandidateStatus.pendienteRevision => const Color(0xFFFFA000),
-    ReportCandidateStatus.aprobadoParaInforme => const Color(0xFF0B8063),
-    ReportCandidateStatus.rechazado => const Color(0xFFE53935),
-    ReportCandidateStatus.incluidoEnInforme => const Color(0xFF1A73E8),
-    ReportCandidateStatus.enviado => const Color(0xFF7B1FA2),
-    ReportCandidateStatus.resuelto => const Color(0xFF607D8B),
   };
 }

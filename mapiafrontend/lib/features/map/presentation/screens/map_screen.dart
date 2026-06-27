@@ -11,7 +11,10 @@ import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/features/chatbot/widgets/floating_chatbot_button.dart';
 import 'package:mapiafrontend/core/network/authenticated_api_client.dart';
 import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
+import 'package:mapiafrontend/features/map/domain/models/map_filter_model.dart';
 import 'package:mapiafrontend/features/map/presentation/widgets/news_map_card.dart';
+import 'package:mapiafrontend/features/map/presentation/widgets/map_filter_chips.dart';
+import 'package:mapiafrontend/features/map/presentation/widgets/map_marker_builder.dart';
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/news_map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
@@ -40,6 +43,7 @@ class _MapScreenState extends State<MapScreen> {
 
   GoogleMapController? _mapController;
   AlertFilters _filters = const AlertFilters();
+  MapLayerFilters _layerFilters = const MapLayerFilters();
   AlertFilterOptions _filterOptions = const AlertFilterOptions();
   List<AlertMapItem> _alerts = [];
   List<MapNewsItem> _mapNews = [];
@@ -306,6 +310,20 @@ class _MapScreenState extends State<MapScreen> {
     _loadAlerts();
   }
 
+  void _toggleLayerFilter(MapFilterCategory category) {
+    setState(() {
+      _layerFilters = _layerFilters.toggled(category);
+      _clearHiddenSelection();
+    });
+  }
+
+  void _clearLayerFilters() {
+    setState(() {
+      _layerFilters = _layerFilters.clear();
+      _clearHiddenSelection();
+    });
+  }
+
   void _selectAlertFromMap(AlertMapItem alert) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -382,6 +400,9 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final visibleAlerts = _visibleAlerts();
+    final visibleNews = _visibleNews();
+    final availableCategories = _availableCategories();
     final bool isCardOpen = _selected != null || _selectedNews != null;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -410,8 +431,8 @@ class _MapScreenState extends State<MapScreen> {
         children: [
           Positioned.fill(
             child: _MapCard(
-              alerts: _alerts,
-              news: _mapNews,
+              alerts: visibleAlerts,
+              news: visibleNews,
               selected: _selected,
               selectedNews: _selectedNews,
               alertMarkerIcons: _alertMarkerIcons,
@@ -420,6 +441,7 @@ class _MapScreenState extends State<MapScreen> {
               currentLocation: _currentLocation,
               isMapSdkLoading: _isMapSdkLoading,
               hasLocationPermission: _hasLocationPermission,
+              hasActiveLayerFilters: !_layerFilters.isEmpty,
               onMapCreated: _handleMapCreated,
               onAlertSelected: _selectAlertFromMap,
               onNewsSelected: _selectNewsFromMap,
@@ -434,7 +456,9 @@ class _MapScreenState extends State<MapScreen> {
               bottom: false,
               child: _MapFilterBar(
                 filters: _filters,
+                layerFilters: _layerFilters,
                 options: _filterOptions,
+                availableCategories: availableCategories,
                 isOpen: _filtersOpen,
                 isLoading: _isLoading,
                 isLocating: _isLocating,
@@ -443,6 +467,8 @@ class _MapScreenState extends State<MapScreen> {
                 onRefresh: ({selectId}) => _refreshMapData(),
                 onLocatePressed: _handleLocatePressed,
                 onFiltersChanged: _applyFilters,
+                onLayerFilterToggled: _toggleLayerFilter,
+                onLayerFiltersCleared: _clearLayerFilters,
               ),
             ),
           ),
@@ -515,6 +541,38 @@ class _MapScreenState extends State<MapScreen> {
     }
     return null;
   }
+
+  List<AlertMapItem> _visibleAlerts() {
+    if (!_layerFilters.allows(MapFilterCategory.citizenReports)) {
+      return const [];
+    }
+    return _alerts;
+  }
+
+  List<MapNewsItem> _visibleNews() {
+    if (!_layerFilters.allows(MapFilterCategory.news)) {
+      return const [];
+    }
+    return _mapNews;
+  }
+
+  Set<MapFilterCategory> _availableCategories() {
+    return {
+      if (_alerts.isNotEmpty) MapFilterCategory.citizenReports,
+      if (_mapNews.isNotEmpty) MapFilterCategory.news,
+    };
+  }
+
+  void _clearHiddenSelection() {
+    if (_selected != null &&
+        !_layerFilters.allows(MapFilterCategory.citizenReports)) {
+      _selected = null;
+    }
+    if (_selectedNews != null &&
+        !_layerFilters.allows(MapFilterCategory.news)) {
+      _selectedNews = null;
+    }
+  }
 }
 
 class _MapCard extends StatelessWidget {
@@ -529,6 +587,7 @@ class _MapCard extends StatelessWidget {
     required this.currentLocation,
     required this.isMapSdkLoading,
     required this.hasLocationPermission,
+    required this.hasActiveLayerFilters,
     required this.onMapCreated,
     required this.onAlertSelected,
     required this.onNewsSelected,
@@ -545,6 +604,7 @@ class _MapCard extends StatelessWidget {
   final LatLng? currentLocation;
   final bool isMapSdkLoading;
   final bool hasLocationPermission;
+  final bool hasActiveLayerFilters;
   final ValueChanged<GoogleMapController> onMapCreated;
   final ValueChanged<AlertMapItem> onAlertSelected;
   final ValueChanged<MapNewsItem> onNewsSelected;
@@ -611,15 +671,18 @@ class _MapCard extends StatelessWidget {
             ),
           ),
         if (!isLoading && error == null && alerts.isEmpty && news.isEmpty)
-          const Positioned(
+          Positioned(
             left: 14,
             right: 14,
             top: 88,
             child: _MapNotice(
               icon: Icons.map_outlined,
-              title: 'No hay novedades geolocalizadas por hoy',
-              message:
-                  'El mapa esta listo para mostrar reportes y novedades nuevas.',
+              title: hasActiveLayerFilters
+                  ? 'No hay elementos para estos filtros'
+                  : 'No hay novedades geolocalizadas por hoy',
+              message: hasActiveLayerFilters
+                  ? 'Prueba otra categoria o limpia los filtros del mapa.'
+                  : 'El mapa esta listo para mostrar reportes y novedades nuevas.',
             ),
           ),
       ],
@@ -627,77 +690,32 @@ class _MapCard extends StatelessWidget {
   }
 
   Set<Marker> _markers() {
-    return {
-      for (final alert in alerts)
-        Marker(
-          markerId: MarkerId(alert.id),
-          position: alert.position,
-          infoWindow: InfoWindow(
-            title: alert.isMine ? 'Tu evento: ${alert.title}' : alert.title,
-            snippet: alert.product,
-          ),
-          icon:
-              alertMarkerIcons?.iconFor(
-                alert.alertType,
-                isMine: alert.isMine,
-              ) ??
-              BitmapDescriptor.defaultMarkerWithHue(
-                alert.isMine
-                    ? BitmapDescriptor.hueAzure
-                    : markerHue(alert.severity),
-              ),
-          onTap: () => onAlertSelected(alert),
-        ),
-      for (final item in news)
-        Marker(
-          markerId: MarkerId('news_${item.id}'),
-          position: item.position,
-          infoWindow: InfoWindow(
-            title: item.title,
-            snippet: item.category.label,
-          ),
-          icon: BitmapDescriptor.defaultMarkerWithHue(item.category.markerHue),
-          onTap: () => onNewsSelected(item),
-        ),
-    };
+    return _markerBuilder().markers();
   }
 
   Set<Circle> _circles() {
-    return {
-      for (final alert in alerts)
-        Circle(
-          circleId: CircleId('circle_${alert.id}'),
-          center: alert.position,
-          radius: selected?.id == alert.id ? 760 : 520,
-          fillColor: severityColor(
-            alert.severity,
-          ).withValues(alpha: selected?.id == alert.id ? 0.32 : 0.22),
-          strokeColor: Colors.white,
-          strokeWidth: selected?.id == alert.id ? 4 : 3,
-          consumeTapEvents: true,
-          onTap: () => onAlertSelected(alert),
-        ),
-      for (final item in news)
-        Circle(
-          circleId: CircleId('news_circle_${item.id}'),
-          center: item.position,
-          radius: selectedNews?.id == item.id ? 620 : 420,
-          fillColor: const Color(
-            0xFF2563EB,
-          ).withValues(alpha: selectedNews?.id == item.id ? 0.2 : 0.1),
-          strokeColor: Colors.white,
-          strokeWidth: selectedNews?.id == item.id ? 4 : 2,
-          consumeTapEvents: true,
-          onTap: () => onNewsSelected(item),
-        ),
-    };
+    return _markerBuilder().circles();
+  }
+
+  MapMarkerBuilder _markerBuilder() {
+    return MapMarkerBuilder(
+      alerts: alerts,
+      news: news,
+      selectedAlert: selected,
+      selectedNews: selectedNews,
+      alertMarkerIcons: alertMarkerIcons,
+      onAlertSelected: onAlertSelected,
+      onNewsSelected: onNewsSelected,
+    );
   }
 }
 
 class _MapFilterBar extends StatelessWidget {
   const _MapFilterBar({
     required this.filters,
+    required this.layerFilters,
     required this.options,
+    required this.availableCategories,
     required this.isOpen,
     required this.isLoading,
     required this.isLocating,
@@ -706,10 +724,14 @@ class _MapFilterBar extends StatelessWidget {
     required this.onRefresh,
     required this.onLocatePressed,
     required this.onFiltersChanged,
+    required this.onLayerFilterToggled,
+    required this.onLayerFiltersCleared,
   });
 
   final AlertFilters filters;
+  final MapLayerFilters layerFilters;
   final AlertFilterOptions options;
+  final Set<MapFilterCategory> availableCategories;
   final bool isOpen;
   final bool isLoading;
   final bool isLocating;
@@ -718,10 +740,13 @@ class _MapFilterBar extends StatelessWidget {
   final Future<void> Function({String? selectId}) onRefresh;
   final Future<void> Function() onLocatePressed;
   final ValueChanged<AlertFilters> onFiltersChanged;
+  final ValueChanged<MapFilterCategory> onLayerFilterToggled;
+  final VoidCallback onLayerFiltersCleared;
 
   @override
   Widget build(BuildContext context) {
-    final activeFilters = _activeFilterCount(filters);
+    final activeFilters =
+        _activeFilterCount(filters) + layerFilters.activeCount;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -764,6 +789,12 @@ class _MapFilterBar extends StatelessWidget {
               ),
             ],
           ),
+        ),
+        MapFilterChips(
+          filters: layerFilters,
+          availableCategories: availableCategories,
+          onToggle: onLayerFilterToggled,
+          onClear: onLayerFiltersCleared,
         ),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 180),
