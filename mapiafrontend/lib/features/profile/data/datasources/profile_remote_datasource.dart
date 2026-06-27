@@ -73,6 +73,10 @@ class ProfileRemoteDatasource {
       followersCount: (json['followersCount'] as num?)?.toInt() ?? 0,
       followingCount: (json['followingCount'] as num?)?.toInt() ?? 0,
       likesCount: (json['likesCount'] as num?)?.toInt() ?? 0,
+      reputationScore:
+          (json['reputationScore'] as num?)?.toInt() ??
+          (json['likesCount'] as num?)?.toInt() ??
+          0,
       postsCount: (json['postsCount'] as num?)?.toInt() ?? posts.length,
       posts: [
         for (final post in posts)

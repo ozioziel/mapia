@@ -26,6 +26,7 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
   List<PostEntity> _posts = const [];
   bool _isLoading = true;
   String? _error;
+  final Set<String> _busyPostIds = {};
 
   @override
   void initState() {
@@ -82,6 +83,99 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
 
   void _openPost(PostEntity post) {
     Navigator.of(context).pushNamed('/posts/${Uri.encodeComponent(post.id)}');
+  }
+
+  Future<void> _setReaction(PostEntity post, PostReaction reaction) async {
+    if (_busyPostIds.contains(post.id)) return;
+    setState(() => _busyPostIds.add(post.id));
+    try {
+      final api = PostsApi(
+        client: createAuthenticatedApiClient(AuthScope.of(context)),
+      );
+      final updated = post.userReaction == reaction
+          ? await api.removeReaction(post.id)
+          : await api.setReaction(post.id, reaction);
+      if (!mounted) return;
+      setState(() {
+        _posts = [
+          for (final item in _posts) item.id == updated.id ? updated : item,
+        ];
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('No se pudo guardar la reaccion: $error'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() => _busyPostIds.remove(post.id));
+      }
+    }
+  }
+
+  Future<void> _reportFalseInformation(PostEntity post) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reportar como falso'),
+        content: const Text(
+          'MAPIA revisara esta publicacion y evitara reportes duplicados.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Reportar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || _busyPostIds.contains(post.id)) return;
+    if (!mounted) return;
+    setState(() => _busyPostIds.add(post.id));
+    try {
+      final api = PostsApi(
+        client: createAuthenticatedApiClient(AuthScope.of(context)),
+      );
+      await api.reportFalseInformation(post.id);
+      final updated = await api.fetchPostById(post.id);
+      if (!mounted) return;
+      setState(() {
+        _posts = [
+          for (final item in _posts) item.id == updated.id ? updated : item,
+        ];
+      });
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Reporte enviado.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('No se pudo enviar el reporte: $error'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() => _busyPostIds.remove(post.id));
+      }
+    }
   }
 
   void _handleNavTap(int index) {
@@ -176,7 +270,11 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
           return _PostFeedItem(
             post: post,
             focused: post.id == widget.focusPostId,
+            isBusy: _busyPostIds.contains(post.id),
             onTap: () => _openPost(post),
+            onLike: () => _setReaction(post, PostReaction.like),
+            onDislike: () => _setReaction(post, PostReaction.dislike),
+            onReport: () => _reportFalseInformation(post),
           );
         },
       ),
@@ -188,12 +286,20 @@ class _PostFeedItem extends StatelessWidget {
   const _PostFeedItem({
     required this.post,
     required this.focused,
+    required this.isBusy,
     required this.onTap,
+    required this.onLike,
+    required this.onDislike,
+    required this.onReport,
   });
 
   final PostEntity post;
   final bool focused;
+  final bool isBusy;
   final VoidCallback onTap;
+  final VoidCallback onLike;
+  final VoidCallback onDislike;
+  final VoidCallback onReport;
 
   @override
   Widget build(BuildContext context) {
@@ -291,23 +397,22 @@ class _PostFeedItem extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(
-                  post.isLiked
+                _TinyAction(
+                  icon: post.userReaction == PostReaction.like
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
-                  color: post.isLiked
-                      ? const Color(0xFFE53935)
-                      : const Color(0xFF5F6B7A),
-                  size: 18,
+                  label: '${post.likesCount}',
+                  active: post.userReaction == PostReaction.like,
+                  onPressed: isBusy ? null : onLike,
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  '${post.likesCount}',
-                  style: const TextStyle(
-                    color: Color(0xFF5F6B7A),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
-                  ),
+                const SizedBox(width: 14),
+                _TinyAction(
+                  icon: post.userReaction == PostReaction.dislike
+                      ? Icons.thumb_down_alt_rounded
+                      : Icons.thumb_down_alt_outlined,
+                  label: '${post.dislikesCount}',
+                  active: post.userReaction == PostReaction.dislike,
+                  onPressed: isBusy ? null : onDislike,
                 ),
                 const SizedBox(width: 14),
                 const Icon(
@@ -325,10 +430,17 @@ class _PostFeedItem extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Color(0xFF5F6B7A),
-                  size: 24,
+                IconButton(
+                  tooltip: 'Reportar como falso',
+                  onPressed: isBusy ? null : onReport,
+                  icon: const Icon(Icons.flag_outlined, size: 19),
+                  color: const Color(0xFF5F6B7A),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 34,
+                    height: 34,
+                  ),
                 ),
               ],
             ),
@@ -384,6 +496,47 @@ class _PostsStateMessage extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             FilledButton(onPressed: onAction, child: Text(actionLabel)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TinyAction extends StatelessWidget {
+  const _TinyAction({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? const Color(0xFFE53935) : const Color(0xFF5F6B7A);
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(18),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF5F6B7A),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ],
         ),
       ),

@@ -5,11 +5,13 @@ class CommentEntity {
     required this.authorName,
     required this.content,
     required this.createdAt,
+    this.authorAvatarUrl,
   });
 
   final String id;
   final String postId;
   final String authorName;
+  final String? authorAvatarUrl;
   final String content;
   final DateTime createdAt;
 }

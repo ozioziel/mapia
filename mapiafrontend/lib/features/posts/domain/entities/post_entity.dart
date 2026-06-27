@@ -17,6 +17,8 @@ enum PostType {
 
 enum PostMediaType { image, video, none }
 
+enum PostReaction { like, dislike, none }
+
 class PostEntity {
   const PostEntity({
     required this.id,
@@ -27,8 +29,11 @@ class PostEntity {
     required this.latitude,
     required this.longitude,
     required this.likesCount,
+    required this.dislikesCount,
     required this.commentsCount,
+    required this.reportsCount,
     required this.isLiked,
+    required this.userReaction,
     required this.isVerified,
     required this.createdAt,
     this.authorAvatarUrl,
@@ -51,10 +56,45 @@ class PostEntity {
   final String? mediaUrl;
   final PostMediaType mediaType;
   final int likesCount;
+  final int dislikesCount;
   final int commentsCount;
+  final int reportsCount;
   final bool isLiked;
+  final PostReaction userReaction;
   final bool isVerified;
   final DateTime createdAt;
+
+  PostEntity copyWith({
+    int? likesCount,
+    int? dislikesCount,
+    int? commentsCount,
+    int? reportsCount,
+    bool? isLiked,
+    PostReaction? userReaction,
+  }) {
+    return PostEntity(
+      id: id,
+      title: title,
+      description: description,
+      type: type,
+      authorName: authorName,
+      latitude: latitude,
+      longitude: longitude,
+      likesCount: likesCount ?? this.likesCount,
+      dislikesCount: dislikesCount ?? this.dislikesCount,
+      commentsCount: commentsCount ?? this.commentsCount,
+      reportsCount: reportsCount ?? this.reportsCount,
+      isLiked: isLiked ?? this.isLiked,
+      userReaction: userReaction ?? this.userReaction,
+      isVerified: isVerified,
+      createdAt: createdAt,
+      authorAvatarUrl: authorAvatarUrl,
+      authorReputation: authorReputation,
+      address: address,
+      mediaUrl: mediaUrl,
+      mediaType: mediaType,
+    );
+  }
 }
 
 class PostTypeOption {

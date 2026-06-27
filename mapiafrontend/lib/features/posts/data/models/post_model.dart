@@ -36,13 +36,32 @@ class PostModel {
           ? PostMediaType.none
           : mediaTypeFromApi(_string(firstMedia['type'])),
       likesCount: _int(json['likesCount']),
+      dislikesCount: _int(json['dislikesCount']),
       commentsCount: _int(json['commentsCount']),
+      reportsCount: _int(json['reportsCount']),
       isLiked: json['isLiked'] == true,
+      userReaction: reactionFromApi(_nullableString(json['userReaction'])),
       isVerified: json['isVerified'] == true,
       createdAt:
           DateTime.tryParse(_string(json['createdAt'])) ?? DateTime.now(),
     );
   }
+}
+
+PostReaction reactionFromApi(String? value) {
+  return switch ((value ?? '').toUpperCase()) {
+    'LIKE' => PostReaction.like,
+    'DISLIKE' => PostReaction.dislike,
+    _ => PostReaction.none,
+  };
+}
+
+String reactionToApi(PostReaction reaction) {
+  return switch (reaction) {
+    PostReaction.like => 'LIKE',
+    PostReaction.dislike => 'DISLIKE',
+    PostReaction.none => '',
+  };
 }
 
 PostType postTypeFromApi(String value) {

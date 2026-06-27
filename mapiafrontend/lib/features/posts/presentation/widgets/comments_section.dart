@@ -22,6 +22,17 @@ class CommentsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
+        if (comments.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Todavia no hay comentarios.',
+              style: TextStyle(
+                color: AppTheme.mutedText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         for (final comment in comments) ...[
           _CommentTile(comment: comment),
           const SizedBox(height: 12),
@@ -38,20 +49,28 @@ class _CommentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final initial = comment.authorName.trim().isEmpty
+        ? 'M'
+        : comment.authorName.characters.first.toUpperCase();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CircleAvatar(
           radius: 17,
           backgroundColor: const Color(0xFFE7F7EF),
-          child: Text(
-            comment.authorName.characters.first.toUpperCase(),
-            style: const TextStyle(
-              color: Color(0xFF0B8063),
-              fontWeight: FontWeight.w900,
-              fontSize: 13,
-            ),
-          ),
+          backgroundImage: comment.authorAvatarUrl == null
+              ? null
+              : NetworkImage(comment.authorAvatarUrl!),
+          child: comment.authorAvatarUrl == null
+              ? Text(
+                  initial,
+                  style: const TextStyle(
+                    color: Color(0xFF0B8063),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                  ),
+                )
+              : null,
         ),
         const SizedBox(width: 10),
         Expanded(

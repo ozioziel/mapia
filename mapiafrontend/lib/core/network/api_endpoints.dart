@@ -32,9 +32,16 @@ class ApiEndpoints {
   static String reportCandidateFromPost(String postId) =>
       '/report-candidates/from-post/$postId';
 
-  static String postById(String postId) => '/posts/$postId';
+  static const publications = '/publications';
 
-  static String postComments(String postId) => '/posts/$postId/comments';
+  static String postById(String postId) => '/publications/$postId';
+
+  static String postComments(String postId) => '/publications/$postId/comments';
+
+  static String postReactions(String postId) =>
+      '/publications/$postId/reactions';
+
+  static String postReports(String postId) => '/publications/$postId/reports';
 
   static String reportCandidateStatus(String id) =>
       '/report-candidates/$id/status';

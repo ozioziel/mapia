@@ -5,4 +5,12 @@ abstract class PostRepository {
   Future<PostEntity> getPostById(String postId);
 
   Future<List<CommentEntity>> getCommentsByPostId(String postId);
+
+  Future<PostEntity> setReaction(String postId, PostReaction reaction);
+
+  Future<PostEntity> removeReaction(String postId);
+
+  Future<CommentEntity> createComment(String postId, String content);
+
+  Future<void> reportFalseInformation(String postId);
 }

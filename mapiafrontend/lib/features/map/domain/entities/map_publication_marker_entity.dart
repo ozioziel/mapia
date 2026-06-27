@@ -60,8 +60,11 @@ class MapPublicationMarkerEntity {
       latitude: latitude,
       longitude: longitude,
       likesCount: 0,
+      dislikesCount: 0,
       commentsCount: 0,
+      reportsCount: 0,
       isLiked: false,
+      userReaction: PostReaction.none,
       isVerified: false,
       createdAt: createdAt,
     );

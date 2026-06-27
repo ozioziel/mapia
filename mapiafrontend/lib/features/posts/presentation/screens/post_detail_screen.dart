@@ -27,8 +27,6 @@ class PostDetailScreen extends StatefulWidget {
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   PostDetailProvider? _provider;
-  bool? _likedOverride;
-  int? _likesOverride;
   bool _initialized = false;
 
   @override
@@ -51,13 +49,57 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     super.dispose();
   }
 
-  void _toggleLike(PostEntity post) {
-    final currentLiked = _likedOverride ?? post.isLiked;
-    final currentLikes = _likesOverride ?? post.likesCount;
-    setState(() {
-      _likedOverride = !currentLiked;
-      _likesOverride = currentLiked ? currentLikes - 1 : currentLikes + 1;
-    });
+  Future<void> _setReaction(PostReaction reaction) async {
+    final ok = await _provider?.setReaction(reaction) ?? false;
+    if (!ok && mounted) {
+      _showMessage(_provider?.error ?? 'No se pudo guardar tu reaccion.');
+    }
+  }
+
+  Future<void> _reportFalseInformation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reportar como falso'),
+        content: const Text(
+          'Revisaremos esta publicacion. Si ya la reportaste, no se duplicara.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Reportar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ok = await _provider?.reportFalseInformation() ?? false;
+    if (!mounted) return;
+    _showMessage(
+      ok
+          ? 'Reporte enviado.'
+          : (_provider?.error ?? 'No se pudo enviar el reporte.'),
+    );
+  }
+
+  Future<bool> _createComment(String content) async {
+    final ok = await _provider?.createComment(content) ?? false;
+    if (!ok && mounted) {
+      _showMessage(_provider?.error ?? 'No se pudo comentar.');
+    }
+    return ok;
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
   }
 
   void _sharePost() {
@@ -122,9 +164,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
             final post = provider.post!;
             final type = post.type.option;
-            final liked = _likedOverride ?? post.isLiked;
-            final likes = _likesOverride ?? post.likesCount;
-
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
               child: AppCard(
@@ -168,10 +207,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     const Divider(height: 1),
                     const SizedBox(height: 8),
                     PostInteractionBar(
-                      likesCount: likes,
+                      likesCount: post.likesCount,
+                      dislikesCount: post.dislikesCount,
                       commentsCount: post.commentsCount,
-                      isLiked: liked,
-                      onLikeTap: () => _toggleLike(post),
+                      userReaction: post.userReaction.name.toUpperCase(),
+                      isBusy: provider.isMutating,
+                      onLikeTap: () => _setReaction(PostReaction.like),
+                      onDislikeTap: () => _setReaction(PostReaction.dislike),
+                      onReportTap: _reportFalseInformation,
                       onShareTap: _sharePost,
                     ),
                     const SizedBox(height: 10),
@@ -185,7 +228,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     const SizedBox(height: 18),
                     CommentsSection(comments: provider.comments),
                     const SizedBox(height: 8),
-                    const CommentInput(),
+                    CommentInput(
+                      isSubmitting: provider.isMutating,
+                      onSubmit: _createComment,
+                    ),
                   ],
                 ),
               ),

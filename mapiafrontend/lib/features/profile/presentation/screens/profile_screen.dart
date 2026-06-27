@@ -149,10 +149,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               return const SizedBox.shrink();
             }
 
-            final reputation = profileReputationInfo(
+            final reputation = reputationInfoFor(
+              score: profile.reputationScore,
               postsCount: profile.postsCount,
-              likesCount: profile.likesCount,
-              followersCount: profile.followersCount,
             );
 
             return RefreshIndicator(

@@ -26,6 +26,7 @@ class ProfileEntity {
     required this.followersCount,
     required this.followingCount,
     required this.likesCount,
+    required this.reputationScore,
     required this.postsCount,
     required this.posts,
     this.location,
@@ -44,6 +45,7 @@ class ProfileEntity {
   final int followersCount;
   final int followingCount;
   final int likesCount;
+  final int reputationScore;
   final int postsCount;
   final List<ProfilePostEntity> posts;
   final String? location;
@@ -76,6 +78,7 @@ class ProfileEntity {
       followersCount: followersCount,
       followingCount: followingCount,
       likesCount: likesCount,
+      reputationScore: reputationScore,
       postsCount: postsCount,
       posts: posts,
       location: location,
