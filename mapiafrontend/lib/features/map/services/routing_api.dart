@@ -7,11 +7,13 @@ class RouteBlockade {
     required this.position,
     required this.title,
     required this.category,
+    required this.radiusMeters,
   });
 
   final LatLng position;
   final String title;
   final String category;
+  final int radiusMeters;
 
   factory RouteBlockade.fromJson(Map<String, dynamic> json) {
     return RouteBlockade(
@@ -21,6 +23,7 @@ class RouteBlockade {
       ),
       title: json['title'] as String? ?? 'Bloqueo',
       category: json['category'] as String? ?? 'bloqueo',
+      radiusMeters: (json['radiusMeters'] as num?)?.toInt() ?? 0,
     );
   }
 }
