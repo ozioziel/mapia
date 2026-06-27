@@ -8,6 +8,7 @@ class ApiEndpoints {
   static const profilePhoneSend = '/profiles/me/phone/send-code';
   static const profilePhoneVerify = '/profiles/me/phone/verify';
 
+  static const myPosts = '/posts/me';
   static String userPosts(String userId) => '/posts/user/$userId';
 
   static const chatbotAsk = '/chatbot/ask';

@@ -12,7 +12,6 @@ import 'package:mapiafrontend/features/language/presentation/providers/language_
 import 'package:mapiafrontend/features/language/presentation/screens/language_settings_screen.dart';
 import 'package:mapiafrontend/features/map/presentation/screens/map_screen.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
-import 'package:mapiafrontend/features/posts/presentation/screens/create_post_screen.dart';
 import 'package:mapiafrontend/features/posts/presentation/screens/post_detail_screen.dart';
 import 'package:mapiafrontend/features/posts/presentation/screens/posts_feed_screen.dart';
 import 'package:mapiafrontend/features/profile/presentation/screens/edit_profile_screen.dart';
@@ -91,8 +90,21 @@ class _MainAppState extends State<MainApp> {
               '/news-posts': (context) => ProtectedRoute(
                 child: _withExperimentalChatbot(const NewsPostsPage()),
               ),
+              '/create-event': (context) => ProtectedRoute(
+                child: _withExperimentalChatbot(
+                  MapScreen(
+                    key: ValueKey(AuthScope.of(context).user?.id),
+                    openCreateEvent: true,
+                  ),
+                ),
+              ),
               '/create-post': (context) => ProtectedRoute(
-                child: _withExperimentalChatbot(const CreatePostScreen()),
+                child: _withExperimentalChatbot(
+                  MapScreen(
+                    key: ValueKey(AuthScope.of(context).user?.id),
+                    openCreateEvent: true,
+                  ),
+                ),
               ),
               '/alerts': (context) => ProtectedRoute(
                 child: _withExperimentalChatbot(const AlertsScreen()),

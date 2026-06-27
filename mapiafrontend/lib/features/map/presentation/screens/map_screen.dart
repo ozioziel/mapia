@@ -21,6 +21,8 @@ import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/news_map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
 import 'package:mapiafrontend/features/reports/data/analyzed_report.dart';
+import 'package:mapiafrontend/features/reports/data/optional_fields_by_category.dart';
+import 'package:mapiafrontend/features/reports/presentation/widgets/dynamic_optional_fields_widget.dart';
 import 'package:mapiafrontend/features/map/styles/mapia_map_style.dart';
 import 'package:mapiafrontend/features/map/types/alert_map_types.dart';
 import 'package:mapiafrontend/features/map/utils/alert_marker_icons.dart';
@@ -33,7 +35,9 @@ import 'package:speech_to_text/speech_to_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  const MapScreen({super.key, this.openCreateEvent = false});
+
+  final bool openCreateEvent;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -68,6 +72,8 @@ class _MapScreenState extends State<MapScreen> {
   String? _pendingNewsId;
   String? _pendingAlertId;
   LatLng? _pendingFocus;
+  bool _pendingOpenCreateEvent = false;
+  bool _didOpenInitialCreateEvent = false;
 
   void _bindToUser() {
     final auth = AuthScope.of(context);
@@ -84,6 +90,9 @@ class _MapScreenState extends State<MapScreen> {
     final args = ModalRoute.of(context)?.settings.arguments;
     _pendingNewsId = args is Map ? args['newsId'] as String? : null;
     _pendingAlertId = args is Map ? args['alertId'] as String? : null;
+    _pendingOpenCreateEvent =
+        widget.openCreateEvent ||
+        (args is Map && args['openCreateEvent'] == true);
     final focusLat = args is Map ? args['lat'] : null;
     final focusLng = args is Map ? args['lng'] : null;
     _pendingFocus = (focusLat is num && focusLng is num)
@@ -141,6 +150,21 @@ class _MapScreenState extends State<MapScreen> {
       _pendingAlertId = null;
       await _applyPendingFocus();
     }
+    _openInitialCreateEventIfNeeded();
+  }
+
+  void _openInitialCreateEventIfNeeded() {
+    if (!_pendingOpenCreateEvent ||
+        _didOpenInitialCreateEvent ||
+        _reportsApi == null) {
+      return;
+    }
+    _didOpenInitialCreateEvent = true;
+    _pendingOpenCreateEvent = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _openPublishReport();
+    });
   }
 
   /// Centra la cámara en la incidencia indicada al navegar desde el chatbot.
@@ -487,7 +511,7 @@ class _MapScreenState extends State<MapScreen> {
               onPressed: _openPublishReport,
               backgroundColor: const Color(0xFF2563EB),
               foregroundColor: Colors.white,
-              tooltip: 'Publicar reporte',
+              tooltip: 'Crear evento',
               child: const Icon(Icons.add_location_alt_rounded),
             ),
       body: Stack(
@@ -1636,6 +1660,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
   String _categoryLabel = 'Otro';
   String _riskLevel = 'info';
   String _summary = '';
+  List<AnalyzedField> _optionalFields = const [];
   final Map<String, TextEditingController> _dynCtrls = {};
   final Map<String, String?> _dynValues = {};
   bool _isParsing = false;
@@ -1643,6 +1668,7 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
   bool _isListening = false;
   bool _isMapSdkLoading = kIsWeb && AppConfig.googleMapsApiKey.isNotEmpty;
   bool _showPreview = false;
+  bool _optionalFieldsOpen = false;
   String? _error;
   GoogleMapController? _mapController;
 
@@ -1670,19 +1696,34 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
     super.dispose();
   }
 
-  void _rebuildDynamicFields(AnalyzedReport analyzed) {
+  void _setOptionalFields(List<AnalyzedField> fields) {
     for (final c in _dynCtrls.values) {
       c.dispose();
     }
     _dynCtrls.clear();
     _dynValues.clear();
-    for (final f in analyzed.fields) {
+    _optionalFields = fields;
+    for (final f in fields) {
       if (f.type == 'select' || f.type == 'bool') {
         _dynValues[f.key] = f.value;
       } else {
         _dynCtrls[f.key] = TextEditingController(text: f.value ?? '');
       }
     }
+  }
+
+  void _selectCategory(String value) {
+    final config = optionalConfigForCategory(value);
+    setState(() {
+      _category = value;
+      _categoryLabel = config.label;
+      _riskLevel = config.riskLevel;
+      _alertType = _alertTypeForCategory(value);
+      _severity = _severityForRisk(config.riskLevel);
+      _setOptionalFields(
+        optionalFieldsForCategory(category: value, analyzed: _analyzed),
+      );
+    });
   }
 
   AlertType _alertTypeForCategory(String c) {
@@ -1722,58 +1763,6 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
       if (raw != null && raw.isNotEmpty) out[f.key] = raw;
     }
     return out;
-  }
-
-  List<Widget> _buildDynamicFields() {
-    final fields = _analyzed?.fields ?? const [];
-    final widgets = <Widget>[];
-    for (final f in fields) {
-      final Widget input;
-      switch (f.type) {
-        case 'select':
-          final current = _dynValues[f.key];
-          input = DropdownButtonFormField<String>(
-            initialValue: f.options.contains(current) ? current : null,
-            decoration: InputDecoration(labelText: f.label, helperText: f.hint),
-            items: f.options
-                .map((o) => DropdownMenuItem(value: o, child: Text(o)))
-                .toList(),
-            onChanged: (v) => setState(() => _dynValues[f.key] = v),
-          );
-        case 'bool':
-          input = SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(f.label),
-            value: _dynValues[f.key] == 'true',
-            onChanged: (v) =>
-                setState(() => _dynValues[f.key] = v ? 'true' : 'false'),
-          );
-        default:
-          final isNum = f.type == 'number';
-          final isArea = f.type == 'textarea';
-          input = TextField(
-            controller: _dynCtrls[f.key],
-            keyboardType: isNum ? TextInputType.number : TextInputType.text,
-            minLines: isArea ? 2 : 1,
-            maxLines: isArea ? 4 : 1,
-            decoration: InputDecoration(
-              labelText: f.required ? '${f.label} *' : f.label,
-              helperText: f.hint,
-              suffixIcon: f.detectedByAi
-                  ? const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 18,
-                      color: Color(0xFF22C55E),
-                    )
-                  : null,
-            ),
-          );
-      }
-      widgets.add(
-        Padding(padding: const EdgeInsets.only(bottom: 12), child: input),
-      );
-    }
-    return widgets;
   }
 
   Future<void> _loadGoogleMapsSdk() async {
@@ -1941,7 +1930,12 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
         latitude: _location.latitude,
         longitude: _location.longitude,
       );
-      _rebuildDynamicFields(analyzed);
+      _setOptionalFields(
+        optionalFieldsForCategory(
+          category: analyzed.category,
+          analyzed: analyzed,
+        ),
+      );
       setState(() {
         _analyzed = analyzed;
         _category = analyzed.category;
@@ -1990,14 +1984,23 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
 
   Future<void> _publish() async {
     final title = _titleController.text.trim();
+    final description = _descriptionController.text.trim();
     if (title.length < 3) {
       setState(() => _error = 'El titulo es obligatorio');
+      return;
+    }
+    if (description.length < 3) {
+      setState(() => _error = 'La descripcion es obligatoria');
+      return;
+    }
+    if (_category.trim().isEmpty) {
+      setState(() => _error = 'Selecciona una categoria');
       return;
     }
     final validationError = _validateReportContent(
       source: _sourceController.text.trim(),
       title: title,
-      description: _descriptionController.text.trim(),
+      description: description,
     );
     if (validationError != null) {
       setState(() => _error = validationError);
@@ -2009,39 +2012,30 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
     }
 
     final values = _collectDynamicValues();
-    final missing = (_analyzed?.fields ?? const [])
-        .where((f) => f.required && (values[f.key] == null))
-        .map((f) => f.label)
-        .toList();
-    if (missing.isNotEmpty) {
-      setState(
-        () => _error = 'Completa los campos esenciales: ${missing.join(', ')}',
-      );
-      return;
-    }
-
     setState(() {
       _isPublishing = true;
       _error = null;
     });
 
+    final categoryConfig = optionalConfigForCategory(_category);
     final details = <String, dynamic>{
       'category': _category,
       'categoryLabel': _categoryLabel,
-      'group': _analyzed?.group,
-      'icon': _analyzed?.icon,
-      'color': _analyzed?.color,
+      'group': _analyzed?.group ?? categoryConfig.group,
+      'icon': _analyzed?.icon ?? categoryConfig.icon,
+      'color': _analyzed?.color ?? categoryConfig.color,
       'riskLevel': _riskLevel,
       'summary': _summary,
       'values': values,
     };
 
     try {
+      final product = _productController.text.trim();
       final id = await widget.reportsApi.publishReport(
         PublishReportInput(
           title: title,
-          description: _descriptionController.text.trim(),
-          product: _productController.text.trim(),
+          description: description,
+          product: product.isEmpty ? null : product,
           alertType: _alertType,
           severity: _severity,
           latitude: _location.latitude,
@@ -2332,165 +2326,19 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                 ],
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  Chip(
-                    label: Text(_categoryLabel),
-                    avatar: const Icon(Icons.category_rounded, size: 18),
+              if (_images.isNotEmpty) ...[
+                SizedBox(
+                  height: 96,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemBuilder: (context, index) =>
+                        _ImagePreview(image: _images[index], onRemove: () {}),
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemCount: _images.length,
                   ),
-                  Chip(
-                    label: Text('Riesgo: $_riskLevel'),
-                    avatar: const Icon(Icons.warning_amber_rounded, size: 18),
-                  ),
-                  if (_analyzed?.usedAi ?? false)
-                    const Chip(
-                      label: Text('Detectado por IA'),
-                      avatar: Icon(Icons.auto_awesome_rounded, size: 18),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Título del evento',
                 ),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _descriptionController,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción de la IA',
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (_images.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          AppCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Imágenes seleccionadas',
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final image in _images)
-                      _ImagePreview(image: image, onRemove: () {}),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Puedes volver al paso anterior si deseas cambiar las fotos.',
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
-                ),
+                const SizedBox(height: 16),
               ],
-            ),
-          ),
-        ],
-        const SizedBox(height: 14),
-        _SheetSection(
-          title: 'Datos del aviso',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<AlertType>(
-                      initialValue: _alertType,
-                      decoration: const InputDecoration(labelText: 'Categoría'),
-                      items: AlertType.values
-                          .map(
-                            (type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(type.label),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) =>
-                          setState(() => _alertType = value ?? _alertType),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: DropdownButtonFormField<AlertSeverity>(
-                      initialValue: _severity,
-                      decoration: const InputDecoration(labelText: 'Severidad'),
-                      items: AlertSeverity.values
-                          .map(
-                            (s) => DropdownMenuItem(
-                              value: s,
-                              child: Text(s.label),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) =>
-                          setState(() => _severity = value ?? _severity),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _productController,
-                      decoration: const InputDecoration(
-                        labelText: 'Producto / Info extra',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _priceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Precio Bs / Valor',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        _SheetSection(
-          title: 'Ubicación identificada',
-          child: Column(
-            children: [
-              TextField(
-                controller: _departmentController,
-                decoration: const InputDecoration(labelText: 'Departamento'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _municipalityController,
-                decoration: const InputDecoration(labelText: 'Municipio'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _zoneController,
-                decoration: const InputDecoration(labelText: 'Zona'),
-              ),
               DropdownButtonFormField<String>(
                 initialValue: kReportCategories.any((c) => c.code == _category)
                     ? _category
@@ -2504,24 +2352,97 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                     .toList(),
                 onChanged: (value) {
                   if (value == null) return;
-                  setState(() {
-                    _category = value;
-                    _categoryLabel = kReportCategories
-                        .firstWhere((c) => c.code == value)
-                        .label;
-                    _alertType = _alertTypeForCategory(value);
-                  });
+                  _selectCategory(value);
                 },
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Campos recomendados para esta categoría. Los marcados con * son '
-                'obligatorios; los demás son opcionales pero hacen el aviso más útil.',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 12.5),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Título o nombre del evento',
+                ),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
               const SizedBox(height: 12),
-              ..._buildDynamicFields(),
+              TextField(
+                controller: _descriptionController,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(labelText: 'Descripción'),
+              ),
+              if (_analyzed?.usedAi ?? false) ...[
+                const SizedBox(height: 12),
+                const Row(
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      'Detectado por IA',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              initiallyExpanded: _optionalFieldsOpen,
+              onExpansionChanged: (value) =>
+                  setState(() => _optionalFieldsOpen = value),
+              tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+              childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              title: const Text(
+                'Agregar datos opcionales',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+              children: [
+                DynamicOptionalFieldsWidget(
+                  fields: _optionalFields,
+                  controllers: _dynCtrls,
+                  values: _dynValues,
+                  onValueChanged: (key, value) =>
+                      setState(() => _dynValues[key] = value),
+                ),
+                const SizedBox(height: 12),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Ubicación textual',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _departmentController,
+                  decoration: const InputDecoration(labelText: 'Departamento'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _municipalityController,
+                  decoration: const InputDecoration(labelText: 'Municipio'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _zoneController,
+                  decoration: const InputDecoration(labelText: 'Zona'),
+                ),
+              ],
+            ),
           ),
         ),
         if (_error != null) ...[
