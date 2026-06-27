@@ -4,6 +4,8 @@ import 'package:mapiafrontend/core/localization/localized_post_type.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 import 'package:mapiafrontend/core/network/authenticated_api_client.dart';
 import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
+import 'package:mapiafrontend/features/posts/data/repositories/remote_post_repository.dart';
+import 'package:mapiafrontend/features/posts/data/services/posts_api.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 import 'package:mapiafrontend/features/posts/presentation/providers/post_detail_provider.dart';
 import 'package:mapiafrontend/features/posts/presentation/widgets/comment_input.dart';
@@ -24,19 +26,28 @@ class PostDetailScreen extends StatefulWidget {
 }
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
-  late final PostDetailProvider _provider;
+  PostDetailProvider? _provider;
   bool? _likedOverride;
   int? _likesOverride;
+  bool _initialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    _provider = PostDetailProvider(postId: widget.postId)..load();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialized) return;
+    _initialized = true;
+    final auth = AuthScope.of(context);
+    _provider = PostDetailProvider(
+      postId: widget.postId,
+      repository: RemotePostRepository(
+        api: PostsApi(client: createAuthenticatedApiClient(auth)),
+      ),
+    )..load();
   }
 
   @override
   void dispose() {
-    _provider.dispose();
+    _provider?.dispose();
     super.dispose();
   }
 
@@ -95,20 +106,21 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       appBar: AppBar(title: Text(context.l10n.publication)),
       body: SafeArea(
         child: AnimatedBuilder(
-          animation: _provider,
+          animation: _provider ?? Listenable.merge(const []),
           builder: (context, _) {
-            if (_provider.isLoading) {
+            final provider = _provider;
+            if (provider == null || provider.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (_provider.error != null || _provider.post == null) {
+            if (provider.error != null || provider.post == null) {
               return _DetailError(
-                message: _provider.error ?? context.l10n.postNotFound,
-                onRetry: _provider.load,
+                message: provider.error ?? context.l10n.postNotFound,
+                onRetry: provider.load,
               );
             }
 
-            final post = _provider.post!;
+            final post = provider.post!;
             final type = post.type.option;
             final liked = _likedOverride ?? post.isLiked;
             final likes = _likesOverride ?? post.likesCount;
@@ -171,7 +183,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     const SizedBox(height: 8),
                     const Divider(height: 1),
                     const SizedBox(height: 18),
-                    CommentsSection(comments: _provider.comments),
+                    CommentsSection(comments: provider.comments),
                     const SizedBox(height: 8),
                     const CommentInput(),
                   ],

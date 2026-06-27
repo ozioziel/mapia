@@ -14,7 +14,9 @@ class PostAuthorHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = post.type.option;
-    final reputation = authorReputationInfo(post.authorName);
+    final reputation = post.authorReputation == null
+        ? authorReputationInfo(post.authorName)
+        : reputationInfoFor(score: post.authorReputation, postsCount: 1);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

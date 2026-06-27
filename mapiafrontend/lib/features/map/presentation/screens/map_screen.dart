@@ -12,9 +12,11 @@ import 'package:mapiafrontend/features/chatbot/widgets/floating_chatbot_button.d
 import 'package:mapiafrontend/core/network/authenticated_api_client.dart';
 import 'package:mapiafrontend/features/auth/presentation/widgets/auth_gate.dart';
 import 'package:mapiafrontend/features/map/domain/models/map_filter_model.dart';
+import 'package:mapiafrontend/features/map/domain/entities/map_publication_marker_entity.dart';
 import 'package:mapiafrontend/features/map/presentation/widgets/news_map_card.dart';
 import 'package:mapiafrontend/features/map/presentation/widgets/map_filter_chips.dart';
 import 'package:mapiafrontend/features/map/presentation/widgets/map_marker_builder.dart';
+import 'package:mapiafrontend/features/map/presentation/widgets/map_post_preview_card.dart';
 import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/map/services/news_map_api.dart';
 import 'package:mapiafrontend/features/map/services/reports_api.dart';
@@ -47,8 +49,10 @@ class _MapScreenState extends State<MapScreen> {
   AlertFilterOptions _filterOptions = const AlertFilterOptions();
   List<AlertMapItem> _alerts = [];
   List<MapNewsItem> _mapNews = [];
+  List<MapPublicationMarkerEntity> _publications = [];
   AlertMapItem? _selected;
   MapNewsItem? _selectedNews;
+  MapPublicationMarkerEntity? _selectedPublication;
   AlertMapMarkerIcons? _alertMarkerIcons;
   bool _isLoading = true;
   bool _isLocating = true;
@@ -87,8 +91,10 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       _selected = null;
       _selectedNews = null;
+      _selectedPublication = null;
       _alerts = [];
       _mapNews = [];
+      _publications = [];
       _isLoading = true;
     });
     _initializeMap();
@@ -127,6 +133,7 @@ class _MapScreenState extends State<MapScreen> {
     await Future.wait([
       _loadAlerts(selectId: _pendingAlertId),
       _loadMapNews(),
+      _loadMapPublications(),
     ]);
     if (_pendingAlertId != null) {
       _pendingFocus = _selected?.position ?? _pendingFocus;
@@ -141,9 +148,7 @@ class _MapScreenState extends State<MapScreen> {
     final target = _pendingFocus;
     if (target == null || _mapController == null) return;
     _pendingFocus = null;
-    await _mapController!.animateCamera(
-      CameraUpdate.newLatLngZoom(target, 14),
-    );
+    await _mapController!.animateCamera(CameraUpdate.newLatLngZoom(target, 14));
   }
 
   Future<void> _loadAlertMarkerIcons() async {
@@ -221,11 +226,13 @@ class _MapScreenState extends State<MapScreen> {
       final results = await Future.wait([
         _mapApi!.fetchAlerts(_filters),
         _mapApi!.fetchFilters(),
+        _mapApi!.fetchPublications(),
       ]);
       if (!mounted) return;
       setState(() {
         _alerts = results[0] as List<AlertMapItem>;
         _filterOptions = results[1] as AlertFilterOptions;
+        _publications = results[2] as List<MapPublicationMarkerEntity>;
       });
     } catch (_) {}
   }
@@ -241,6 +248,34 @@ class _MapScreenState extends State<MapScreen> {
     } catch (_) {}
   }
 
+  Future<void> _loadMapPublications() async {
+    try {
+      final items = await _fetchVisiblePublications();
+      if (!mounted) return;
+      setState(() {
+        _publications = items;
+        _selectedPublication = _findPublication(
+          items,
+          _selectedPublication?.publicationId,
+        );
+      });
+    } catch (_) {}
+  }
+
+  Future<List<MapPublicationMarkerEntity>> _fetchVisiblePublications() async {
+    final controller = _mapController;
+    if (controller == null) {
+      return _mapApi!.fetchPublications();
+    }
+    final bounds = await controller.getVisibleRegion();
+    return _mapApi!.fetchPublications(
+      north: bounds.northeast.latitude,
+      south: bounds.southwest.latitude,
+      east: bounds.northeast.longitude,
+      west: bounds.southwest.longitude,
+    );
+  }
+
   Future<void> _loadAlerts({String? selectId}) async {
     setState(() {
       _isLoading = true;
@@ -251,9 +286,11 @@ class _MapScreenState extends State<MapScreen> {
       final results = await Future.wait([
         _mapApi!.fetchAlerts(_filters),
         _mapApi!.fetchFilters(),
+        _mapApi!.fetchPublications(),
       ]);
       final alerts = results[0] as List<AlertMapItem>;
       final options = results[1] as AlertFilterOptions;
+      final publications = results[2] as List<MapPublicationMarkerEntity>;
       final selected = selectId == null
           ? _findAlert(alerts, _selected?.id)
           : _findAlert(alerts, selectId);
@@ -261,6 +298,7 @@ class _MapScreenState extends State<MapScreen> {
       if (!mounted) return;
       setState(() {
         _alerts = alerts;
+        _publications = publications;
         _filterOptions = options;
         _selected = selected;
         _isLoading = false;
@@ -306,6 +344,7 @@ class _MapScreenState extends State<MapScreen> {
       _filters = filters;
       _selected = null;
       _selectedNews = null;
+      _selectedPublication = null;
     });
     _loadAlerts();
   }
@@ -330,6 +369,7 @@ class _MapScreenState extends State<MapScreen> {
       setState(() {
         _selected = alert;
         _selectedNews = null;
+        _selectedPublication = null;
       });
     });
   }
@@ -340,8 +380,26 @@ class _MapScreenState extends State<MapScreen> {
       setState(() {
         _selectedNews = item;
         _selected = null;
+        _selectedPublication = null;
       });
     });
+  }
+
+  void _selectPublicationFromMap(MapPublicationMarkerEntity item) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _selectedPublication = item;
+        _selected = null;
+        _selectedNews = null;
+      });
+    });
+  }
+
+  void _openPublication(MapPublicationMarkerEntity item) {
+    Navigator.of(
+      context,
+    ).pushNamed('/posts/${Uri.encodeComponent(item.publicationId)}');
   }
 
   Future<void> _openNewsUrl(MapNewsItem item) async {
@@ -353,7 +411,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _refreshMapData() async {
-    await Future.wait([_loadAlerts(), _loadMapNews()]);
+    await Future.wait([_loadAlerts(), _loadMapNews(), _loadMapPublications()]);
   }
 
   Future<void> _openPublishReport() async {
@@ -402,8 +460,12 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final visibleAlerts = _visibleAlerts();
     final visibleNews = _visibleNews();
+    final visiblePublications = _visiblePublications();
     final availableCategories = _availableCategories();
-    final bool isCardOpen = _selected != null || _selectedNews != null;
+    final bool isCardOpen =
+        _selected != null ||
+        _selectedNews != null ||
+        _selectedPublication != null;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (FloatingChatbotButton.isVisible.value != !isCardOpen) {
@@ -433,8 +495,10 @@ class _MapScreenState extends State<MapScreen> {
             child: _MapCard(
               alerts: visibleAlerts,
               news: visibleNews,
+              publications: visiblePublications,
               selected: _selected,
               selectedNews: _selectedNews,
+              selectedPublication: _selectedPublication,
               alertMarkerIcons: _alertMarkerIcons,
               isLoading: _isLoading,
               error: _error,
@@ -445,6 +509,13 @@ class _MapScreenState extends State<MapScreen> {
               onMapCreated: _handleMapCreated,
               onAlertSelected: _selectAlertFromMap,
               onNewsSelected: _selectNewsFromMap,
+              onPublicationSelected: _selectPublicationFromMap,
+              onCameraIdle: _loadMapPublications,
+              onMapTapped: () => setState(() {
+                _selected = null;
+                _selectedNews = null;
+                _selectedPublication = null;
+              }),
               onRetry: ({selectId}) => _refreshMapData(),
             ),
           ),
@@ -483,6 +554,17 @@ class _MapScreenState extends State<MapScreen> {
                     ? () => _openNewsUrl(_selectedNews!)
                     : null,
                 onClose: () => setState(() => _selectedNews = null),
+              ),
+            )
+          else if (_selectedPublication != null)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 125,
+              child: MapPostPreviewCard(
+                post: _selectedPublication!.toPreviewPost(),
+                onGoTap: () => _openPublication(_selectedPublication!),
+                onClose: () => setState(() => _selectedPublication = null),
               ),
             )
           else if (_selected != null)
@@ -542,6 +624,17 @@ class _MapScreenState extends State<MapScreen> {
     return null;
   }
 
+  MapPublicationMarkerEntity? _findPublication(
+    List<MapPublicationMarkerEntity> items,
+    String? id,
+  ) {
+    if (id == null) return null;
+    for (final item in items) {
+      if (item.publicationId == id) return item;
+    }
+    return null;
+  }
+
   List<AlertMapItem> _visibleAlerts() {
     if (!_layerFilters.allows(MapFilterCategory.citizenReports)) {
       return const [];
@@ -556,10 +649,18 @@ class _MapScreenState extends State<MapScreen> {
     return _mapNews;
   }
 
+  List<MapPublicationMarkerEntity> _visiblePublications() {
+    if (!_layerFilters.allows(MapFilterCategory.userPosts)) {
+      return const [];
+    }
+    return _publications;
+  }
+
   Set<MapFilterCategory> _availableCategories() {
     return {
       if (_alerts.isNotEmpty) MapFilterCategory.citizenReports,
       if (_mapNews.isNotEmpty) MapFilterCategory.news,
+      if (_publications.isNotEmpty) MapFilterCategory.userPosts,
     };
   }
 
@@ -572,6 +673,10 @@ class _MapScreenState extends State<MapScreen> {
         !_layerFilters.allows(MapFilterCategory.news)) {
       _selectedNews = null;
     }
+    if (_selectedPublication != null &&
+        !_layerFilters.allows(MapFilterCategory.userPosts)) {
+      _selectedPublication = null;
+    }
   }
 }
 
@@ -579,8 +684,10 @@ class _MapCard extends StatelessWidget {
   const _MapCard({
     required this.alerts,
     required this.news,
+    required this.publications,
     required this.selected,
     required this.selectedNews,
+    required this.selectedPublication,
     required this.alertMarkerIcons,
     required this.isLoading,
     required this.error,
@@ -591,13 +698,18 @@ class _MapCard extends StatelessWidget {
     required this.onMapCreated,
     required this.onAlertSelected,
     required this.onNewsSelected,
+    required this.onPublicationSelected,
+    required this.onCameraIdle,
+    required this.onMapTapped,
     required this.onRetry,
   });
 
   final List<AlertMapItem> alerts;
   final List<MapNewsItem> news;
+  final List<MapPublicationMarkerEntity> publications;
   final AlertMapItem? selected;
   final MapNewsItem? selectedNews;
+  final MapPublicationMarkerEntity? selectedPublication;
   final AlertMapMarkerIcons? alertMarkerIcons;
   final bool isLoading;
   final String? error;
@@ -608,6 +720,9 @@ class _MapCard extends StatelessWidget {
   final ValueChanged<GoogleMapController> onMapCreated;
   final ValueChanged<AlertMapItem> onAlertSelected;
   final ValueChanged<MapNewsItem> onNewsSelected;
+  final ValueChanged<MapPublicationMarkerEntity> onPublicationSelected;
+  final VoidCallback onCameraIdle;
+  final VoidCallback onMapTapped;
   final Future<void> Function({String? selectId}) onRetry;
 
   @override
@@ -647,7 +762,8 @@ class _MapCard extends StatelessWidget {
                   tiltGesturesEnabled: true,
                   markers: _markers(),
                   circles: _circles(),
-                  onTap: (_) {},
+                  onCameraIdle: onCameraIdle,
+                  onTap: (_) => onMapTapped(),
                 ),
         ),
         if (isLoading)
@@ -670,7 +786,11 @@ class _MapCard extends StatelessWidget {
               onAction: () => onRetry(),
             ),
           ),
-        if (!isLoading && error == null && alerts.isEmpty && news.isEmpty)
+        if (!isLoading &&
+            error == null &&
+            alerts.isEmpty &&
+            news.isEmpty &&
+            publications.isEmpty)
           Positioned(
             left: 14,
             right: 14,
@@ -701,11 +821,14 @@ class _MapCard extends StatelessWidget {
     return MapMarkerBuilder(
       alerts: alerts,
       news: news,
+      publications: publications,
       selectedAlert: selected,
       selectedNews: selectedNews,
+      selectedPublication: selectedPublication,
       alertMarkerIcons: alertMarkerIcons,
       onAlertSelected: onAlertSelected,
       onNewsSelected: onNewsSelected,
+      onPublicationSelected: onPublicationSelected,
     );
   }
 }
@@ -1829,7 +1952,10 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                     onPressed: () => setState(() => _showPreview = false),
                     icon: const Icon(Icons.arrow_back_rounded),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 40,
+                      height: 40,
+                    ),
                   ),
                 Expanded(
                   child: Text(
@@ -1884,8 +2010,16 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Icon(_images.isNotEmpty ? Icons.image_search_rounded : Icons.auto_awesome_rounded),
-                    label: Text(_images.isNotEmpty ? 'Analizar con IA Visual' : 'Analizar texto'),
+                        : Icon(
+                            _images.isNotEmpty
+                                ? Icons.image_search_rounded
+                                : Icons.auto_awesome_rounded,
+                          ),
+                    label: Text(
+                      _images.isNotEmpty
+                          ? 'Analizar con IA Visual'
+                          : 'Analizar texto',
+                    ),
                   ),
           ),
           if (bottomInset > 0) SizedBox(height: bottomInset),
@@ -1935,7 +2069,9 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
           onPressed: _toggleVoice,
           icon: Icon(_isListening ? Icons.stop_rounded : Icons.mic_rounded),
           label: Text(_isListening ? 'Detener dictado' : 'Dictar con voz'),
-          style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 44)),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 44),
+          ),
         ),
         const SizedBox(height: 16),
         _SheetSection(
@@ -1955,7 +2091,8 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
               Text(
                 'Lat ${_location.latitude.toStringAsFixed(5)}, Lng ${_location.longitude.toStringAsFixed(5)}',
                 style: TextStyle(
-                  color: isInsideBolivia(_location.latitude, _location.longitude)
+                  color:
+                      isInsideBolivia(_location.latitude, _location.longitude)
                       ? const Color(0xFF64748B)
                       : const Color(0xFFEF4444),
                   fontWeight: FontWeight.w800,
@@ -1966,7 +2103,9 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                 onPressed: _requestLocation,
                 icon: const Icon(Icons.my_location_rounded),
                 label: const Text('Usar ubicación actual'),
-                style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 44)),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 44),
+                ),
               ),
             ],
           ),
@@ -1988,7 +2127,9 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                 label: const Text('Agregar imágenes'),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 44),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
               if (_images.isNotEmpty) ...[
@@ -2001,7 +2142,9 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                       _ImagePreview(
                         image: image,
                         onRemove: () => setState(
-                          () => _images = _images.where((item) => item != image).toList(),
+                          () => _images = _images
+                              .where((item) => item != image)
+                              .toList(),
                         ),
                       ),
                   ],
@@ -2012,7 +2155,13 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
-          Text(_error!, style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w800)),
+          Text(
+            _error!,
+            style: const TextStyle(
+              color: Color(0xFFEF4444),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ],
     );
@@ -2030,12 +2179,18 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.auto_awesome_rounded, color: Theme.of(context).primaryColor),
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Theme.of(context).primaryColor,
+                  ),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
                       'Paso 2 de 2: Confirmar evento',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ],
@@ -2062,15 +2217,22 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
               const SizedBox(height: 16),
               TextField(
                 controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Título del evento'),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                decoration: const InputDecoration(
+                  labelText: 'Título del evento',
+                ),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _descriptionController,
                 minLines: 2,
                 maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Descripción de la IA'),
+                decoration: const InputDecoration(
+                  labelText: 'Descripción de la IA',
+                ),
               ),
             ],
           ),
@@ -2082,21 +2244,24 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Imágenes seleccionadas', style: TextStyle(fontWeight: FontWeight.w900)),
+                const Text(
+                  'Imágenes seleccionadas',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
                   children: [
                     for (final image in _images)
-                      _ImagePreview(
-                        image: image,
-                        onRemove: () {},
-                      ),
+                      _ImagePreview(image: image, onRemove: () {}),
                   ],
                 ),
                 const SizedBox(height: 10),
-                const Text('Puedes volver al paso anterior si deseas cambiar las fotos.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+                const Text(
+                  'Puedes volver al paso anterior si deseas cambiar las fotos.',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                ),
               ],
             ),
           ),
@@ -2112,8 +2277,16 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                     child: DropdownButtonFormField<AlertType>(
                       initialValue: _alertType,
                       decoration: const InputDecoration(labelText: 'Categoría'),
-                      items: AlertType.values.map((type) => DropdownMenuItem(value: type, child: Text(type.label))).toList(),
-                      onChanged: (value) => setState(() => _alertType = value ?? _alertType),
+                      items: AlertType.values
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _alertType = value ?? _alertType),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -2121,8 +2294,16 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                     child: DropdownButtonFormField<AlertSeverity>(
                       initialValue: _severity,
                       decoration: const InputDecoration(labelText: 'Severidad'),
-                      items: AlertSeverity.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label))).toList(),
-                      onChanged: (value) => setState(() => _severity = value ?? _severity),
+                      items: AlertSeverity.values
+                          .map(
+                            (s) => DropdownMenuItem(
+                              value: s,
+                              child: Text(s.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _severity = value ?? _severity),
                     ),
                   ),
                 ],
@@ -2133,7 +2314,9 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                   Expanded(
                     child: TextField(
                       controller: _productController,
-                      decoration: const InputDecoration(labelText: 'Producto / Info extra'),
+                      decoration: const InputDecoration(
+                        labelText: 'Producto / Info extra',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -2141,7 +2324,9 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
                     child: TextField(
                       controller: _priceController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Precio Bs / Valor'),
+                      decoration: const InputDecoration(
+                        labelText: 'Precio Bs / Valor',
+                      ),
                     ),
                   ),
                 ],
@@ -2173,7 +2358,13 @@ class _PublishReportSheetState extends State<_PublishReportSheet> {
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
-          Text(_error!, style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w800)),
+          Text(
+            _error!,
+            style: const TextStyle(
+              color: Color(0xFFEF4444),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ],
     );

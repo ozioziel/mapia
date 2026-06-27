@@ -32,6 +32,7 @@ class PostEntity {
     required this.isVerified,
     required this.createdAt,
     this.authorAvatarUrl,
+    this.authorReputation,
     this.address,
     this.mediaUrl,
     this.mediaType = PostMediaType.none,
@@ -43,6 +44,7 @@ class PostEntity {
   final PostType type;
   final String authorName;
   final String? authorAvatarUrl;
+  final int? authorReputation;
   final double latitude;
   final double longitude;
   final String? address;
