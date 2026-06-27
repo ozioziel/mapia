@@ -17,7 +17,7 @@ class ApiEndpoints {
 
   static const mapAlerts = '/map/alerts';
   static const mapRoute = '/map/route';
-  static const mapPublications = '/map/posts';
+  static const mapPublications = '/map/publications';
   static const mapSummary = '/map/summary';
   static const mapFilters = '/map/filters';
   static const newsTodayMap = '/news/today/map';

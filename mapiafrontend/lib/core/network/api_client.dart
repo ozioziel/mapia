@@ -164,6 +164,8 @@ class ApiClient {
         final raw = jsonDecode(response.body);
         if (raw is Map<String, dynamic>) {
           decoded = raw;
+        } else if (raw is List) {
+          decoded = {'items': raw};
         }
       } catch (_) {
         decoded = {'message': response.body};
