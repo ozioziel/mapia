@@ -1,16 +1,29 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mapiafrontend/core/localization/l10n_extension.dart';
 import 'package:mapiafrontend/core/theme/app_theme.dart';
 
 class PostPhotoPicker extends StatelessWidget {
   const PostPhotoPicker({
     super.key,
-    required this.imageSource,
-    required this.onSelectSource,
+    required this.image,
+    required this.onPick,
   });
 
-  final String? imageSource;
-  final ValueChanged<String> onSelectSource;
+  final XFile? image;
+  final ValueChanged<XFile?> onPick;
+
+  Future<void> _pick(ImageSource source) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (picked != null) onPick(picked);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +36,7 @@ class PostPhotoPicker extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => onSelectSource(l10n.camera),
+                onPressed: () => _pick(ImageSource.camera),
                 icon: const Icon(Icons.photo_camera_outlined),
                 label: Text(l10n.takePhoto, overflow: TextOverflow.ellipsis),
                 style: OutlinedButton.styleFrom(
@@ -35,7 +48,7 @@ class PostPhotoPicker extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => onSelectSource(l10n.gallery),
+                onPressed: () => _pick(ImageSource.gallery),
                 icon: const Icon(Icons.photo_library_outlined),
                 label: Text(
                   l10n.chooseFromGallery,
@@ -49,33 +62,45 @@ class PostPhotoPicker extends StatelessWidget {
             ),
           ],
         ),
-        if (imageSource != null) ...[
+        if (image != null) ...[
           const SizedBox(height: 10),
-          Container(
-            height: 96,
-            decoration: BoxDecoration(
-              gradient: AppTheme.mintGradient,
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-              border: Border.all(color: AppTheme.softBorder),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: 14),
-                const Icon(Icons.image_outlined, color: Color(0xFF0B8063)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    l10n.photoSelectedFrom(imageSource!),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppTheme.textNavy,
-                      fontWeight: FontWeight.w700,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            child: FutureBuilder<Uint8List>(
+              future: image!.readAsBytes(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const SizedBox(
+                    height: 150,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                return Stack(
+                  children: [
+                    Image.memory(
+                      snapshot.data!,
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                     ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-              ],
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Material(
+                        color: Colors.black54,
+                        shape: const CircleBorder(),
+                        child: IconButton(
+                          tooltip: 'Quitar foto',
+                          iconSize: 18,
+                          color: Colors.white,
+                          onPressed: () => onPick(null),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],

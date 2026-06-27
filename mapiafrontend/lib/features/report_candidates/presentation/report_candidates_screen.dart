@@ -63,10 +63,7 @@ class _ReportCandidatesScreenState extends State<ReportCandidatesScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
               children: [
-                if (provider.error != null || provider.usingMockData)
-                  _Notice(
-                    text: provider.error ?? 'Mostrando candidatos de prueba.',
-                  ),
+                if (provider.error != null) _Notice(text: provider.error!),
                 const SizedBox(height: 10),
                 for (final candidate in provider.candidates) ...[
                   _CandidateCard(

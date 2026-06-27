@@ -1,33 +1,22 @@
 import 'package:flutter/foundation.dart';
-import 'package:mapiafrontend/features/alerts/data/datasources/alerts_mock_datasource.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:mapiafrontend/features/alerts/data/datasources/alerts_remote_datasource.dart';
 import 'package:mapiafrontend/features/alerts/data/repositories/alerts_repository_impl.dart';
 import 'package:mapiafrontend/features/alerts/domain/entities/nearby_alert_group_entity.dart';
 import 'package:mapiafrontend/features/alerts/domain/usecases/get_nearby_alert_groups_usecase.dart';
 import 'package:mapiafrontend/features/alerts/domain/usecases/get_nearby_posts_by_type_usecase.dart';
 import 'package:mapiafrontend/features/location/domain/entities/location_entity.dart';
+import 'package:mapiafrontend/features/map/services/map_api.dart';
 import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 
 class AlertsProvider extends ChangeNotifier {
-  AlertsProvider({
-    GetNearbyAlertGroupsUsecase? getGroupsUsecase,
-    GetNearbyPostsByTypeUsecase? getPostsByTypeUsecase,
-  }) : _getGroupsUsecase = getGroupsUsecase ?? _defaultGetGroupsUsecase,
-       _getPostsByTypeUsecase =
-           getPostsByTypeUsecase ?? _defaultGetPostsByTypeUsecase;
-
-  static const userMockLocation = AppLocationEntity(
-    latitude: -16.5000,
-    longitude: -68.1500,
-    address: 'La Paz, Bolivia / Sopocachi / Zona actual mock',
-  );
-
-  static final _repository = AlertsRepositoryImpl(const AlertsMockDatasource());
-  static final _defaultGetGroupsUsecase = GetNearbyAlertGroupsUsecase(
-    _repository,
-  );
-  static final _defaultGetPostsByTypeUsecase = GetNearbyPostsByTypeUsecase(
-    _repository,
-  );
+  AlertsProvider({required MapApi mapApi})
+    : _getGroupsUsecase = GetNearbyAlertGroupsUsecase(
+        AlertsRepositoryImpl(AlertsRemoteDatasource(mapApi: mapApi)),
+      ),
+      _getPostsByTypeUsecase = GetNearbyPostsByTypeUsecase(
+        AlertsRepositoryImpl(AlertsRemoteDatasource(mapApi: mapApi)),
+      );
 
   final GetNearbyAlertGroupsUsecase _getGroupsUsecase;
   final GetNearbyPostsByTypeUsecase _getPostsByTypeUsecase;
@@ -39,16 +28,57 @@ class AlertsProvider extends ChangeNotifier {
   bool isLoading = false;
   String? error;
 
-  AppLocationEntity get currentLocation => userMockLocation;
+  AppLocationEntity? _location;
+  AppLocationEntity get currentLocation =>
+      _location ??
+      const AppLocationEntity(
+        latitude: 0,
+        longitude: 0,
+        address: 'Tu ubicación',
+      );
+
+  /// Resuelve la ubicación real del dispositivo (sin datos mock).
+  Future<AppLocationEntity?> _resolveLocation() async {
+    if (_location != null) return _location;
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+      final pos =
+          await Geolocator.getLastKnownPosition() ??
+          await Geolocator.getCurrentPosition();
+      _location = AppLocationEntity(
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        address: 'Tu ubicación',
+      );
+      return _location;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> loadGroups() async {
     isLoading = true;
     error = null;
     notifyListeners();
 
+    final location = await _resolveLocation();
+    if (location == null) {
+      error = 'Activa tu ubicación para ver alertas cercanas.';
+      isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
       groups = await _getGroupsUsecase(
-        location: currentLocation,
+        location: location,
         radiusKm: selectedRadiusKm,
       );
     } catch (_) {
@@ -71,10 +101,18 @@ class AlertsProvider extends ChangeNotifier {
     nearbyPosts = [];
     notifyListeners();
 
+    final location = await _resolveLocation();
+    if (location == null) {
+      error = 'Activa tu ubicación para ver publicaciones cercanas.';
+      isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
       nearbyPosts = await _getPostsByTypeUsecase(
         type: type,
-        location: currentLocation,
+        location: location,
         radiusKm: radiusKm,
       );
     } catch (_) {

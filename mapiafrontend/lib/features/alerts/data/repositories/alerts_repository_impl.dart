@@ -1,4 +1,4 @@
-import 'package:mapiafrontend/features/alerts/data/datasources/alerts_mock_datasource.dart';
+import 'package:mapiafrontend/features/alerts/data/datasources/alerts_remote_datasource.dart';
 import 'package:mapiafrontend/features/alerts/domain/entities/nearby_alert_group_entity.dart';
 import 'package:mapiafrontend/features/alerts/domain/repositories/alerts_repository.dart';
 import 'package:mapiafrontend/features/location/domain/entities/location_entity.dart';
@@ -7,7 +7,7 @@ import 'package:mapiafrontend/features/posts/domain/entities/post_entity.dart';
 class AlertsRepositoryImpl implements AlertsRepository {
   const AlertsRepositoryImpl(this.datasource);
 
-  final AlertsMockDatasource datasource;
+  final AlertsRemoteDatasource datasource;
 
   @override
   Future<List<NearbyAlertGroupEntity>> getNearbyAlertGroups({
