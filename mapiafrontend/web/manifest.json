@@ -1,6 +1,6 @@
 {
-    "name": "mapiafrontend",
-    "short_name": "mapiafrontend",
+    "name": "mapia",
+    "short_name": "mapia",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

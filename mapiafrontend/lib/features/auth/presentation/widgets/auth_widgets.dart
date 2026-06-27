@@ -238,84 +238,25 @@ class AuthHeader extends StatelessWidget {
 class MapiaLogo extends StatelessWidget {
   const MapiaLogo({super.key});
 
+  static const String asset = 'assets/images/logo.png';
+
   @override
   Widget build(BuildContext context) {
     final scale = AuthScale.of(context).scale;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 24 * scale,
-          height: 24 * scale,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              _LogoArc(
-                color: const Color(0xFF4285F4),
-                startAngle: -90,
-                sweepAngle: 115,
-                size: 23 * scale,
-                strokeWidth: 4.4 * scale,
-              ),
-              _LogoArc(
-                color: const Color(0xFFEA4335),
-                startAngle: 28,
-                sweepAngle: 85,
-                size: 23 * scale,
-                strokeWidth: 4.4 * scale,
-              ),
-              _LogoArc(
-                color: const Color(0xFFFBBC05),
-                startAngle: 118,
-                sweepAngle: 72,
-                size: 23 * scale,
-                strokeWidth: 4.4 * scale,
-              ),
-              _LogoArc(
-                color: const Color(0xFF34A853),
-                startAngle: 192,
-                sweepAngle: 78,
-                size: 23 * scale,
-                strokeWidth: 4.4 * scale,
-              ),
-              CircleAvatar(radius: 4.7 * scale, backgroundColor: Colors.white),
-            ],
-          ),
+    return Image.asset(
+      asset,
+      height: 44 * scale,
+      fit: BoxFit.contain,
+      errorBuilder: (_, _, _) => Text(
+        'Mapia',
+        style: TextStyle(
+          color: AppTheme.primaryBlue,
+          fontSize: 22 * scale,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0,
         ),
-        SizedBox(width: 7 * scale),
-        Text.rich(
-          const TextSpan(
-            children: [
-              TextSpan(
-                text: 'M',
-                style: TextStyle(color: Color(0xFF4285F4)),
-              ),
-              TextSpan(
-                text: 'a',
-                style: TextStyle(color: Color(0xFFEA4335)),
-              ),
-              TextSpan(
-                text: 'p',
-                style: TextStyle(color: Color(0xFFFBBC05)),
-              ),
-              TextSpan(
-                text: 'i',
-                style: TextStyle(color: Color(0xFF4285F4)),
-              ),
-              TextSpan(
-                text: 'a',
-                style: TextStyle(color: Color(0xFF34A853)),
-              ),
-            ],
-          ),
-          style: TextStyle(
-            fontSize: 18 * scale,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -687,73 +628,5 @@ class _CloudBubble extends StatelessWidget {
         shape: BoxShape.circle,
       ),
     );
-  }
-}
-
-class _LogoArc extends StatelessWidget {
-  const _LogoArc({
-    required this.color,
-    required this.startAngle,
-    required this.sweepAngle,
-    required this.size,
-    required this.strokeWidth,
-  });
-
-  final Color color;
-  final double startAngle;
-  final double sweepAngle;
-  final double size;
-  final double strokeWidth;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.square(size),
-      painter: _ArcPainter(
-        color: color,
-        startAngle: startAngle,
-        sweepAngle: sweepAngle,
-        strokeWidth: strokeWidth,
-      ),
-    );
-  }
-}
-
-class _ArcPainter extends CustomPainter {
-  const _ArcPainter({
-    required this.color,
-    required this.startAngle,
-    required this.sweepAngle,
-    required this.strokeWidth,
-  });
-
-  final Color color;
-  final double startAngle;
-  final double sweepAngle;
-  final double strokeWidth;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    canvas.drawArc(
-      Offset.zero & size,
-      startAngle * 3.141592653589793 / 180,
-      sweepAngle * 3.141592653589793 / 180,
-      false,
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _ArcPainter oldDelegate) {
-    return color != oldDelegate.color ||
-        startAngle != oldDelegate.startAngle ||
-        sweepAngle != oldDelegate.sweepAngle ||
-        strokeWidth != oldDelegate.strokeWidth;
   }
 }
